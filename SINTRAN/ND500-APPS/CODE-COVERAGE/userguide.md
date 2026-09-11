@@ -91,24 +91,31 @@ UNVERIFIED: the precise order of the questions, and which are conditional.
 
 ### INPUT
 
-- **Command line / arguments: none needed.** [doc] CODE-COVERAGE is
+- **Command line / arguments: none needed.** [from disasm] CODE-COVERAGE is
   question-driven (see "Commands and options" above) - it does not read a
   program-name argument off the SINTRAN command line the way `NC TEST` does.
   Start it with the bare name at `@`.
-- **All input is read from device 1 (your own terminal), one prompt at a
-  time, via MON 503B InputString (DVINST).** [inferred from
-  `../../Developer/MON/calls/503B_InputString.yaml`] 503B is the standard
-  ND-500 terminal line-read call; nothing in the disassembled prompt list
-  (`Compiler List file:`, `DUMP-LOG file:`, `New input file:`, `Print the
-  source (Y/N):`, `Output file:`, `Program language:`) suggests device-0
-  command-buffer reads the way NC-A06 or NC-A06-style programs use them - see
-  the memory note `nc-reads-its-parameter-line-from-the-command-buffer.md` for
-  the device-0 pattern this program does NOT show.
-- **503B blocks (suspends) on an empty line and re-reads the whole line on
-  resume.** [doc, 503B yaml `verified` block] This is exactly why an EXIT
-  typed BEFORE the banner in corpus701 was swallowed by the FIRST prompt
-  (`Program language:`) rather than being queued for a later one - each
-  prompt only consumes the answer you give it at the moment it is asked.
+- **CORRECTED 2026-09-11: input is read from device 1 (your own terminal)
+  ONE BYTE AT A TIME via MON 1B InByte (INBT), NOT via MON 503B InputString.**
+  [from disasm, `analysis/code-coverage.asm`] The monitor-call table in the
+  disassembly contains exactly one input call, `MON 1B INBT` at `0x08003DA4`
+  (paired with `MON 2B OUTBT` for output at `0x08003DBD`) - there is NO
+  occurrence of `503B`/`DVINST` anywhere in the 2623-line file (checked with a
+  full-file search). The live run agrees: run308 (`E:\Dev\Ronny\ND5000UC\BUGS.md`
+  line 408) records "one `MON 1B`" for this program's only captured input
+  attempt, not a 503B call. An earlier draft of this section claimed 503B by
+  inference from the prompt list alone, without reading the disassembly's own
+  monitor-call table - that inference was wrong.
+  Nothing in the prompt list or the monitor-call table shows a device-0
+  command-buffer read the way NC-A06 uses one - see the memory note
+  `nc-reads-its-parameter-line-from-the-command-buffer.md` for the device-0
+  pattern this program does NOT show.
+- **MON 1B InByte blocks (suspends) when the input buffer is empty and
+  resumes when a byte arrives.** [doc, `1B_InByte.yaml`: "The program waits if
+  there is no bytes in the input buffer of the device."] This is consistent
+  with why an EXIT typed BEFORE the banner in corpus701 was swallowed by the
+  FIRST prompt (`Program language:`) rather than being queued for a later one
+  - each prompt only consumes the answer given at the moment it is asked.
   [measured, `E:\Dev\Ronny\ND5000UC\BUGS.md` line 46: "EXIT typed BEFORE the
   banner (`Unknown language`), then parked on the next read"]
 - **Input FILES it needs to do useful work** (not command-line args - file
@@ -147,12 +154,17 @@ UNVERIFIED: the precise order of the questions, and which are conditional.
   program are`, `Number of lines not executed are`, `The following routines
   have non executed source lines:`, and `The code coverage figure is <n>
   percent`. [from disasm]
-- **No file-as-segment mechanism.** [inferred] CODE-COVERAGE reads its two
-  input files and writes its one output file as ordinary text; there is no
-  evidence in the disassembly of a MON 412B FSCNT (FileAsSegment) call the
-  way LED-FORTRAN uses one - it looks like plain sequential MON 117B/120B-style
-  file I/O. [UNVERIFIED - the MON-call trace for this program has not been
-  captured live.]
+- **CORRECTED 2026-09-11: the disassembly's monitor-call table DOES contain a
+  MON 412B FSCNT and a MON 413B FSCDNT call** (`analysis/code-coverage.asm`
+  lines with `; MON 412B FSCNT` and `; MON 413B FSCDNT`), alongside plain
+  `MON 117B RFILE` / `MON 120B WFILE`. An earlier draft of this section
+  claimed "no evidence... of a MON 412B FSCNT call" - that is factually wrong;
+  the call is present. What is NOT established is which mechanism CODE-COVERAGE
+  actually uses at runtime for its two input files and its output file - the
+  table only proves the program is LINKED against both the file-as-segment
+  calls and the plain sequential-I/O calls; no live MON-call trace has been
+  captured for a full run to say which path executes. [UNVERIFIED - which of
+  412B/413B vs 117B/120B fires at runtime]
 
 ### GOOD TO KNOW
 
@@ -197,8 +209,9 @@ UNVERIFIED: the precise order of the questions, and which are conditional.
 - Shared conventions: [../README.md](../README.md)
 - Disassembly: [analysis/code-coverage.asm](analysis/code-coverage.asm)
 - Runnable domain: [files/CODE-COVERAGE.DOM](files/CODE-COVERAGE.DOM)
-- MON 503B InputString (terminal reads):
-  `E:\Dev\Ronny\NDInsight\Developer\MON\calls\503B_InputString.yaml`
+- MON 1B InByte (terminal reads - the call CODE-COVERAGE actually uses, per
+  its own disassembly's monitor-call table):
+  `E:\Dev\Ronny\NDInsight\Developer\MON\calls\1B_InByte.yaml`
 - MON 50B OpenFile / MON 221B CreateFile (output-file convention):
   `E:\Dev\Ronny\NDInsight\Developer\MON\calls\50B_OpenFile.yaml`,
   `E:\Dev\Ronny\NDInsight\Developer\MON\calls\221B_CreateFile.yaml`

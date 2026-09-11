@@ -113,10 +113,15 @@ General MON-call background for every ND-500 DOM program: see the central refere
 `E:\Dev\Ronny\ND500UC\docs\DOM-PROGRAM-IO-REFERENCE.md`. This section applies that reference to
 AUTOMAKE-500-C00 specifically.
 
-**Ships incomplete here.** Our local install is only the single `:DOM` file. AUTOMAKE-500 as a
-product ships as FOUR files and needs a rules file, `AUTO-RULES-5:MAKE`, that this bundle does
-not carry — so most of what follows about actually MAKE-ing a target is read from the DOM's own
-embedded strings/disassembly, not exercised end to end. [from disasm; see "Requirements" above]
+**Ships incomplete here.** Our local install is only the single `:DOM` file. The DOM's own
+strings show it looks for a default rules file matching the pattern `AUTO-RULES-?-???` (the `?`
+are wildcard/blank characters, not a literal name), so it expects at least one external rules
+file that this bundle does not carry. **CORRECTION 2026-09-11:** the earlier draft of this
+section stated a specific ships-as-"FOUR files" count and a specific rules-file name
+(`AUTO-RULES-5:MAKE`) — no source in this repo supports either the file count or the "5"; both
+have been removed. [measured via `strings` on `files/AUTOMAKE-500-C00.DOM`, 2026-09-11] So most
+of what follows about actually MAKE-ing a target is read from the DOM's own embedded
+strings/disassembly, not exercised end to end. [from disasm; see "Requirements" above]
 No local copy of the vendor manual (ND-60.232) exists in any corpus we hold, so nothing below
 claiming to be the command set can be checked against the manual — only against the binary.
 [from disasm]
@@ -135,12 +140,14 @@ claiming to be the command set can be checked against the manual — only agains
   same line as the start command (for example a `MAKE <file> <target> <output>` line) would be
   expected to skip the interactive prompt for that command, by analogy — but this is
   **[inferred]**, not measured for AUTOMAKE itself.
-- **Do not send EXIT too early.** BUGS.md run311 (corpus701, 2026-09-04) recorded AUTOMAKE
-  reaching its banner and the `Target name:` prompt, but the scripted `EXIT` had already been
-  consumed by an earlier read in the harness's input queue, so the process parked on the next
-  read instead of leaving cleanly and never reached `MON 0B`. This is the SAME failure shape as
-  CONVERT-DOM-A03's B-list entry, and the same fix applies: answer each prompt in order and put
-  `EXIT` after the last one, not folded in. [measured, `E:\Dev\Ronny\ND5000UC\BUGS.md` line 48]
+- **Do not send EXIT too early.** BUGS.md's "THE HEADLINE NUMBER" re-measurement (2026-09-09,
+  the `corpus701` macro-round logs — NOT the older, differently-worded `run311` row from the
+  2026-09-04 table further down the same file) recorded AUTOMAKE reaching its banner and the
+  `Target name:` prompt, but the scripted `EXIT` had already been consumed by an earlier read
+  in the harness's input queue, so the process parked on the next read instead of leaving
+  cleanly and never reached `MON 0B`. This is the SAME failure shape as CONVERT-DOM-A03's
+  entry, and the same fix applies: answer each prompt in order and put `EXIT` after the last
+  one, not folded in. [measured, `E:\Dev\Ronny\ND5000UC\BUGS.md` line 48]
 - The 2026-09-04 raw run (BUGS.md "kept for the record" table, run311) shows the console output
   as `April 27, 1987` only — a fragment of the version banner — while the trail recorded 14
   `MON 2B OutByte` and 2 `MON 162B OutString` calls, meaning more text was PUSHED than what
@@ -202,10 +209,12 @@ claiming to be the command set can be checked against the manual — only agains
   A: The same input-queue-consumption bug as CONVERT-DOM-A03: an earlier prompt likely ate it.
   Make sure you have answered every prompt AUTOMAKE actually asks (it may ask more than one
   before it is ready to accept EXIT) and put `EXIT` last. [measured, BUGS.md run311]
-- **Q: Where do I get `AUTO-RULES-5:MAKE`?**
-  A: Not shipped in this bundle. AUTOMAKE-500 as a product is four files plus a rules file;
-  only the `:DOM` is installed here, so a real MAKE run needs that file sourced/created
-  separately before it can do useful work. [verified — see "Requirements" above]
+- **Q: Where do I get the rules file AUTOMAKE looks for?**
+  A: Not shipped in this bundle. The DOM's own strings show it defaults to a name matching
+  `AUTO-RULES-?-???` (see the correction under "Ships incomplete here" above — the specific
+  file count and exact name once written here were unsupported and have been removed); only the
+  `:DOM` is installed here, so a real MAKE run needs a rules file sourced/created separately
+  before it can do useful work. [measured via `strings`, 2026-09-11]
 - **Q: Can AUTOMAKE build FORTRAN programs?**
   A: The command exists, but the run will fail for FORTRAN specifically because the
   FORTRAN-LIB/EXCEPT-LIB runtime library is not installed in this environment — see

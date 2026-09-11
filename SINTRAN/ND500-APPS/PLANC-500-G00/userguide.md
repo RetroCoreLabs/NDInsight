@@ -126,14 +126,17 @@ disasm].
 ### Input
 
 - **Command source**: the SINTRAN `@` prompt starts `PLANC-500-G00` like any
-  other program — the initial command line (if any) is not consumed by PLANC
-  itself; PLANC always comes up to its own `*` prompt and reads directives
-  from **device 1 (the interactive terminal)** [doc — no MON 503B "device 0"
-  pattern is documented for PLANC in this repo, unlike NC-A06; the compiler is
-  driven purely through its own `*` prompt, never a leading command-buffer
-  line]. This is a real difference from NC-A06 (below): there is no
-  first-CR/device-switch dance, and there is no equivalent of NC's "type the
-  answer as the very first argument line" trap.
+  other program, and every measured run shows it coming up straight to its own
+  `*` prompt with no separate device-0 argument-line step
+  [measured, corpus701/corpus709 — banner then `*`, no leading-CR needed].
+  **Which device (0 or 1) it reads from once at the prompt is NOT established
+  here** — the disassembly in `analysis/planc-500-g00.asm` has no MON 503B
+  (DVINST) or 504B (DVOUTS) call at all, for input or output, so this repo has
+  no positive evidence either way; absence of a device-0 pattern is not proof
+  of device 1, only proof that no such pattern was found in the swept code
+  `[OPEN]`. What IS supported is the practical difference from NC-A06 (below):
+  a measured run never needed a leading CR or a device-switch step, and never
+  showed NC's "type the answer as the very first argument line" trap.
 - The prompt is `*` [measured, corpus701/corpus709 — banner
   `ND-500 PLANC COMPILER - JUNE 9, 1986 VERSION G` then `*`].
 - **`COMPILE <source>,<list>,<object>`** — three file arguments

@@ -162,13 +162,20 @@ completion. [verified]
   "run CAT-CAT5 and see if it worked" outside of the compile chain, other
   than the direct (unsupported) bare-name invocation this userguide already
   notes as unverified.
-- **Two different outcomes have been measured for CAT-CAT5, same build**:
-  run319 printed its banner and reached the `Cat-500:` prompt (then idled
-  an hour); run326, same commit, printed **nothing at all** and ended in
-  process segment 3 (still in the swapper), never reaching the DOM.
-  [measured, `E:\Dev\Ronny\ND5000UC\BUGS.md` section on run324/325/319/326]
+- **CORRECTION 2026-09-11 — "same build" is not supported.** Two different
+  outcomes have been measured for CAT-CAT5: run319 printed its banner and
+  reached the `Cat-500:` prompt (then idled an hour); run326 printed
+  **nothing at all** and ended in process segment 3 (still in the swapper),
+  never reaching the DOM. But `BUGS.md`'s own table (the B23 section) marks
+  run319's build as **"earlier"** and run326's as **"same commit"** (i.e.
+  same as the reference build used for run324/325) — the two CAT-CAT5 runs
+  are explicitly NOT recorded as the same build. [measured,
+  `E:\Dev\Ronny\ND5000UC\BUGS.md` B23 table: "run319 | CAT-CAT5 | earlier |
+  ... | run326 | CAT-CAT5 | same commit | ..."]
   This means a "no output" result from CAT-CAT5 is not on its own proof of
-  a program-level bug — the run may simply not have left the swapper.
+  a program-level bug — the run may simply not have left the swapper — but
+  it cannot be pinned to "same build, different outcome" either, since the
+  builds differed.
 - The stall at the `Cat-500:` prompt (see B10 below) was seen alongside a
   heap-allocation trap (`GETB: no heap blocks available for size 2^10`) in
   the two programs that get furthest through this toolchain (CAT-CAT5 and
@@ -200,8 +207,10 @@ completion. [verified]
 ### COMMON ERRORS AND HOW TO FIX THEM
 
 - **Symptom: reaches `Cat-500:` prompt then stalls for the whole run window
-  (up to 3600 s), ending in a WAIT state after dozens of page-ins and
-  restarts.** This is `BUGS.md` **B10**: "CAT-CAT5 reaches its prompt and
+  (up to 3600 s), ending in a WAIT state after 64 page-ins and 208
+  restarts** (BUGS.md B10's exact counts — corrected 2026-09-11 from a
+  vaguer "dozens", which understated the restart count). This is `BUGS.md`
+  **B10**: "CAT-CAT5 reaches its prompt and
   then does nothing for an hour" — the same `MON 1B`-shaped wait pattern as
   other prompt-driven programs that never got a command typed at them.
   **Fix:** the prompt is a real read waiting for a command; supply one (or
@@ -216,11 +225,14 @@ completion. [verified]
   nested run reaches the generator; fake-MON lane — wire the
   `ExecuteCommandHook` runner (`MON_317_UECOM.cs`), currently the open gap.
   [verified, `MON_317_UECOM.cs`; `317B_ExecuteCommand.yaml`]
-- **Symptom: no console output at all, process ends in segment 3.** Same
-  build, same pack, same window as a run that DID print the banner (run319
-  vs run326) — the divergence is in the swapper/scheduling, not the
-  program. **Fix:** re-run; check the end process segment before concluding
-  CAT-CAT5 itself regressed. [measured, `BUGS.md`]
+- **Symptom: no console output at all, process ends in segment 3.** Seen in
+  run326, against a run that DID print the banner (run319) — but per the
+  CORRECTION above, `BUGS.md` records these as **different builds**
+  (run319 "earlier", run326 "same commit" as the reference), so this pair
+  does NOT show same-build divergence; it only shows that ending in segment
+  3 (still in the swapper) is not itself proof CAT-CAT5 regressed. **Fix:**
+  re-run on a matched build; check the end process segment before concluding
+  CAT-CAT5 itself regressed. [measured, `BUGS.md` B23 table]
 - The corpus701 **macro-round** run (the one this project treats as
   authoritative for "does it complete") DID complete cleanly: banner,
   `Cat-500: EXIT`, `program CAT_COMPILER terminated`, MON 0B, 1.3 s.

@@ -55,6 +55,11 @@ printf 'LOGIN GUEST\nCONVERT-DOM-A03\nCONVERT-DOMAIN NEW-DOM OLD-DOM\nEXIT\n' | 
     ./build/bin/nd500x --monitor --user GUEST --sintran-root ~/ND500USERS
 ```
 
+**Note added 2026-09-11:** this `nd500x` example follows the HELP text's destination-first order.
+On the real-SINTRAN/octobus lane, a 2026-09-11 measurement found the running binary instead
+wants **source first (unquoted), destination second (quoted)** — see "Parameter order" under
+"Input & output files" below before assuming this example's order carries over to that lane.
+
 ## Commands and options
 
 Commands (from the shipped HELP): [from HELP]
@@ -232,30 +237,49 @@ to CONVERT-DOM-A03 specifically.
   from **SINTRAN device 0, the command buffer** — the text that followed the command name on
   the line that started the program. [measured, `DOM-PROGRAM-IO-REFERENCE.md` section 3]
 - **One-shot (non-interactive) form** — put every parameter on the SAME line as the command
-  name, for example `ND CONVERT-DOM DEST-DOM SOURCE-DOM`. When parameters are on the command
-  line, the ND-SHELL is **not** invoked at all — it reads the line straight from device 0 and
-  acts. [from HELP, section "SHELL"]
+  name. When parameters are on the command line, the ND-SHELL is **not** invoked at all — it
+  reads the line straight from device 0 and acts. [from HELP, section "SHELL"]
 - **Interactive form** — the bare name only. The ND-SHELL takes over and prompts step by step
   (`Source domain:`, etc). [from HELP]
-- Full parameter order: `CONVERT-DOMAIN <dest> <source> [linked Y/N] [progress Y/N]
-  [force-free-seg...]`. `<dest>` and `<source>` are mandatory; the rest are optional with
-  documented defaults (NO / YES). A `$` in `<dest>` is replaced with the source domain name;
-  an empty `<dest>` (bare CR) is treated as a single `$`. Quote `<dest>` to refuse to
-  overwrite an existing file. [from HELP]
-- **SILENCE = WAITING, NOT BROKEN.** CONVERT-DOM-A03 reads its command line **before it prints
-  any banner at all**. If you drive it and see nothing, it has not crashed — it is parked on
-  the `INBT`/device-0 read waiting for a line. This cost a whole night on 2026-08-28 before it
-  was understood. [measured; see BUGS.md and MEMORY.md "read the deep dive" note]
-- **Do not send EXIT too early.** BUGS.md run314 (corpus701, 2026-09-04) recorded CONVERT-DOM-A03
-  reaching its banner, `CONV entered:`, and the `Source domain:` prompt, but the harness's
-  scripted `EXIT` had already been consumed by an earlier read, so the program parked instead
-  of leaving cleanly and never reached `MON 0B`. [measured, `E:\Dev\Ronny\ND5000UC\BUGS.md`
-  line 47]
-- Terminal type: CONVERT-DOM-A03's terminal display database lookup carries no generation
-  letter and needs a **G-generation DDBTABLES** entry to resolve. [doc, task-supplied fact —
-  not independently re-verified in this pass; same class of issue as LED-FORTRAN's
-  `DDBTABLES-E` ambiguity, see `led-fortran-ambiguous-ddbtables-e` memory, which is the sibling
-  finding for a DIFFERENT program and generation letter — do not assume the two share a fix]
+- **Parameter order — THE MANUAL AND THE MACHINE DISAGREE; THE MACHINE WINS.** The HELP text
+  (and the manual's own example, `@ND CONV-DOM DEST-DOM SOURCE-DOM`) document
+  **destination-first**: `CONVERT-DOMAIN <dest> <source> [linked Y/N] [progress Y/N]
+  [force-free-seg...]`. [from HELP] But MEASURED 2026-09-11 on the real-SINTRAN lane, the
+  running binary wants **source first (unquoted), destination second (quoted)**:
+  `CONVERT-DOMAIN <source> "<dest>" [linked Y/N] [progress Y/N] [force-free-seg...]`.
+  Dest-first (`CONVERT-DOMAIN "LED-CONV" LED-B03`) printed `Conv-Dom Error: ChkNames:
+  Sourcename has '"'` and exited — it took the quoted first token as the source and rejected
+  the quote. Source-first (`CONVERT-DOMAIN LED-B03 "LED-CONV"`) ran clean past the name check
+  and reached the file layer (MON 256B CONNECT, MON 50B OPEN access-3 returning file 101B,
+  MON 412B FSCNT, all K=0 — the output OPEN succeeded). **Use source-first on this lane; treat
+  the manual's dest-first order as a documented but unreproduced claim.** [measured,
+  `DOM-PROGRAM-IO-REFERENCE.md` section 3] `<dest>` and `<source>` are mandatory regardless of
+  order; the rest are optional with documented defaults (NO / YES). A `$` in `<dest>` is
+  replaced with the source domain name; an empty `<dest>` (bare CR) is treated as a single `$`.
+  Quoting `<dest>` means "refuse to overwrite an existing `:DOM`", NOT "create" — the quote is
+  optional when the destination does not yet exist. [from HELP]
+- **SILENCE = WAITING, NOT BROKEN — but the banner DOES print first.** The verified 2026-08-10
+  run (see "Verified behaviour in nd500x" above) and the 2026-09-09 corpus701 re-measurement
+  both show the banner and `CONV entered:` print immediately on start; CONVERT-DOM-A03 then
+  waits, silently, at whatever prompt comes next (`CONV:` or `Source domain:`). Waiting there is
+  normal, not a hang — but the claim that it "reads before printing any banner at all" is NOT
+  supported by either measured run and has been removed. [checked against the verified
+  transcript above and BUGS.md line 47, 2026-09-11]
+- **Do not send EXIT too early.** BUGS.md's "THE HEADLINE NUMBER" re-measurement (2026-09-09,
+  the `corpus701` macro-round logs — this supersedes the older, differently-worded `run314` row
+  from the 2026-09-04 table further down the same file) recorded CONVERT-DOM-A03 reaching its
+  banner, `CONV entered:`, and the `Source domain:` prompt, but the harness's scripted `EXIT`
+  had already been consumed by an earlier read, so the program parked instead of leaving
+  cleanly and never reached `MON 0B`. [measured, `E:\Dev\Ronny\ND5000UC\BUGS.md` line 47]
+- Terminal type: CONVERT-DOM-A03's own DOM binary contains the bare string `DDBTABLES-      :VTM`
+  (name padded with blanks, no generation letter baked in — unlike LED-FORTRAN's DOM, which
+  contains the literal `DDBTABLES-E     :VTM FILE DOES NOT EXIST`), plus a separate string
+  `VTM ver. G03` elsewhere in the same binary. [measured via a `strings` dump of
+  `files/CONVERT-DOM-A03.DOM`, 2026-09-11] Whether that `G03` is the generation letter this
+  lookup actually needs is an **inference by analogy with LED-FORTRAN's own E-generation match**
+  (see `led-fortran-ambiguous-ddbtables-e` memory) — it has NOT been confirmed by a live run of
+  CONVERT-DOM-A03 hitting this code path, and LED's own root cause was a DUPLICATE
+  `DDBTABLES-E*` on the pack, not a missing/wrong letter. [inferred, unconfirmed]
 
 ### Output
 
@@ -265,12 +289,16 @@ to CONVERT-DOM-A03 specifically.
   **MON 513B** file-write call and one **MON 512B** message call further down (lines
   ~51552–54955). A second, independent `MON 50B OPEN` call site exists at line 53099. [from
   disasm]
-- CONVERT-DOM-A03 issues **MON 50B three times with what looks like the same argument cells**
-  before it succeeds. This is a SINTRAN name-matching **search path walking candidate names**
-  (for example trying the destination on the destination's own user area, then a library user,
-  then the current user, per the `<Include linked segments>` rule in the HELP text above) — it
-  is NOT a fault. Two "failures" then a success is the normal shape. [doc/from HELP + measured
-  MON census]
+- **CORRECTION 2026-09-11 (previous text here was unsupported and has been removed):** there is
+  NO evidence CONVERT-DOM-A03 calls `MON 50B` three times for the destination open. The
+  disassembly has exactly two static `MON 50B` call sites (line 43149 and a second, independent
+  one at line 53099), and the one measured real run that reached the file layer shows a SINGLE
+  `MON 50B` call succeeding immediately (K=0, file 101B) — no retry pattern was observed.
+  [checked against `analysis/convert-dom-a03.asm` and `DOM-PROGRAM-IO-REFERENCE.md` section 3,
+  2026-09-11] The HELP text DOES describe a three-step fallback search (destination user, then
+  a library user, then the current user) — but that is for creating a **free `:SEG` file** for a
+  linked segment when `<Include linked segments>` is NO, not for opening the main destination
+  `:DOM` file. Do not conflate the two.
 - **SINTRAN does NOT auto-create a file on an unquoted open-for-write.** Per the central IO
   reference, an output `:DOM`/`:SEG` name that does not already exist needs either the
   double-quoted create form (`"name:type"`, which is also how CONVERT-DOM-A03's own
@@ -300,18 +328,25 @@ to CONVERT-DOM-A03 specifically.
 
 ### FAQ
 
-- **Q: I ran the bare command name and nothing prints. Is it hung?**
-  A: No. It reads its whole command line from device 0 before printing anything. Either wait
-  for the interactive prompt (it will eventually ask `Source domain:` once the shell takes
-  over) or re-drive it with all parameters on the same line for the one-shot path. [measured]
+- **Q: I ran the bare command name (`CONVERT-DOM-A03`) and nothing prints. Is it hung?**
+  A: No — the verified 2026-08-10 run shows the banner and `CONV entered:` DO print for a bare
+  start; it then waits at the `CONV:` shell prompt for a command. [verified, see "Verified
+  behaviour in nd500x" above] A DIFFERENT, real trap is typing the bare command **`CONVERT-
+  DOMAIN`** (no arguments) at that `CONV:` prompt: measured 2026-09-11, this makes the program
+  read back leftover bytes from its own command line ("-DOMAIN", the tail of the command name
+  it just read) and loop on `Source domain:` forever — always supply the parameters, or expect
+  to answer `Source domain:` yourself. [measured, `DOM-PROGRAM-IO-REFERENCE.md` section 3]
 - **Q: Why did my scripted `EXIT` not end the session?**
   A: An earlier prompt in the script likely consumed it as its own answer. Count prompts and
   make sure `EXIT` is queued as its own separate line AFTER the last real prompt, not folded
-  into the same input burst. [measured, BUGS.md run314]
+  into the same input burst. [measured, BUGS.md "THE HEADLINE NUMBER" table, line 47 — see the
+  correction above the older `run314` label is superseded by this]
 - **Q: My destination file open fails on the first two tries and only succeeds on the third
   `MON 50B` — is that a bug?**
-  A: No — that is the documented user-area search order (destination user, then the segment's
-  natural library user, then current user) working as designed. [from HELP + measured]
+  A: This has not actually been observed for the destination `:DOM` open — see the correction
+  above. If you see a `MON 50B` retried, it is more likely the HELP text's free-`:SEG`-file
+  search order (destination user, then a library user, then the current user), which applies
+  when copying a LINKED segment, not the destination file itself. [from HELP]
 - **Q: Can I convert Sibas or Notis-DS?**
   A: Only specific versions — see LIMITATIONS in the HELP text; older Sibas F / Notis-DS D /
   Notis-ID B / ND-500 Basic B must NOT be converted. [from HELP]
@@ -320,9 +355,9 @@ to CONVERT-DOM-A03 specifically.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Nothing prints after starting the bare command | Reading command line from device 0 before any banner — normal, not broken | Wait for the prompt, or send all parameters on the start line instead of running interactively [measured] |
-| Session parks after `Source domain:`, never reaches `EXIT`/`MON 0B` | Scripted `EXIT` was consumed by an earlier prompt read | Re-count the prompts your script answers; put `EXIT` on its own trailing line after every expected prompt has been answered [measured, BUGS.md run314] |
+| A bare `CONVERT-DOMAIN` (no args) typed at the `CONV:` prompt loops on `Source domain:` forever | It read back leftover bytes ("-DOMAIN") from its own command line instead of your answer | Always type `CONVERT-DOMAIN` with its parameters, or be ready to answer `Source domain:` on the next line [measured, `DOM-PROGRAM-IO-REFERENCE.md` section 3] |
+| Session parks after `Source domain:`, never reaches `EXIT`/`MON 0B` | Scripted `EXIT` was consumed by an earlier prompt read | Re-count the prompts your script answers; put `EXIT` on its own trailing line after every expected prompt has been answered [measured, BUGS.md "THE HEADLINE NUMBER" table, line 47] |
 | "File already exists" style error creating `<Destination>` | `<Destination>` was quoted (quoting here means "refuse to overwrite"), or the file legitimately already exists | Drop the quotes if overwrite is intended, or pick a different destination name; quoting on `<Destination>` is NOT the SINTRAN create-file convention, it means the opposite (protect) [from HELP] |
-| Output `:DOM`/`:SEG` open fails outright (not the normal 2-then-succeed pattern) | Unquoted open-for-write on a name SINTRAN will not auto-create | Pre-create the target with `@CREATE-FILE`, matching name/type/user exactly, before running CONVERT-DOMAIN [doc, central IO reference] |
-| "Ambiguous file name" style terminal/database errors | More than one generation of the terminal database file (DDBTABLES) present, or the wrong generation letter installed | Ensure exactly one matching-prefix DDBTABLES entry of the generation CONVERT-DOM-A03 expects (G-generation) is on the pack [doc, task-supplied fact; verify with a live run before trusting further] |
+| Output `:DOM`/`:SEG` open fails outright | Unquoted open-for-write on a name SINTRAN will not auto-create (general SINTRAN rule; not yet seen fail this way for CONVERT-DOM-A03's own destination open, which succeeded first-try in the one measured run) | Pre-create the target with `@CREATE-FILE`, matching name/type/user exactly, before running CONVERT-DOMAIN [doc, central IO reference] |
+| "Ambiguous file name" style terminal/database errors | Possibly more than one generation of the terminal database file (DDBTABLES) present on the pack, or the wrong generation letter installed — CONVERT-DOM-A03's binary looks up a bare `DDBTABLES-` prefix, and separately contains the string `VTM ver. G03`, but which generation it actually needs has not been confirmed by a live run [inferred, unconfirmed — see "Terminal type" note above] | Ensure exactly one matching-prefix DDBTABLES entry is on the pack; verify the required generation with a live run before trusting the `G03` guess |
 | Converting a domain listed under LIMITATIONS produces a broken/unusable result | Program is one of the excluded old-domain-format families (Sibas F-, Notis-DS D-, Notis-ID B-, ND-500 Basic B-, or the Swapper/Symbolic Debugger) | Do not convert; use the vendor-documented alternate procedures in the HELP text's SIBAS topic instead [from HELP] |

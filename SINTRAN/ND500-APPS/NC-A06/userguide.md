@@ -218,17 +218,45 @@ against an NC manual - treat individual flag semantics as [UNVERIFIED].
   block -1" [doc, same reference — this was a real emulator bug, fixed
   2026-07-10, unrelated to how you invoke NC].
 - **NC is a multi-pass front end, not a single monolithic compiler**: it
-  parses to a `SCRATCH-00001:*` scratch area, writes a preliminary object
-  image to a scratch segment (`MON 422B GSWSP GetScratchSegment`), and
   re-invokes later passes as **nested SINTRAN commands via `MON 317B UECOM`
-  (ExecuteCommand)** — observed nested invocations are named `NC-A'` and
-  `CAT-CAT5-B'` [doc/measured, task brief measured facts + `mon_registry`
-  entry for `317B`/`UECOM` in the MON contract doc §5].
-- **Requires `CAT-CAT5-B06` installed in SYSTEM.** Without it, `GENERATE-CODE`
-  still appears to "succeed" in about 14 seconds but writes a **0-byte**
-  `:NRF` — a silent failure, not a hang [measured, task brief]. Always check
-  the `:NRF`'s byte size after a run, not just the exit code / `terminated`
-  string.
+  (ExecuteCommand)** — the observed nested invocations are named `NC-A'` and
+  `CAT-CAT5-B'`
+  [doc, `Developer/MON/calls/317B_ExecuteCommand.yaml` `observed_calls`:
+  `"caller: NC C front-end (nc-a06.dom) - three invocations per compile"`,
+  `Command: "'NC-A', then 'CAT-CAT5-B', then 'NC-A'"`]. **The
+  `SCRATCH-00001:*`/`MON 422B GSWSP` framing above is NOT supported by that
+  same source** — the yaml's own wording is that NC "writes machine-independent
+  CAT code into the always-open scratch file (SINTRAN file number 0100 octal
+  = 64 decimal, `SCRATCHnn:DATA`)", a fixed always-open scratch file, not a
+  `GetScratchSegment` call; no `SCRATCH-00001` name or `MON 422B` tie-in
+  appears in this yaml or in `nc-a06-usage-and-mon-contract.md`. Removed.
+- **`CAT-CAT5-B06` not being wired up was, at one point, why a compile
+  produced a 0-byte `:NRF`** — but the cause was that `MON 317B` was a STUB on
+  the emulator (it logged the nested command name and did nothing with it),
+  not that the `.DOM` file was absent from SYSTEM
+  [doc, `317B_ExecuteCommand.yaml`: `"THIS STUB IS WHY BOUT.NRF WAS ALWAYS 0
+  BYTES. It was never an emulator or MON-contract bug - it was a MISSING
+  BACK-END."`, dated 2026-07-17]. That yaml also records the fix as already
+  shipped (commit 15ca5e9, "NC unchanged by the fix: clean MON 0B LEAVE"), and
+  this userguide's own "Verified behaviour" section above records a REAL
+  `:NRF` and `programCAT_COMPILER terminated` on 2026-07-31, i.e. AFTER that
+  fix [verified]. So on the current build this is history, not a live trap:
+  there is no confirmed current-day case of `GENERATE-CODE` reporting success
+  with a 0-byte `:NRF`. The "about 14 seconds" timing figure has no citation
+  in the repo sources checked by this audit.
+  **RESTORED 2026-09-11 with the correct source:** both the `SCRATCH-00001`
+  scratch-area name and the "compile silently succeeds in ~14 s with a 0-byte
+  `:NRF` when CAT-CAT5-B06 is absent" behaviour ARE documented — in the
+  `nd500-apps` skill (the manual+measured aggregate), which the repo-scoped
+  audit did not have as a source: *"nc-a06.dom is a multi-pass FRONT END: it
+  parses to SCRATCH-00001:*, writes an object image to scratch-64, then
+  re-invokes the later passes as nested SINTRAN commands through MON 317B
+  UECOM"* and *"Without CAT-CAT5 in the tree the compile 'succeeds' in 14
+  seconds and writes a 0-byte NRF."* [doc - `nd500-apps` skill "The C compile ->
+  link -> run chain"] So the missing-CAT-CAT5 cause and the ~14 s figure are a
+  documented behaviour, distinct from the (also real, now-fixed) `MON 317B` stub
+  cause above; the `MON 422B GSWSP` tie-in the audit removed was NOT in the skill
+  and stays removed.
 - Terminal-input write path (relevant to why input can silently not arrive):
   SINTRAN delivers each line NC reads via `503B` using **`MON 11B DMEMWR`**
   to NC's ND-500 LOGICAL buffer address. On the octobus lane this was
@@ -281,8 +309,15 @@ against an NC manual - treat individual flag semantics as [UNVERIFIED].
   [verified].
 - **Q: `GENERATE-CODE` reports `programCAT_COMPILER terminated` (looks like
   success) but my `.NRF` has 0 bytes.**
-  A: `CAT-CAT5-B06` is not installed in SYSTEM. Install it (see
-  `../CAT-CAT5-B06/`) and re-run [measured].
+  A: This was seen historically when `MON 317B UECOM` (the call NC uses to
+  invoke the CAT-CAT5-B06 back end as a nested command) was a stub on the
+  emulator that logged the command and did nothing — fixed per commit
+  `15ca5e9` [doc, `317B_ExecuteCommand.yaml`]. This userguide's own "Verified
+  behaviour" section records a real `.NRF` on 2026-07-31, after that fix. If
+  you still see a 0-byte `.NRF`, check `CAT-CAT5-B06` is actually installed
+  in SYSTEM (see `../CAT-CAT5-B06/`) as the next thing to try, but there is no
+  current-build measurement of that specific failure [inferred, not
+  re-measured on this build].
 - **Q: The program looks stuck reading forever after I typed a line at the
   `NC:` prompt, and nothing echoes back.**
   A: On the octobus lane this was `B24` (BUGS.md) — SINTRAN's terminal-input
@@ -298,7 +333,7 @@ against an NC manual - treat individual flag semantics as [UNVERIFIED].
 | `EXIT` (or any command) sent immediately after start does nothing | Consumed as the device-0 initial argument line before the `NC:` prompt existed | Send a leading `\r` first if the intent was an interactive command [measured, corpus701] |
 | "Ambiguous file name" / file not found for a name with a dot in it | NC appended its own default type onto the dotted name (`B.C` -> `B.C.C`) | Use the bare SINTRAN name (`B`), let NC append `:C`/`:LIST`/`:NRF`/etc. itself [measured] |
 | `compile` prints `preprocessing` then `no rewrite` / ` terminated`, no object produced | Single-command `compile` stops after preprocessing (known limitation on this build) | Use the two-step `CHECK <src>,<list>,<cat>` then `GENERATE-CODE <cat>,<obj>` MODE-file flow [verified] |
-| `GENERATE-CODE` reports "terminated" cleanly but `:NRF` is 0 bytes | `CAT-CAT5-B06` not installed | Install `CAT-CAT5-B06` in SYSTEM before compiling [measured] |
+| `GENERATE-CODE` reports "terminated" cleanly but `:NRF` is 0 bytes | Historically, `MON 317B UECOM` was a stub that never ran the nested CAT-CAT5-B06 back end; fixed per commit `15ca5e9` [doc, `317B_ExecuteCommand.yaml`] | Confirm you are on a build after that fix (this userguide's "Verified behaviour" run of 2026-07-31 is); if it still happens, check `CAT-CAT5-B06` is installed in SYSTEM [inferred, not re-measured on this build] |
 | `SINTRAN ERROR 56B` opening `:CAT`/`:LIST`/`:NRF` | Output file not `CREATE-FILE`d first | `CREATE-FILE` all three output files before running `NC-A06` (see MODE-file example) [pattern from "How to run"] |
 | Typed input never echoes / NC reads the same character forever | Octobus-lane terminal-input delivery bug (B24, BUGS.md) writing to the wrong physical address | Confirm the servicer fix (corpus709) is in place; this is a transport bug, not a usage error [measured] |
 
