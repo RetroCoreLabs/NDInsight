@@ -55,10 +55,12 @@ printf 'LOGIN GUEST\nCONVERT-DOM-A03\nCONVERT-DOMAIN NEW-DOM OLD-DOM\nEXIT\n' | 
     ./build/bin/nd500x --monitor --user GUEST --sintran-root ~/ND500USERS
 ```
 
-**Note added 2026-09-11:** this `nd500x` example follows the HELP text's destination-first order.
-On the real-SINTRAN/octobus lane, a 2026-09-11 measurement found the running binary instead
-wants **source first (unquoted), destination second (quoted)** — see "Parameter order" under
-"Input & output files" below before assuming this example's order carries over to that lane.
+**Note (corrected 2026-09-11):** the HELP's destination-first order is CORRECT. The scripted line
+above types the `CONVERT-DOMAIN` verb because it drives the INTERACTIVE ND-SHELL. When you instead
+run the DOM with parameters on its OWN command line, do NOT type the verb — the first token is the
+destination directly (see "Parameter order" under "Input & output files" below). An earlier note
+here claimed a "source-first" order; that was an artifact of counting the verb as the first token,
+and is withdrawn.
 
 ## Commands and options
 
@@ -241,23 +243,26 @@ to CONVERT-DOM-A03 specifically.
   reads the line straight from device 0 and acts. [from HELP, section "SHELL"]
 - **Interactive form** — the bare name only. The ND-SHELL takes over and prompts step by step
   (`Source domain:`, etc). [from HELP]
-- **Parameter order — THE MANUAL AND THE MACHINE DISAGREE; THE MACHINE WINS.** The HELP text
-  (and the manual's own example, `@ND CONV-DOM DEST-DOM SOURCE-DOM`) document
-  **destination-first**: `CONVERT-DOMAIN <dest> <source> [linked Y/N] [progress Y/N]
-  [force-free-seg...]`. [from HELP] But MEASURED 2026-09-11 on the real-SINTRAN lane, the
-  running binary wants **source first (unquoted), destination second (quoted)**:
-  `CONVERT-DOMAIN <source> "<dest>" [linked Y/N] [progress Y/N] [force-free-seg...]`.
-  Dest-first (`CONVERT-DOMAIN "LED-CONV" LED-B03`) printed `Conv-Dom Error: ChkNames:
-  Sourcename has '"'` and exited — it took the quoted first token as the source and rejected
-  the quote. Source-first (`CONVERT-DOMAIN LED-B03 "LED-CONV"`) ran clean past the name check
-  and reached the file layer (MON 256B CONNECT, MON 50B OPEN access-3 returning file 101B,
-  MON 412B FSCNT, all K=0 — the output OPEN succeeded). **Use source-first on this lane; treat
-  the manual's dest-first order as a documented but unreproduced claim.** [measured,
-  `DOM-PROGRAM-IO-REFERENCE.md` section 3] `<dest>` and `<source>` are mandatory regardless of
-  order; the rest are optional with documented defaults (NO / YES). A `$` in `<dest>` is
-  replaced with the source domain name; an empty `<dest>` (bare CR) is treated as a single `$`.
-  Quoting `<dest>` means "refuse to overwrite an existing `:DOM`", NOT "create" — the quote is
-  optional when the destination does not yet exist. [from HELP]
+- **Parameter order — DESTINATION FIRST, and NO `CONVERT-DOMAIN` verb on the command line.**
+  When you run the DOM with parameters on its OWN command line, it reads them DIRECTLY: the
+  FIRST token is the `<destination>`, the SECOND is the `<source>`. The word `CONVERT-DOMAIN`
+  is a verb ONLY inside the interactive ND-SHELL — do NOT type it on the command line, or the
+  DOM takes the literal word `CONVERT-DOMAIN` as your destination name. So the one-shot form is:
+  `<dest> <source> [linked Y/N] [progress Y/N] [force-free-seg...]` — e.g. `LED-CONV LED-B03`.
+  This matches the HELP/manual's documented destination-first order.
+  MEASURED 2026-09-11 on the real-SINTRAN lane: `LED-CONV LED-B03` (no verb) resolved the
+  destination correctly — the DOM issued MON 221B CREATE for `LED-CONV:DOM`, then MON 50B OPEN
+  (write) K=0. The two earlier attempts that PREPENDED the verb gave a misleading "source-first"
+  appearance and are the whole reason an earlier version of this note (now withdrawn) claimed
+  source-first: `CONVERT-DOMAIN LED-B03 "LED-CONV"` was parsed dest=`CONVERT-DOMAIN`,
+  source=`LED-B03` (third token ignored); `CONVERT-DOMAIN "LED-CONV" LED-B03` put the quoted
+  `"LED-CONV"` in the source slot and failed `Conv-Dom Error: ChkNames: Sourcename has '"'`.
+  Counting the verb as the first (destination) token is what produced the false source-first
+  reading. [measured 2026-09-11; reconciles with the HELP dest-first order]
+  `<dest>` and `<source>` are mandatory; the rest are optional with documented defaults
+  (NO / YES). A `$` in `<dest>` is replaced with the source domain name; an empty `<dest>`
+  (bare CR) is treated as a single `$`. Quoting `<dest>` means "refuse to overwrite an existing
+  `:DOM`", NOT "create" — the quote is optional when the destination does not yet exist. [from HELP]
 - **SILENCE = WAITING, NOT BROKEN — but the banner DOES print first.** The verified 2026-08-10
   run (see "Verified behaviour in nd500x" above) and the 2026-09-09 corpus701 re-measurement
   both show the banner and `CONV entered:` print immediately on start; CONVERT-DOM-A03 then
