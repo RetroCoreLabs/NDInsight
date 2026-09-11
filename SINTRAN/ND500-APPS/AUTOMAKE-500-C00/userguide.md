@@ -106,3 +106,117 @@ the precise semantics of each `<On/Off>` toggle.
 - Shared conventions: [../README.md](../README.md)
 - Disassembly: [analysis/automake-500-c00.asm](analysis/automake-500-c00.asm)
 - Runnable domain: [files/AUTOMAKE-500-C00.DOM](files/AUTOMAKE-500-C00.DOM)
+
+## Input & output files, FAQ, common errors (added 2026-09-11)
+
+General MON-call background for every ND-500 DOM program: see the central reference
+`E:\Dev\Ronny\ND500UC\docs\DOM-PROGRAM-IO-REFERENCE.md`. This section applies that reference to
+AUTOMAKE-500-C00 specifically.
+
+**Ships incomplete here.** Our local install is only the single `:DOM` file. AUTOMAKE-500 as a
+product ships as FOUR files and needs a rules file, `AUTO-RULES-5:MAKE`, that this bundle does
+not carry — so most of what follows about actually MAKE-ing a target is read from the DOM's own
+embedded strings/disassembly, not exercised end to end. [from disasm; see "Requirements" above]
+No local copy of the vendor manual (ND-60.232) exists in any corpus we hold, so nothing below
+claiming to be the command set can be checked against the manual — only against the binary.
+[from disasm]
+
+### Input
+
+- Like every ND-500 DOM, AUTOMAKE reads via `INBT` (MON 1B): device 0 is the command buffer
+  (text on the same line as the command name), device 1 is the interactive terminal. [doc,
+  `DOM-PROGRAM-IO-REFERENCE.md` section 3]
+- **Interactive is the only form actually observed.** Every run so far — the 2026-07-31
+  load-sweep and the 2026-09-04/09-09 harness runs — started AUTOMAKE bare and it printed its
+  banner (`April 27, 1987`) then reached and PARKED on an interactive prompt, observed in
+  corpus701 as `Target name:`. [verified/measured]
+- No command-line one-shot form has been exercised for AUTOMAKE in this repo. Given the MON 1B
+  device-0/device-1 rule that CONVERT-DOM-A03 confirms, putting the relevant arguments on the
+  same line as the start command (for example a `MAKE <file> <target> <output>` line) would be
+  expected to skip the interactive prompt for that command, by analogy — but this is
+  **[inferred]**, not measured for AUTOMAKE itself.
+- **Do not send EXIT too early.** BUGS.md run311 (corpus701, 2026-09-04) recorded AUTOMAKE
+  reaching its banner and the `Target name:` prompt, but the scripted `EXIT` had already been
+  consumed by an earlier read in the harness's input queue, so the process parked on the next
+  read instead of leaving cleanly and never reached `MON 0B`. This is the SAME failure shape as
+  CONVERT-DOM-A03's B-list entry, and the same fix applies: answer each prompt in order and put
+  `EXIT` after the last one, not folded in. [measured, `E:\Dev\Ronny\ND5000UC\BUGS.md` line 48]
+- The 2026-09-04 raw run (BUGS.md "kept for the record" table, run311) shows the console output
+  as `April 27, 1987` only — a fragment of the version banner — while the trail recorded 14
+  `MON 2B OutByte` and 2 `MON 162B OutString` calls, meaning more text was PUSHED than what
+  reached the visible console capture at that time. Whether that was lost text or genuinely
+  empty calls was left `[UNMEASURED]` in BUGS.md B9 and is superseded by the later corpus701
+  run showing the fuller banner and prompt — read `BUGS.md` "THE HEADLINE NUMBER" table before
+  trusting the older B9 entry on its own. [measured, BUGS.md B9 and headline table]
+- Documented prompts embedded in the DOM, beyond `Target name:`: `Automake file:`,
+  `Destination:`, `Input file:`, `Identifier:`, `Add own user name (<On/Off>):`, `Expand file
+  names (<On/Off>):`, and a target-CPU selector `100/500/68000:`. [from disasm]
+
+### Output
+
+- AUTOMAKE's own MAKE step does not write files directly for most targets — it EXECUTES other
+  commands (typically a compiler, then LINKER-B01) that do the actual compiling/linking and
+  file writing. So AUTOMAKE's own file-output footprint is mainly the artifacts named by
+  `COPY-REQUIRED`/`LIST-REQUIRED`/`GENERATE-AUTOMAKE-FILE`, plus whatever the driven tools
+  produce. [from disasm]
+- `GENERATE-AUTOMAKE-FILE <Input file> <Automake file> <Own username> <Expand>` writes a new
+  automake (rules) file from an input file — this is the one command that is itself a direct
+  file-creation step. [from disasm]
+- `LIST-REQUIRED <Automake file> <Target name> <Output file>` and `COPY-REQUIRED <Automake
+  file> <Target name> <Destination>` both name an explicit output/destination — expect the same
+  SINTRAN create-on-write convention as every other DOM program: **an unquoted open on a name
+  that does not exist fails; use the double-quoted create form or pre-create the target with
+  `@CREATE-FILE` first.** [doc, `DOM-PROGRAM-IO-REFERENCE.md` section 4 — not independently
+  re-verified for AUTOMAKE's own OPEN calls, since no live MAKE has been run through it]
+- No live build has gone through AUTOMAKE in this repo, so the exact MON call sequence for its
+  own file creation (which of 50B/257B/513B it uses, in what order) is NOT measured here —
+  unlike CONVERT-DOM-A03, where the FOPEN→OPEN pair is confirmed by decoding the disassembly at
+  specific addresses. [open item]
+
+### Good to know
+
+- AUTOMAKE targets THREE CPU families from one tool — the prompt string `100/500/68000:` shows
+  it can drive builds for ND-100, ND-500, and Motorola 68000 targets, not only ND-500. [from
+  disasm]
+- Building a FORTRAN target through AUTOMAKE is blocked by the same missing FORTRAN-LIB /
+  EXCEPT-LIB runtime library gap documented in `../README.md` — this is a toolchain
+  installation gap, not an AUTOMAKE defect. C targets have a working toolchain and are
+  unaffected. [from disasm, cross-referenced to README.md]
+- The rules-file mini-language (`if/elsif/else/endif`, `head`/`tail`, `include`,
+  `search-order`, `in`-scoped macro assignment) is real and has real error text embedded
+  (`Dependency statements are not allowed in the rulesfile.`), but its exact grammar is not
+  verified here — read `analysis/automake-500-c00.asm` directly before writing a rules file by
+  hand. [from disasm]
+- `EXECUTION-MODE` (Execute/Unconditional/Touch/List/Off) is the make-style "dry run" control —
+  `List` should show what would run without doing it, `Touch` should just update timestamps,
+  `Off` disables the step — but which is the DEFAULT mode has not been observed live.
+  [from disasm; default unverified]
+
+### FAQ
+
+- **Q: AUTOMAKE printed its date banner and then stopped. Is it broken?**
+  A: No — it reached its interactive `Target name:` prompt and is waiting for terminal input
+  (device 1). This is the SAME "silence looks broken but isn't" trap documented for
+  CONVERT-DOM-A03 and CODE-COVERAGE. [measured, BUGS.md headline table]
+- **Q: My scripted `EXIT` didn't end the session.**
+  A: The same input-queue-consumption bug as CONVERT-DOM-A03: an earlier prompt likely ate it.
+  Make sure you have answered every prompt AUTOMAKE actually asks (it may ask more than one
+  before it is ready to accept EXIT) and put `EXIT` last. [measured, BUGS.md run311]
+- **Q: Where do I get `AUTO-RULES-5:MAKE`?**
+  A: Not shipped in this bundle. AUTOMAKE-500 as a product is four files plus a rules file;
+  only the `:DOM` is installed here, so a real MAKE run needs that file sourced/created
+  separately before it can do useful work. [verified — see "Requirements" above]
+- **Q: Can AUTOMAKE build FORTRAN programs?**
+  A: The command exists, but the run will fail for FORTRAN specifically because the
+  FORTRAN-LIB/EXCEPT-LIB runtime library is not installed in this environment — see
+  `../README.md`. C targets are fine. [from disasm/README.md]
+
+### Common errors and how to fix them
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Only the date banner (`April 27, 1987`) prints, then silence | Program reached an interactive prompt (`Target name:` or similar) and is waiting on device 1 | Answer the actual prompt text; don't treat silence as a hang [measured] |
+| Session parks after `Target name:`, `EXIT` never lands | Scripted `EXIT` was consumed by an earlier prompt in the input queue | Recount how many prompts AUTOMAKE actually issues before your script's answers run out; queue `EXIT` after the last real answer [measured, BUGS.md run311] |
+| `MAKE` on a FORTRAN target fails partway through the compile step | Missing FORTRAN-LIB / EXCEPT-LIB runtime library, not an AUTOMAKE bug | Install the FORTRAN runtime library per `../README.md`, or build a C target instead [from disasm] |
+| "Dependency statements are not allowed in the rulesfile." or "`Else` must be preceded by `if ... then`." | A hand-written or generated `AUTO-RULES` file violates the rules-file grammar | Fix the rules file syntax; consult `analysis/automake-500-c00.asm` for the exact accepted grammar since no vendor manual is available locally [from disasm] |
+| `LIST-REQUIRED`/`COPY-REQUIRED` output/destination file fails to open | Unquoted open-for-write on a name SINTRAN will not auto-create (inferred from the general DOM convention, not yet confirmed for AUTOMAKE's own OPEN calls) | Pre-create the destination with `@CREATE-FILE`, or use the double-quoted create form if AUTOMAKE's own OPEN uses one [doc/inferred] |
