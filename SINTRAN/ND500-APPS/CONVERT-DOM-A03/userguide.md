@@ -30,9 +30,23 @@ For shared install/run conventions see [../README.md](../README.md).
 - The `.DOM` file to run. [verified]
 - Install: copy `files/*` into the sintran-root. See
   [../README.md](../README.md).
-- To convert a domain you need the source domain in the OLD format (its
-  description file plus its `:PSEG`/`:DSEG`/`:LINK` files) available under a
-  user directory. [from HELP]
+- To convert a domain you need the source domain COMPLETE in the OLD format:
+  FOUR parts - `NAME:PSEG` + `NAME:DSEG` + `NAME:LINK` + an entry in the owner's
+  `DESCRIPTION-FILE:DESC`, all under a user directory. **The `:LINK` is MANDATORY
+  - no mode of CONVERT-DOMAIN skips it** (ND-860289-2-EN Linker manual, App. F
+  "The Convert-Domain Program", pp.258-261). The `:LINK` and `:DESC` are written
+  by the old Linkage-Loader (NLL, ND-210319) at link time from the `:NRF`
+  objects; they CANNOT be reconstructed from `:PSEG`+`:DSEG` alone, and
+  CONVERT-DOMAIN only READS them. [doc; full write-up + MON-level I/O model in
+  `docs/CONVERT-DOMAIN-USAGE.md` in the sibling `ND500UC` project]
+- GOTCHA (our test packs): `LED-B03` is `:PSEG`+`:DSEG` ONLY - it has NO `:LINK`
+  (there are zero `:LINK` files on the L pack), though its `:DESC` entry exists.
+  So LED-B03 is an INCOMPLETE convert source; use a genuinely complete source such
+  as `WP-DUMMY-ENCRYPT` (`:PSEG`+`:DSEG`+`:LINK`+`:DESC`, from HD00) to prove a
+  valid `:DOM` actually comes out. This `:LINK` requirement is SEPARATE from the
+  emulator's output-page paging fix and has NOT yet been exercised on our lane
+  (runs stall on the output-page paging before the convert reads `:LINK`).
+  [doc / [not-yet-exercised]]
 
 ## How to run
 
@@ -230,7 +244,7 @@ result than the OLD-format run path in
 ## Input & output files, FAQ, common errors (added 2026-09-11)
 
 General MON-call background for every ND-500 DOM program: see the central reference
-`E:\Dev\Ronny\ND500UC\docs\DOM-PROGRAM-IO-REFERENCE.md`. This section applies that reference
+`docs/DOM-PROGRAM-IO-REFERENCE.md` in the sibling `ND500UC` project. This section applies that reference
 to CONVERT-DOM-A03 specifically.
 
 ### Input
@@ -275,7 +289,7 @@ to CONVERT-DOM-A03 specifically.
   from the 2026-09-04 table further down the same file) recorded CONVERT-DOM-A03 reaching its
   banner, `CONV entered:`, and the `Source domain:` prompt, but the harness's scripted `EXIT`
   had already been consumed by an earlier read, so the program parked instead of leaving
-  cleanly and never reached `MON 0B`. [measured, `E:\Dev\Ronny\ND5000UC\BUGS.md` line 47]
+  cleanly and never reached `MON 0B`. [measured, `BUGS.md` line 47 in the sibling `nd5000uc` repository]
 - Terminal type: CONVERT-DOM-A03's own DOM binary contains the bare string `DDBTABLES-      :VTM`
   (name padded with blanks, no generation letter baked in — unlike LED-FORTRAN's DOM, which
   contains the literal `DDBTABLES-E     :VTM FILE DOES NOT EXIST`), plus a separate string

@@ -349,3 +349,169 @@ B. **fn-cell value 0x223**: the milestone-10 record and the deep-dive mention
    dossier's exhaustive search (4e) found NO SINTRAN source for 547/0o1043 and
    the bound check would reject it. Until re-verified, treat the 0x223
    observation as harness/uninitialised-state origin, not protocol.
+
+---
+
+## ADDENDUM 2026-09-13 — the idx-24 INSTALL message field map (was un-carved)
+
+The idx-24 install command (SWPDECODER install-descriptor) builds a per-PSN segment descriptor
+from the relayed SWMSG. The install parameter block was NOT covered by the field table above
+(which is fn-3/fn-5). Measured from the CONVERT-DOM output connect (record base 0x240BC = the
+riom intake; SWMSG source = ND-100 phys 0x210718; installer routine 1000006134, stores at
+1000006253-6306), record offsets (octal, halfwords):
+
+| off (octal) | field | notes |
+|---|---|---|
+| 0o20 | PSN | idx24.PSN; e.g. psn14 = 0x000E |
+| 0o34 | file-first-char | 0x41 'A' / 0x42 'B' — matches FSCNT arg[0] |
+| **0o36** | **packed STATE-descriptor word** | written to desc+4; STATE = bits 26-29 (LSB) = `(word>>26)&0xF`. Per-seg measured: 0x8340→0, 0x8180→0, 0xDE00→7, 0xE580→9, **0xEB2C→0xA** |
+| 0o40 | (all-zero every install) | NOT the descriptor field — refutes an 0o36-vs-0o40 off-by-one |
+| 0o42 | 0x0240 const | |
+| 0o0/0o2 | 0xFFFF | constant across installs |
+| 0o4 | 0x0006 | constant |
+| 0o6 | 0x0001 | constant |
+| 0o14 | 0x0005 | constant |
+| 0o16 | 0x0018 | constant |
+
+**STATE bit numbering (from ND-05.009.4):** the swapper's `getbf r.4,$32,$4` reads bits 26-29
+LSB-numbered; the grow-gate `bi test $1000224744+` treats the permit word as a BYTE-ADDRESSED
+BIT ARRAY (a BI operand is byte-addressed, bit 0 = LSB of the addressed byte, `+` post-indexes).
+So `0x00E00000` (bytes 00 E0 00 00) permits STATE **{13,14,15}**, not "bits 21-23". The installer's
+STATE→attribute tables: `$224744`(grow)→{13,14,15}, `$224754`→{6,7}, `$224760/764`→{0,1,2,3,6,11-15},
+`$224770`→{0,1,2,6}.
+
+**Finding:** the fresh CONVERT-DOM output (psn14) carries STATE 0xA verbatim from the ND-100
+message; 0xA fails the grow-permit and LALLOPAGE never fires → NO SUCH PAGE. STATE 9 (a source
+seg) is also attribute-less yet backs via LNEWSWAP (existing disk page), so STATE alone does not
+decide LNEWSWAP-vs-grow — disk backing does. See the ND500UC repo `docs/HANDOFF-2026-09-13.md`.
+
+---
+
+## ADDENDUM 2026-09-13b — CONNECT-FILE (MON 60 fn 13) flow: where STATE is, and is NOT, built
+
+## CONFIRMED 2026-09-14 (measured microcode decode) — the STATE-0xA / {13,14,15} chain in both 2026-09-13 addenda stands
+
+The "fresh output → STATE 0xA → fails grow-permit {13,14,15} → NO SUCH PAGE" chain in the two
+addenda below IS measured. (A brief note had called it "unverified" after a census printed rotating
+garbage; that census — the functional-lane AppendSwapperFnCells instrument, wrong sample point plus
+a mislabeled halfword — was the ONLY broken thing. The STATE-0xA conclusion itself stands.)
+
+1. STATE 0xA for the fresh AccessType-3 output (PSN 14) is decoded from the CORRECT instrument —
+   the microcode ALLOCGATE sampling SWMSG@0x080240BC AT the gate (convdom-micro-run.log:10952-10959):
+   idx-24 record read big-endian halfword, STATE=(word@0o36>>10)&0xF; PSN 14: 0o20=0x000E,
+   0o34=0x0042 ('B'), 0o36=0xEB2C → STATE 0xA. Cross-validated 3 ways (dossier per-seg table
+   0x8340→0 / 0xE580→9 / 0xEB2C→0xA; PSN halfword = ALLOCGATE b24; file-char = FSCNT arg[0]).
+2. STATE 0xA ∉ grow-permit {13,14,15} (permit word 0x00E00000, byte-addressed bit array) →
+   grow-gate declines → allocate 0x0800062F never fires → NO SUCH PAGE. Measured on BOTH ND-500
+   lanes (functional + real microcode) = COMMON code, NOT a functional-CPU bug.
+3. The PSN-14 output descriptor (DESC@b40=0x08076820) is all-zeros/unbacked — consistent: the SWMSG
+   carries STATE 0xA and the page descriptor is unbacked. STATE alone does not decide the outcome;
+   disk backing matters too (a source seg with STATE 9 backs via LNEWSWAP because it HAS pages; the
+   fresh output has NEITHER backing NOR a growable STATE).
+4. NOT terminal: trap 46B, WAIT-parked (no MON 0B exit); SINTRAN re-runs the swapper (104x 3MONCO +
+   31x 3TRACO) but never resolves PSN 14.
+5. Code caveat (worth checking, not a doubt about the SET): CpuND500.Execute.cs `permitR` uses a
+   WORD-SHIFT bit-extraction while 0x00E00000 is byte-addressed = {13,14,15}. The SET {13,14,15} is
+   correct; the shift code may pull the wrong bits.
+6. ROOT LOCUS (open): why does S3SM5 assign the fresh AccessType-3 output STATE 0xA (non-growable)
+   AND leave it unbacked? Fix = pre-backed OR growable STATE {13,14,15}.
+
+Newly mapped from the version-matched NPL source (`SINTRAN/NPL-SOURCE/NPL/5P-P2-MON60.NPL`) plus
+the loaded S3FS / S3SM5 Ghidra. This traces WHERE the connect builds the descriptor and STATE,
+which the fn-3/fn-5 field table above did not cover.
+
+- **N500M** (MON 60 entry) dispatches via the **5IFUNC** table (pre-monitor param setup), indexed
+  by function code.
+- **ICONNFI** (func 13, pre-phase): copies the file NAME from user param **5P1** (200 bytes,
+  FRUSMOVE) and the file TYPE from user param **5P3** (4 bytes, XFRUSMOVE) into the MON60 buffer.
+  For MON 412B FileAsSegment, 5P3 = the AccessType. This is a CROSS-BRIDGE copy of ND-500 user
+  memory by ND-100 code.
+- **5NOPAR** then does `CALL FPT2ENTRY` = "ENTER ND-500 SYSTEM MONITOR". The actual connect
+  (segment descriptor + swapper-message build, carrying STATE) runs in the **ND-500 system monitor
+  overlay (S3SM5, address range 0x4000+)** — NOT in the MON60 overlay (0x2C00–0x3B00), and NOT in
+  this swapper-message servicer `MP-P2-N500.NPL` (0xB000+, which only RESPONDS to swapper requests
+  at runtime: LDATREADY / LALLOPAGE).
+- **FCONNFI** (func 13, post-phase): only copies the resulting open-file number back to the user.
+  It does **not** build STATE.
+- **OFT (open file table), SINTRAN L version:** OPTAB = octal 147515 = 0xCF4D, 2 words/entry;
+  per-file pool BPOOL = 0xCFCD. OFT slot+5 = file-type word (Indexed = bit 0o10 = 0x08). An
+  env-gated ND-100 OFT-watch instrument now exists in the RetroCore sibling repo
+  (`CpuND100.OftWatch.cs`, env `RETROCORE_ND100_OFTWATCH_ADDR`) to watch these OFT / STATE fields.
+
+### Corrected key understanding (we had it wrong)
+The STATE VALUE does not by itself decide grow-vs-not. **DISK BACKING decides the page-fault
+outcome.** A segment WITH disk pages services the fault via LNEWSWAP regardless of STATE (psn13,
+STATE 9, backs fine because it has pages); a FRESH UNBACKED writable segment has nothing to swap in
+and MUST take the grow path, which needs STATE {13,14,15}. psn14 (STATE 0xA) fails on both counts:
+no backing AND STATE 0xA not grow-permitted. STATE 9 and STATE 0xA are BOTH attribute-less in the
+install tables — the tables do NOT separate them. So "STATE 0xA is the bug / just set STATE to
+13-15" is too simple; the real question is why the fresh unbacked output is neither pre-backed NOR
+given a growable STATE.
+
+### Red herrings / refuted leads (recorded so they are not re-chased)
+- **S3FS routine 0x6CA6** is a per-page descriptor loop (its stored value varies across 39 calls),
+  NOT the OFT file-type set.
+- **The MON60 0x3124 "discriminator"** and the **S3SM5 0xBB6F discriminator**
+  (`[struct-0x12] - [[*0x2D]] = 1`) are CONSTANTS inside the STATE-0xA builder, NOT the grow-vs-not
+  gate. Verified: the alternate/growable branch never executes; STATE 9 is built by a SEPARATE
+  routine at ~0xBCCD. The real gate is the UPSTREAM routing that sends the fresh output to the
+  STATE-0xA builder vs the STATE-9 builder — still being traced.
+
+### Tooling caution — carved segments do not byte-align with the live overlays
+The carved segment files (`006-S3FS.bin` loaded at 0x2C00, `030-S3SM5.bin` at 0x4000) do NOT
+byte-align with the live runtime overlay addresses for all routines. A forced Ghidra disassembly at
+the runtime PCs (S3FS 0x3124, S3SM5 0xBB6E) comes out misaligned / garbage, and a byte-search for a
+known instruction (e.g. `SAA 0xA` = `f1 0a`) does not land at the traced PC. Verify against a
+runtime trace before cross-mapping any static address.
+
+### Grow-permit bit numbering — reaffirmed, and the wrong reading flagged
+The permit word `0x00E00000` is a BYTE-ADDRESSED bit array (permitted STATE set = {13,14,15}); the
+little-endian word-shift reading ("bits 21-23") is WRONG. The harness `permitR` word-shift model in
+the RetroCore file `CpuND500.Execute.cs` reflects that wrong reading and is suspect.
+
+### Status
+Root cause is localized (our ND-100/servicer handling of the fresh unbacked output connect;
+Ronny's steer is that our forwarding drops the grow-grant) but NOT yet pinned to one line. It is
+NOT fixed. Open items: (1) find the upstream STATE-0xA-vs-STATE-9 routing; (2) decide whether the
+output should arrive pre-backed or be given a growable STATE (ND-5000 microcode is the ground
+truth). See the ND500UC repo `docs/HANDOFF-2026-09-13.md`.
+
+---
+
+## ADDENDUM 2026-09-14 — the CONNECT is the bug (not the program), and the fault-handling phase is faithful
+
+**Root cause, as measured fact.** CONVERT-DOMAIN's `MON 412B` connect of its fresh AccessType-3,
+0-page output (logical seg 9 = PSN 14) makes it a NON-GROWABLE segment. The swapper descriptor for
+PSN 14 (@0x08038578 = 0x08038000 + 14*0o144) is stamped STATE 0xA, template grow-bit CLEAR
+(desc+0o24 = 0x84C0), size 0, no disk backing → non-growable THREE ways (STATE 0xA ∉ {13,14,15};
+grow-bit 0x20 clear; unbacked). STATE 0xA is stamped by S3SM5's connect into the connect record
+r.36 (SWMSG @0o36); the installer (1000006134) copies it to descriptor+0o4. The swapper TEMPLATE
+default STATE = 0 (raw DSEG @0x08023EBC) — so 0xA comes from the CONNECT, not the swapper.
+CONVERT-DOMAIN growing a 0-page output by writing through the segment is its INTENDED design
+(verified from its disassembly); the output must be growable, so the bug is the CONNECT.
+
+**Fault-handling phase — our emulation is FAITHFUL (these our-side hypotheses are REFUTED, do NOT
+record them as bugs).** After the fault the convert WAIT-parks; SINTRAN re-runs the swapper (104×
+3MONCO + 31× 3TRACO) but never resolves → parks indefinitely (NOT a terminal MON-exit abort).
+Refuted by raw bytes:
+- The page-in coupling never holds here (0 hits).
+- Our 3MONCO FUNCV/K delivery is faithful — SINTRAN itself sent FUNCV=0 / K=0; our servicer
+  delivers other faults' error codes fine (e.g. FUNCV=0x2E where a path DOES error).
+- **SWPST=0xA is the MSWPFAULT ACTIVATION reason** (ND-100→swapper direction, per §1d/§2), NOT the
+  swapper's error answer. (This reconciles with §5b: SWPST is bidirectional; the 0xA seen here is
+  the activation-reason direction, not the error-code direction.)
+- SINTRAN's error-restart contract (SWPDECODER / LNEWSWAP, MP-P2-N500 @135443/135470, matching
+  §5b): a swapper error answer needs SWPST(0o103) ≠ 0 AND SPFLA(0o143) ≠ 0 → EMONICO restarts with
+  the error code (3MONCO delivering FUNCV=code, KFLIP=1); else OK-retry. For PSN 14 SINTRAN takes
+  OK-retry (no error answer seen).
+
+**OPEN FORK (NOT settled).** On the declined-non-growable path, does the ND-500 swapper WRITE an
+error (SPFLA/SWPST) — in which case, if our emulation does not propagate the SWMSG administration
+region (0o101+) to the ND-100 side, that is an our-side unshared-region bug — OR OK-retry without
+erroring (→ purely the STATE-0xA-should-be-growable question)? SWPST(0o103)/SPFLA(0o143) live in the
+SWMSG administration region (0o101+, §1b), BEYOND the RIOM-copied head (0..0o14). Being measured with
+a physical write-watch (ND-100 SWPST at phys 0x420DB6, SPFLA at phys 0x420DC6).
+
+**STATE decode (canonical, tested).** STATE = `(install-record word @0o36 >> 10) & 0xF` (big-endian
+halfword); grow-permit byte-addressed array `0x00E00000` = {13,14,15}. Encoded in the RetroCore
+sibling repo `SintranSwmsgDecode.cs` with 18 passing tests.
