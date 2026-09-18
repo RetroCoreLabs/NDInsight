@@ -26,6 +26,14 @@
 5. [Testing Scenarios](implementation/Testing-Scenarios.md) - Test your implementation
 6. [Debugging Guide](implementation/Debugging-Guide.md) - Troubleshoot issues
 
+### 🛠️ I'm Writing a Program That Uses HDLC
+**Start here if**: You want to send/receive HDLC frames from your own SINTRAN program (and run it under nd100x).
+
+⚙️ **Your Path**:
+1. [HDLC Raw Programming Guide](HDLC-Raw-Programming-Guide.md) - MON 201B API, DCB layout, send/receive flow
+2. [Buffer-Pool and Emulator Usage](implementation/Buffer-Pool-and-Emulator-Usage.md) - `CHANGE-BUFFER-SIZE` setup, pool sizing, the receive-arm trap, running under nd100x
+3. [MAC Cookbook](../../../Developer/Languages/System/MAC-COOKBOOK.md) - writing the MAC program itself (source encoding, monitor-call ABI, file I/O)
+
 ### 🔍 I'm Debugging an Existing System
 **Start here if**: Something isn't working and you need to figure out why.
 
@@ -76,6 +84,7 @@
 | Document | Description | Lines |
 |----------|-------------|-------|
 | [Emulator-Implementation-Guide.md](implementation/Emulator-Implementation-Guide.md) | Complete emulator development guide | ~800 |
+| [Buffer-Pool-and-Emulator-Usage.md](implementation/Buffer-Pool-and-Emulator-Usage.md) | Buffer setup (`CHANGE-BUFFER-SIZE`), pool sizing, receive-arm tuning, running HDLC apps under nd100x | ~230 |
 | [Testing-Scenarios.md](implementation/Testing-Scenarios.md) | Comprehensive test cases | ~400 |
 | [Debugging-Guide.md](implementation/Debugging-Guide.md) | Troubleshooting and debugging strategies | ~450 |
 

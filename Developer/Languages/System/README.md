@@ -55,6 +55,26 @@ Low-level assembly language for NORD-100 computers.
 
 ---
 
+### [MAC-COOKBOOK.md](MAC-COOKBOOK.md)
+**MAC Practitioner's Cookbook**
+
+The empirically-verified companion to the MAC guide: what actually assembles and runs through the `@MAC` reentrant subsystem on SINTRAN III VSX/500 L (built with `)9ASSM` + NRL, run under nd100x).
+
+**Covers:**
+- The exact source encoding that `@MAC` accepts (`:SYMB`, CR-only, even parity, `)LINE`)
+- Build pipeline: `)9ASSM` → NRL → run
+- The addressing deref ladder (`LDA (` vs `LDA I (`), P-relative ±128 limit, literal-pool flushing
+- The monitor-call ABI (skip-on-success convention, by-reference param lists)
+- A gotcha catalogue (symptom → cause → fix) and a debugging methodology
+- Differences observed vs. the general language reference
+
+**Use Cases:**
+- Getting a first MAC program to assemble and run on SINTRAN III
+- Debugging "assembled fine but faults at runtime" issues
+- Onboarding (AI or human) to practical ND MAC coding
+
+---
+
 ### [NORD-500-ASSEMBLER-DEVELOPER-GUIDE.md](NORD-500-ASSEMBLER-DEVELOPER-GUIDE.md)
 **NORD-500 Assembler**
 

@@ -134,6 +134,23 @@ Automate your development workflow with MODE scripts.
 
 ---
 
+### [CROSS-DEVELOPMENT-WITH-ND100X.md](CROSS-DEVELOPMENT-WITH-ND100X.md)
+**Host-Driven Cross-Development with the nd100x Emulator**
+
+Build, link, and run SINTRAN programs from a modern PC instead of typing source on the target. (SCRIPT-GUIDE automates *inside* SINTRAN; this is the *host* side.)
+
+**Contents:**
+- The edit → stage → boot → drive → run loop
+- Source encoding for the target (CR-only, even parity, `:SYMB`)
+- Staging files into the SMD disk image (create on target, fill from host)
+- `nd100x` invocation flags (`--boot=smd`, `--smd0`, `--telnet`, `--hdlc`, `--max-instr`)
+- Driving `@MAC`/`@NRL` over the telnet console; capturing console + device output
+- Reusable base images for expensive one-time setup
+
+**Verified** building MAC programs for SINTRAN III VSX/500 L under nd100x.
+
+---
+
 ### [TOOLS-REFERENCE.md](TOOLS-REFERENCE.md)
 **Complete Development Tools Reference**
 

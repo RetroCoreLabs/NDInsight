@@ -71,7 +71,15 @@ Developer/
 │   ├── COMPILER-COMMANDS-REFERENCE.md
 │   ├── LINKING-GUIDE.md
 │   ├── SCRIPT-GUIDE.md
+│   ├── CROSS-DEVELOPMENT-WITH-ND100X.md
 │   └── TOOLS-REFERENCE.md
+│
+├── Case-Studies/ (End-to-end worked examples)
+│   └── HTTP-Server-over-HDLC.md
+│
+├── Reverse-Engineering/ (Disassembly + binary RE)
+│   ├── Disassembling-a-PROG.md
+│   └── ND-100-Instruction-Decoding.md
 │
 ├── Editors/ (Text editor guides)
 │   ├── EDITORS-GUIDE.md

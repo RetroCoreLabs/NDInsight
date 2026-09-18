@@ -540,17 +540,23 @@ SIZE, END-START          % Relocatable - relocatable = absolute
 ```mac
 % Hello World in pure MAC
 
-START,  LDA =43               % WRTSW monitor call
-        LDT I (MSG)           % Message address
-        MONITOR 43            % Write string
-        LDA =3                % EXIT monitor call
-        MONITOR 3             % Exit program
+START,  LDT I (MSG)           % Message address
+        MONITOR 162           % OutString - write the message (MON 162B)
+        MONITOR 0             % ExitFromProgram
 
 MSG,    'HELLO FROM MAC!'
         15, 12                % CR, LF
 
         )ENTR START
 ```
+
+> **Monitor numbers corrected.** Earlier drafts of this example used
+> `MONITOR 43` for "write string" and `MONITOR 3` for "exit"; per the
+> repo's own monitor-call reference those are **CloseFile** (43) and the
+> **No-Wait switch** (3). String output is **OutString = MON 162B** and
+> program exit is **ExitFromProgram = MON 0**. (For the `@MAC` *reentrant*
+> subsystem the mnemonic is `MON n`, not `MONITOR n` — see the
+> [MAC Cookbook](MAC-COOKBOOK.md).)
 
 ### 9.2 Subroutine
 
@@ -804,6 +810,7 @@ ROUTINE, LDA LOCAL
 
 ## See Also
 
+- **[MAC-COOKBOOK.md](MAC-COOKBOOK.md)** - Practitioner's companion: what actually assembles and runs through `@MAC` on SINTRAN III (verified source encoding, addressing deref ladder, monitor-call ABI, gotcha catalogue)
 - **[NPL-DEVELOPER-GUIDE.md](NPL-DEVELOPER-GUIDE.md)** - NPL language guide
 - **[LINKING-GUIDE.md](../../Workflow/LINKING-GUIDE.md)** - NRL linker guide
 - **[QUICK-START-EXAMPLES.md](../../QUICK-START-EXAMPLES.md)** - Hello World examples

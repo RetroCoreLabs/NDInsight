@@ -2379,3 +2379,8 @@ entire system.
 | PLANC Reference Manual | ND-60.117.5 EN | -- | PLANC language specification |
 | HDLC Driver Source | MP-P2-HDLC-DRIV.NPL | -- | SINTRAN HDLC driver (626 lines) |
 | COM5025 Datasheet | SMC/AMD | -- | Multi-Protocol Communications Controller |
+
+## See Also
+
+- **[Buffer-Pool and Emulator Usage](implementation/Buffer-Pool-and-Emulator-Usage.md)** — operational layer around this API: `CHANGE-BUFFER-SIZE` buffer setup, pool sizing (D-I-W/D-O-W), the receive-arm trap (undersized arm → flood), and running/testing HDLC under nd100x.
+- **[MAC Cookbook](../../../Developer/Languages/System/MAC-COOKBOOK.md)** — writing the MAC program that issues these monitor calls (source encoding, the monitor-call skip-on-success ABI, file I/O).
