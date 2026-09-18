@@ -7,7 +7,7 @@
   "byteOrder": "big-endian",
   "verification": {
     "status": "struct layout transcribed from working C code (pcc-nd500 dom.h/dom_utils.c), used to run real .DOM files; FLAGS byte (0x06) independently confirmed against a freshly CONVERT-DOM-A03-produced LINKAGE-LOAD-H02.DOM",
-    "sourceFile": "/home/ronny/repos/ragge/pcc-nd500/src/include/nd500/dom.h",
+    "sourceFile": "pcc-nd500 repository: src/include/nd500/dom.h",
     "date": "2026-08-10"
   },
   "headerSizeBytes": 4096,

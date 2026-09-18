@@ -249,15 +249,18 @@
 //     confirmed against real ND-500-APPS .DOM files during this build -
 //     see the "known limitations" note in README.md for what that check
 //     covered).
-//   - DESC (DESCRIPTION-FILE:DESC): no fixed magic either. Domain/Segment
-//     entry blocks are found by the SAME heuristic byte-scan algorithm as
-//     nd500-dump.c's dump_desc_file()/desc_scan_block()/looks_like_desc_name()
+//   - DESC (DESCRIPTION-FILE:DESC): no fixed magic either. DETECTION uses
+//     the SAME heuristic byte-scan algorithm as nd500-dump.c's
+//     dump_desc_file()/desc_scan_block()/looks_like_desc_name()
 //     - ported field-for-field below, including its exact tolerances
 //     (all-zero slots are gaps but scanning STOPS at the first gap, a
 //     Segment Entry name must start with '(' and contain a closing ')',
-//     a Domain Entry name needs >=4 printable characters). Only the two
-//     fields nd500-dump.c itself trusts (SEGLINK, DNAME/SNAME) are decoded;
-//     everything else is explicitly marked unverified rather than guessed.
+//     a Domain Entry name needs >=4 printable characters). PARSING does
+//     not use the scan: parseDESC() reads domain entries by index at the
+//     monitor's own computed positions and follows each SEGLINK chain.
+//     Decoded: SEGLINK, DNAME/SNAME and ten Segment Entry fields
+//     (PLB..PUPLOGFIX). The rest is not shown - see the DESC parser
+//     banner further down for why.
 //
 // All field NAMES, DESCRIPTIONS and bit-table LABELS come from the three
 // JSON specs fetched at load time - they are the single source of truth,
@@ -319,7 +322,9 @@ async function loadSpecs() {
         document.getElementById('parsedPanel').innerHTML =
             '<div class="error-panel">Could not fetch ../nrf-format.json / ../dom-format.json / ../desc-format.json.\n\n' +
             'This page must be served over http(s) (fetch() of a sibling folder is blocked under file://).\n' +
-            'Run from the viewer/ folder:\n\n    python -m http.server 8000\n\nthen open http://localhost:8000/\n\n' +
+            'Double-click run.bat in the viewer/ folder, or run from the File-Formats/ folder\n' +
+            '(ONE LEVEL UP from viewer/ - the specs are fetched as ../*.json, so a server started\n' +
+            'inside viewer/ cannot reach them):\n\n    python -m http.server 8888\n\nthen open http://localhost:8888/viewer/\n\n' +
             'Underlying error: ' + e.message + '</div>';
     }
 }
@@ -734,14 +739,21 @@ function renderDOM(r) {
 }
 
 // ============================================================================
-// DESC parser - ports nd500-dump.c's heuristic block scan EXACTLY
-// (looks_like_desc_name + desc_scan_block), since DESC has no documented
-// fixed offset for where its Domain/Segment Entry blocks start. SEGLINK and
-// DNAME/SNAME come from that heuristic scan. The ten Segment Entry fields
-// below (PLB..PUPLOGFIX) are fixed byte offsets confirmed against the
-// ND-500 Monitor's own code (MON-DEBUG:PROG) - see DESCRIPTION-FILE-FORMAT.md
-// section 4. Everything else in the Segment Entry, and everything in the
-// Domain Entry past SEGLINK/DNAME, is still manual-order-only and NOT shown.
+// DESC parser. Two parts:
+//  - nd500-dump.c's heuristic block scan, ported EXACTLY
+//    (looks_like_desc_name + desc_scan_block). It was the whole parser
+//    once, when DESC had no known fixed offset for where its Domain/Segment
+//    Entry blocks start. Now it is used only by detectFormat() and as a
+//    cross-check in parseDESC().
+//  - parseDESC() itself, which reads domain entries by index at the
+//    position the ND-500 Monitor computes and follows the SEGLINK chains.
+// The ten Segment Entry fields below (PLB..PUPLOGFIX) are fixed byte
+// offsets confirmed against the ND-500 Monitor's own code (MON-DEBUG:PROG)
+// - see DESCRIPTION-FILE-FORMAT.md section 4. Everything else in the
+// Segment Entry, and everything in the Domain Entry past SEGLINK/DNAME, is
+// NOT shown. That was because those offsets were manual-order-only; they
+// have been code-proven since 2026-08-17 (DESCRIPTION-FILE-FORMAT.md
+// sections 3 and 4), so showing them is simply not done yet.
 // ============================================================================
 const DESC_DOMAIN_ENTRY_SIZE = 56, DESC_DOMAIN_DNAME_OFFSET = 4, DESC_DOMAIN_DNAME_SIZE = 16;
 const DESC_SEGMENT_ENTRY_SIZE = 192, DESC_SEGMENT_SNAME_OFFSET = 4, DESC_SEGMENT_SNAME_SIZE = 54;
@@ -901,7 +913,7 @@ function parseDESC(buf) {
 
 function renderDESC(r) {
     const p = document.getElementById('parsedPanel');
-    let html = `<div class="info-panel">DESC file, ${r.byteLength} bytes. Domain entries are read at the positions the ND-500 Monitor itself computes (56*index + 256*(index div 32 + 1)), and each domain's segments by following the link chain - no heuristic scanning. Segment Entry: SEGLINK, SNAME and the ten fields taken from the monitor's own print routine (PLB, PSIZE, DLB, DSIZE, DEBUGINFO, DLINKDATE, ABSFIXAD, LOWLOGFIX, PLOLOGFIX, PUPLOGFIX - see DESCRIPTION-FILE-FORMAT.md section 4). PSIZE and DSIZE hold the LAST BYTE INDEX, so the real file sizes are PLB+PSIZE+1 and DLB+DSIZE+1 - checked against 24 real segment files across 13 vendor floppies with no mismatches. <b>Offsets are proven; some meanings are not</b> - DLINKDATE, ABSFIXAD, LOWLOGFIX, PLOLOGFIX and PUPLOGFIX read zero in all 26 real entries, so those names are the monitor's labels rather than decoded meanings. Domain Entry: only SEGLINK and DNAME are decoded; everything past DNAME is manual-order-only and not shown. The COMSEGSIZE/N100SEGNO conflict at bytes 74-84 is unadjudicated and not shown rather than guessed.${r.orphanHint ? ` <b>Note:</b> a heuristic scan finds ${r.orphanHint} more segment-shaped entr${r.orphanHint === 1 ? 'y' : 'ies'} than the chains reach - possibly unreferenced, possibly a false match.` : ''}</div>`;
+    let html = `<div class="info-panel">DESC file, ${r.byteLength} bytes. Domain entries are read at the positions the ND-500 Monitor itself computes (56*index + 256*(index div 32 + 1)), and each domain's segments by following the link chain - no heuristic scanning. Segment Entry: SEGLINK, SNAME and the ten fields taken from the monitor's own print routine (PLB, PSIZE, DLB, DSIZE, DEBUGINFO, DLINKDATE, ABSFIXAD, LOWLOGFIX, PLOLOGFIX, PUPLOGFIX - see DESCRIPTION-FILE-FORMAT.md section 4). PSIZE and DSIZE hold the LAST BYTE INDEX, so the real file sizes are PLB+PSIZE+1 and DLB+DSIZE+1 - checked against 24 real segment files across 13 vendor floppies with no mismatches. <b>Offsets are proven; some meanings are not</b> - DLINKDATE, ABSFIXAD, LOWLOGFIX, PLOLOGFIX and PUPLOGFIX read zero in all 26 real entries, so those names are the monitor's labels rather than decoded meanings. Domain Entry: only SEGLINK and DNAME are shown; the fields past DNAME, and the Segment Entry's common-segment arrays at bytes 62-85 (COMSEGNO, COMSEGADDR, COMSEGSIZE, N100SEGNO), have proven offsets in DESCRIPTION-FILE-FORMAT.md sections 3 and 4 but this viewer does not display them yet.${r.orphanHint ? ` <b>Note:</b> a heuristic scan finds ${r.orphanHint} more segment-shaped entr${r.orphanHint === 1 ? 'y' : 'ies'} than the chains reach - possibly unreferenced, possibly a false match.` : ''}</div>`;
 
     html += `<h2 class="section-title">Domain Entries (56 bytes/entry)</h2>`;
     if (r.domains.length === 0) html += '<div class="placeholder">(no domain entries - every slot in this file is unused)</div>';

@@ -9,10 +9,13 @@ The remaining opening: the L-era `SL202-FO-L27` variant's string/module regions.
 The old ND-500(0) domain format is three files per segment: `:PSEG` (program), `:DSEG` (data)
 and `:LINK`. `DESCRIPTION-FILE-FORMAT.md` covers the index that names them, and the `:PSEG` /
 `:DSEG` sizes are now fully accounted for by the DESC size rule. `:LINK` had never been looked
-at. This document records what eleven real `:LINK` files actually contain, and is deliberately
-short on interpretation - there is one strong structural finding, and the rest is not settled.
+at before 2026-08-17.
 
-Do not treat anything below as a decoded layout. Where a reading is a guess it says so.
+**How to read this document.** Sections 1 to 4 are the first pass: what eleven real `:LINK`
+files look like from the bytes alone, written before any code was carved. They are kept because
+the observations are real and a parser has to cope with every one of them. **Section 4a is the
+decoded layout** and it explains all of them - where an earlier section offers two readings or
+a guess, 4a is the answer. Where something is still a guess it says so.
 
 ---
 
@@ -51,8 +54,11 @@ Two readings fit, and the evidence here does not separate them:
 - **A.** The file is k records of 32 bytes followed by a single terminator byte.
 - **B.** The file is a stream whose length the writer rounds to 32k, plus one byte.
 
-Reading A is contradicted by the content of at least one file (see section 4), so it cannot be
-the whole story.
+**Settled in section 4a: it is reading A, with one correction.** The file is k cells of 32
+bytes, and the extra byte is not a terminator - NLL stores a zero end-word and sets the file's
+max byte pointer to 32k, and the directory byte count is max byte pointer + 1. The files that
+seemed to contradict reading A (shapes b and c in section 4) use the same 32-byte cells - behind
+a header page, or with string regions between them.
 
 ## 3. `:LINK` is optional and is often absent
 
@@ -70,9 +76,10 @@ rather than a one-byte record. Not proven.
 So a domain can ship with no `:LINK` at all. Whatever it holds is not required to run the
 domain.
 
-## 4. The contents are NOT one uniform format
+## 4. First pass: three shapes that looked like different formats
 
-This is the finding that stops any quick answer. Three clearly different shapes appear:
+From the bytes alone, three clearly different shapes appear. Section 4a shows they are one
+format seen in three eras:
 
 **(a) A symbol table with fixed 32-byte records.** `FORTRAN-500.LINK` (1982) is the clean case:
 all 392 records begin with `ff ff ff ff`, and each carries a 7-8 character upper-case symbol
@@ -87,8 +94,10 @@ name at byte +16 with what looks like a length byte at +4.
 
 `MAINNAME` is 8 characters and its record's byte +4 is `08`; `EOFFLAG` is 7 and its byte +4 is
 `07`. That correspondence holds for every record checked, which is why the length byte reading
-is offered at all. Note that the 7-character record's remaining fields then sit one byte
-earlier than the 8-character record's, so the record is not a simple fixed field layout.
+is offered at all. The bytes after a 7-character name look as if the remaining fields sit one
+byte earlier than after an 8-character name. They do not: section 4a shows the fields are all
+BEFORE the name, at fixed offsets, and what follows the name inside its 16-byte area is
+leftover heap content.
 
 **(b) The same `ff ff ff ff` opening, but not at every 32-byte boundary.** Eight of the eleven
 start with `ff ff ff ff`, yet only the 1982 file has that marker at every record start.
@@ -108,8 +117,10 @@ is `0x2b` = 43. So this region is length-prefixed strings naming the **source fi
 domain was built from. It is also by far the most printable file in the set at 49%, against
 25-31% for the others.
 
-**Conclusion for this section:** `:LINK` is a container whose contents vary by producing tool
-and era. Any parser must not assume 32-byte symbol records.
+**Conclusion for this section, as corrected by 4a:** the 32-byte cell is the unit in every
+file, but a parser must not assume every cell is a symbol record, that records start at offset
+0, or that word 0 means the same thing in every era. Shape (b) is a 2048-byte header page in
+front of the records; shape (c) is string/module regions between the cells.
 
 ## 4a. DECODED (2026-08-17): the loader-table dump, from NLL's own serializer
 
@@ -168,7 +179,7 @@ Verified 2026-08-17 by parsing all 11 samples under this layout (script preserve
 carve session): 10/11 fully conform (355/355, 470/470, 516/516, 884/884, 344/344, 834/834,
 697/697, 1309/1309, 880/880, 392/392 records with 100% ascending values), SL202 partially.
 
-## 5. What this is probably for - and why that is still a guess
+## 5. What it is for, and who reads it
 
 The old format needs somewhere to keep what NLL requires in order to **relink** a domain, and
 what a symbolic debugger requires in order to show names. Global symbol names with addresses
@@ -177,8 +188,9 @@ description. `LED-B03` is the symbolic debugger and ships with a **zero-byte** `
 does not contradict it - the debugger reads other domains' link information, it does not need
 its own.
 
-**None of this is verified.** No code has been carved for the `:LINK` reader yet, but the
-reader is now IDENTIFIED (2026-08-17, Ghidra session):
+**What is and is not proven here.** The WRITER is carved (section 4a). The purpose above rests
+on the manual's wording quoted below, not on carved code. **No code has been carved for a
+`:LINK` READER** - the readers are only identified (2026-08-17, Ghidra session):
 
 - **`MON-DEBUG:PROG` (nd-500-mon-j04) does NOT read `:LINK` - ruled out, byte-verified.**
   Its file-type table (bank 2 byte 0x996E) holds only `PSEG DSEG DATA PROG`, and the string

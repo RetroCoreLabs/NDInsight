@@ -7,7 +7,7 @@
   "byteOrder": "big-endian",
   "verification": {
     "status": "control byte bit order VERIFIED against a real compiler-produced file (nd-500-apf-lib-e.nrf)",
-    "sourceFile": "E:\\Dev\\Ronny\\ND500\\Microcode\\nd-500-apf-lib-e.nrf",
+    "sourceFile": "nd-500-apf-lib-e.nrf, from the ND-500 microcode set kept outside this repository",
     "date": "2026-08-10"
   },
   "structure": {

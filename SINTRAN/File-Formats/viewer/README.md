@@ -28,6 +28,33 @@ python -m http.server 8888
 
 then open `http://localhost:8888/viewer/` in a browser.
 
+**What you need:** Python 3 on the `PATH` (the `http.server` module comes with it, nothing to
+install) and a browser. `run.bat` calls plain `python`; if that command is not found, the
+window closes at once and the browser shows "cannot connect". Check with `python --version`.
+
+**Stopping it:** the server runs in the console window `run.bat` opened, and keeps running
+until you stop it. Press Ctrl+C in that window, or close the window. Nothing else is left
+behind.
+
+**If port 8888 is taken:** the server prints `OSError: [WinError 10048]` (address already in
+use) and exits, and the browser tab that opened shows whatever else owns that port. Pick
+another port - it is written in two places in `run.bat` (the `start` line and the `python`
+line), or by hand:
+
+```
+python -m http.server 8890
+```
+
+then open `http://localhost:8890/viewer/`.
+
+**If the page loads but shows "Could not fetch ../nrf-format.json ...":** the server was
+started from the wrong folder (from `viewer/` instead of `File-Formats/`), or the page was
+opened as a `file://` path. Start it as described above.
+
+`link-format.json` is not read by the viewer, and there is no `:LINK` view. The format itself
+is decoded (`../LINK-FILE-FORMAT.md` section 4a, 32-byte cells); nobody has written the viewer
+part yet.
+
 ## What it does
 
 - **Format detection**: filename extension (`.nrf`, `.dom`, `.seg`, `.desc`, or
@@ -44,13 +71,17 @@ then open `http://localhost:8888/viewer/` in a browser.
   parts + ND-100 RT segments + linked segments (SEG), indirect segments, common part -
   with names resolved from the name pool and flag/attribute bytes decoded to their
   documented bit labels. Byte offsets ported from `nd500/dom.h`'s struct layout.
-- **DESC**: domain and segment entries found by the exact heuristic block-scan algorithm
-  from `nd500-dump.c` (`looks_like_desc_name` / `desc_scan_block`, ported line-for-line).
-  Only the two fields the C code itself trusts per entry - `SEGLINK` and the
-  apostrophe-terminated name (`DNAME`/`SNAME`) - are decoded. Every other DESC field
-  (`CHILDDOMAINS`, `PLB`/`PSIZE`/`DLB`/`DSIZE`, the cross-domain-ref array, etc.) is
-  explicitly marked unverified in `desc-format.json`/`DESCRIPTION-FILE-FORMAT.md` and is
-  **not shown** here rather than guessed at.
+- **DESC**: domain entries are read by index at the positions the ND-500 Monitor itself
+  computes (`56*index + 256*(index div 32 + 1)`), and each domain's segment entries by
+  following the `SEGLINK` chain until 0 - no guessing about where the blocks start. Shown per
+  domain entry: `SEGLINK` and `DNAME`. Shown per segment entry: `SEGLINK`, `SNAME`, and `PLB`,
+  `PSIZE`, `DLB`, `DSIZE`, `DEBUGINFO`, with the real size (stored value + 1) beside `PSIZE` and
+  `DSIZE`. The parser also reads `DLINKDATE`, `ABSFIXAD`, `LOWLOGFIX`, `PLOLOGFIX` and
+  `PUPLOGFIX` but the table has no columns for them.
+  The old heuristic block scan from `nd500-dump.c` (`looks_like_desc_name` /
+  `desc_scan_block`) is still in the page, used for two things only: deciding whether a
+  dropped file looks like a DESC file, and a cross-check that warns when it finds more
+  segment-shaped entries than the chains reach.
 - **Hex dump**: paginated (1024 bytes/page - some real `.DOM` files are several MB, so the
   whole file is never rendered as one giant `<pre>`), octal or hex addresses, a jump-to-
   offset box, and click-to-highlight from any parsed field.
@@ -71,7 +102,10 @@ group-reader / heuristic-scan logic into a throwaway Node.js script and running 
   (22528 bytes) - heuristic scan finds domain block at offset 0x100 (2 entries:
   `SCRATCH-DOMAIN`, `LINKAGE-LOAD-H02`) and segment block at offset 0x4000 (2 entries:
   `(210319H02:FLOPPY-USER)SCRATCH-SEG-01`, `(210319H02:FLOPPY-USER)LINKAGE-LOAD-H02`) -
-  exactly matching the task's expected domains/segments.
+  exactly matching the task's expected domains/segments. (That run was of the heuristic
+  scan, which was the DESC parser at the time. The by-index parser that replaced it lands on
+  the same two offsets, `0x100` and `0x4000`, by arithmetic; `../samples/README.md` records
+  that it is kept in agreement with `nd500-dump`.)
 - **DOM**: `SINTRAN/ND500-APPS/CONVERT-DOM-A03/files/CONVERT-DOM-A03.DOM`
   (339968 bytes) and `SINTRAN/ND500-APPS/LINKER-B01/files/LINKER-B01.DOM`
   (724992 bytes) - both decode FLAGS=0xF0/0xF8 (IS_DOMAIN_FILE | IS_ROOT_DOMAIN |
@@ -96,9 +130,13 @@ the sibling JSON specs correctly (HTTP 200).
   (asserting the exact numbers this task asked for), plus a `node --check` syntax pass
   and an HTTP reachability check of the served page - not by visually inspecting the
   rendered UI in a browser.
-- DESC fields beyond `SEGLINK`/`DNAME`/`SNAME` are not decoded at all (by design - they
-  are unverified in the spec itself). Domain Entry's `CHILDDOMAINS`/`MOTHER`/etc. and
-  Segment Entry's `PLB`/`PSIZE`/`DLB`/`DSIZE` onward are simply absent from the UI.
+- DESC: the Domain Entry fields past `DNAME` (`CHILDDOMAINS`, `MOTHER`, `CHILDINDEX`,
+  FLAG/PRIOR, `STADR`, `ENABLEINT`, `THA`, `SYSENABL`, `PBITMAP`, `DBITMAP`) and the Segment
+  Entry's common-segment arrays (`COMSEGNO`, `COMSEGADDR`, `COMSEGSIZE`, `N100SEGNO`,
+  `ADDSGELEM`) are absent from the UI. They were left out when their offsets were unproven;
+  the offsets have been code-proven since 2026-08-17 (`../DESCRIPTION-FILE-FORMAT.md` sections
+  3 and 4), so this is now simply work nobody has done.
+- No `:LINK` view (see "How to run it" above).
 - NRF's Layer-3 linear PSEG/DSEG reconstruction (`nrf_reconstruct()` in the C reference)
   is not ported - this viewer shows the group stream and module/symbol summary only, not
   a reconstructed byte buffer.

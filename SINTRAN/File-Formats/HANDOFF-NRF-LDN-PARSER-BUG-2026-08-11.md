@@ -7,7 +7,7 @@
 
 ## What was broken
 
-`nrf_read_group()` in `~/repos/ragge/pcc-nd500/src/lib/nrf/nrf_utils.c`, and the JS port of it
+`nrf_read_group()` in `src/lib/nrf/nrf_utils.c` of the `pcc-nd500` repository, and the JS port of it
 (`nrfReadGroup()` in `viewer/index.html`), never special-cased **LDN (control number 27)**.
 Every other NRF control group's numeric field (NL bytes, 0-7) *is* its entire payload. LDN is
 the one exception: its numeric field is a byte **count** N (unsigned), and **N more raw literal
@@ -114,6 +114,8 @@ monitor instruction/label evidence per field). I:
   zero-DLB entries already satisfied trivially. Corrected both `.md` and `.json`; moved that
   item from `openQuestions` to a new `resolvedQuestions` array.
 
-The one thing genuinely still open in DESC: the manual-vs-monitor conflict at Segment Entry
-bytes 74-84 (manual says `COMSEGSIZE`/`N100SEGNO` arrays; the monitor code prints two byte
-strings there using a count at word `37B`). Not adjudicated - both files record it as such.
+At the time, one thing was left open in DESC: the manual-vs-monitor conflict at Segment Entry
+bytes 74-84 (manual says `COMSEGSIZE`/`N100SEGNO` arrays; the monitor code seemed to print two
+byte strings there using a count at word `37B`). **Settled 2026-08-17: the manual was right** -
+the count is `COMSEGNO` and the "strings" were a misread loop. See `DESCRIPTION-FILE-FORMAT.md`
+section 4.

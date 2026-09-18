@@ -5,7 +5,19 @@ that ingests a Norsk Data **BRF** (Binary Relocatable Format) object file and
 produces a Ghidra program with correct memory layout, symbols, entry points and
 relocations for ND-100 code.
 
-**Honest status:** No Ghidra loader exists yet. What DOES exist is a validated
+**Status, corrected 2026-09-18: THE LOADER HAS BEEN BUILT.** This handoff was written
+on 2026-07-07, when no Ghidra loader existed. One was written the next day: the sibling
+repository `ghidra-nd100` has `ND-100/src/main/java/nd/bpun/BRFLoader.java` (1171 lines,
+commit `c5983bc`, "BRFLoader: add ND-100 BRF (Binary Relocatable Format) import support"),
+beside its BPUN and `:PROG` loaders, with its own handoff `HANDOFF-BRF-LOADER.md` dated
+2026-07-08 in that repository's root. Read that handoff for the state of the loader.
+NOT CHECKED here: whether the loader passes the checklist in section 5 below - the file
+and its commit were looked at, the loader was not run.
+
+The rest of this document is kept as the specification the loader was built from, and as
+the record of the format rules that cost debugging time.
+
+**Status as written 2026-07-07:** No Ghidra loader exists yet. What DOES exist is a validated
 **Python reference implementation** (a BRF linker that emulates the ND Relocating
 Loader). Its logic is the authoritative spec for the Ghidra loader - port it.
 Both the format doc and the reference code are reproduced below so this file is
@@ -299,5 +311,8 @@ If those all hold, the loader is faithful to the ND Relocating Loader.
 **Provenance:** created 2026-07-07 during ENCOS Ethernet-II reverse engineering.
 Python reference tools live (temporarily) in the session scratchpad
 (`brf_link.py`, `brf_parse.py`, `nd100_dis.py`, `analyze_encos.py`); their exact
-logic is reproduced above so this handoff is self-contained. Format spec:
+logic is reproduced above so this handoff is self-contained. (Added 2026-09-18: the
+scratchpad is gone. A later BRF linker written to the same format document is kept in this
+repository at `SINTRAN/XMSG/DOC/COSMOS-RE/ENNS0-Startup-RE-2026-07-23/tools/brf_link.py`;
+it is a different file from the one reproduced above, not a copy of it.) Format spec:
 `SINTRAN\File-Formats\BRF-FILE-FORMAT.md`.

@@ -25,7 +25,7 @@ SINTRAN III was a sophisticated real-time operating system providing:
 |--------|----------|-------|
 | [Devices/](Devices/README.md) | Hardware device documentation (HDLC, SCSI, SMD, Octobus, FloppyDMA, bus signals) | 177 files |
 | [Emulator/](Emulator/README.md) | C# emulator implementation guides | 16 files |
-| [File-Formats/](File-Formats/README.md) | ND object and executable file formats: BRF, `:PROG`, `:NRF`, `:DOM`/`:SEG`, `DESCRIPTION-FILE:DESC` - each with a machine-readable `.json`, plus a drag-and-drop browser viewer | 16 files |
+| [File-Formats/](File-Formats/README.md) | ND object and executable file formats: BRF, `:PROG`, `:NRF`, `:DOM`/`:SEG`, `:LINK`, `DESCRIPTION-FILE:DESC` - the four ND-500 formats (`:NRF`, `:DOM`, `:LINK`, DESC) each with a machine-readable `.json`, a drag-and-drop browser viewer for NRF, DOM/SEG and DESC files (start it with `viewer/run.bat`), and `samples/` with the real vendor DESC and `:LINK` files the findings were checked against | 44 files |
 | [Filesystem/](Filesystem/README.md) | SINTRAN III directory-device on-disk format: master block, object entry, user entry, page bitmap, boot sector - byte-verified against real disk images | 21 files |
 | [ND500/](ND500/README.md) | ND-500 CPU architecture, the 3022/5015 bus interface, SINTRAN integration, and the MON-call hub | 482 files |
 | [ND500-APPS/](ND500-APPS/README.md) | **ND-500 vendor programs (FraTor DOMs): runnable files + user guide per program** | **13 programs, 75 files** |
@@ -371,16 +371,20 @@ Measured 2026-08-17, counting every file in each folder (not only Markdown).
 | ND500-APPS | 75 | 40 MB |
 | NPL-SOURCE | 73 | 7.7 MB |
 | ND5000 | 65 | 1.5 MB |
+| File-Formats | 44 | 1.1 MB |
 | OS | 42 | 1.6 MB |
 | Filesystem | 21 | 372 KB |
 | Emulator | 16 | 412 KB |
-| File-Formats | 16 | 244 KB |
 | Print | 13 | 168 KB |
 | Release-Documentation | 8 | 1.3 MB |
 | TAD | 8 | 240 KB |
 | SINTRAN Structures | 6 | 560 KB |
 | TSS | 2 | 8.7 MB |
-| **Total** | **5294** | **310 MB** |
+| **Total** | **5322** | **311 MB** |
+
+The File-Formats row was measured again on 2026-09-18 (it grew from 16 files to 44 when the
+sample files were added) and the total was adjusted by that difference. Every other row is
+still the 2026-08-17 measurement.
 
 The size columns are dominated by non-text content: XMSG carries a full C# solution,
 ND500-APPS carries runnable vendor binaries, Devices carries scanned material, and TSS
@@ -433,9 +437,12 @@ is two slide-deck files.
 [XMSG/DOC/XMSG-COMMAND-REFERENCE.md](XMSG/DOC/XMSG-COMMAND-REFERENCE.md) for the COSMOS/XMSG operator utility
 
 **Decoding an ND File:**
-→ See [File-Formats/](File-Formats/README.md) for BRF, `:PROG`, `:NRF`, `:DOM`/`:SEG` and
-`DESCRIPTION-FILE:DESC` byte layouts, and [File-Formats/viewer/](File-Formats/viewer/README.md)
-for the drag-and-drop hex + parsed browser viewer that reads the `.json` layouts directly
+→ See [File-Formats/](File-Formats/README.md) for BRF, `:PROG`, `:NRF`, `:DOM`/`:SEG`, `:LINK`
+and `DESCRIPTION-FILE:DESC` byte layouts,
+[File-Formats/viewer/](File-Formats/viewer/README.md) for the drag-and-drop hex + parsed browser
+viewer that reads the `.json` layouts directly, and
+[File-Formats/samples/](File-Formats/samples/README.md) for the real vendor DESC and `:LINK`
+files to check a parser against
 
 **Reading a Raw Disk Image:**
 → See [Filesystem/on-disk-format/](Filesystem/on-disk-format/README.md) for the four

@@ -274,6 +274,14 @@ itself is not modified by execution.
 
 ## 7. Known Gaps in the Public Documentation
 
+**Gaps 1 and 2 below are answered in the companion document
+[prog-fileformat.md](prog-fileformat.md)**, from the NPL source of `@RECOVER`
+(`RP-P2-MONCALLS.NPL`, which reads exactly 7 words from block 0) and four real `:PROG`
+files: the header is 7 big-endian 16-bit words at file offset 0 - start, restart, bank 1
+first/last, bank 2 first/last, data-bank-copy last - and there is no magic number or version
+word. The list is kept as written because it is still true of the MANUALS; gaps 3, 4 and 5
+are still open, and the companion's own section 6 lists what it could not settle.
+
 The following details are **not** published in the manuals in the repository
 and would require disassembly of NRL or of the SINTRAN `@RECOVER` /
 `@DUMP` command processors to verify:
@@ -332,5 +340,7 @@ SIN  @MEMORY <lower> <upper>              ! defines @DUMP extent
 ---
 
 **Last updated:** 2026-04-09
-**Status:** Phase 1 - operational reference complete; byte-level header layout
-left as **UNVERIFIED** pending NPL/disassembly cross-check.
+**Status:** Phase 1 - operational reference complete. The byte-level header layout
+is NOT in this document; it was established from the NPL source and real files in
+[prog-fileformat.md](prog-fileformat.md). (Status line corrected 2026-09-18; the body above
+is unchanged since 2026-04-09.)

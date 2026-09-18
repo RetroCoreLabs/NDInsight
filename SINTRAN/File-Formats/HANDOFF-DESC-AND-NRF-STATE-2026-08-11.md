@@ -1,6 +1,7 @@
-# State of play: DESC format resolved, NRF LDN fix pending commit
+# State of play: DESC format resolved, NRF LDN fix committed
 
-**Date:** 2026-08-11
+**Date:** 2026-08-11, brought up to date 2026-08-17 and 2026-09-18 (finished items removed
+from sections 4 and 8; the file name keeps its original date)
 **Audience:** whoever picks this thread up next - a WSL session in `nd500x`/`pcc-nd500`, a
 Windows session driving Ghidra, or a fresh session with none of this context.
 **Supersedes as the entry point:** `HANDOFF-NRF-LDN-PARSER-BUG-2026-08-11.md` (still the
@@ -72,16 +73,17 @@ Segment entries are a **singly linked list**: word 0 of a domain entry is the fi
 of its first segment entry, word 0 of a segment entry points to the next, 0 ends the chain.
 Verified in both files.
 
-### NRF LDN - FIXED, NOT YET INDEPENDENTLY RE-VERIFIED
+### NRF LDN - FIXED, RE-VERIFIED AND COMMITTED
 
 Control number 27's numeric field is a byte **count**, with that many raw payload bytes following
 the header; every other control group's numeric field is its whole payload. Both the C parser
 (`pcc-nd500`, `src/lib/nrf/nrf_utils.c`) and the viewer's JS port now skip the payload. The count
 must be recomputed from the raw bytes - the stored `numeric_value` is sign-extended, so an LDN
-with `NL=1` and the top bit set would come out negative. The previous session reports all four
-library files parsing to clean EOF. **The next session should re-run that before committing**
-(todo #1), not because the work looks doubtful but because "verified by another agent" is not
-verification.
+with `NL=1` and the top bit set would come out negative. The re-run this section used to ask
+for was done on 2026-08-17 before the commit (`pcc-nd500` `c82cbfc`): without the fix all three
+libraries end in an allocation failure with unclosed modules, with it all three reach clean EOF
+and libnrf's own tests still pass at 53 modules. The record is in
+`HANDOFF-NRF-LDN-PARSER-BUG-2026-08-11.md`, "Commit status".
 
 ## 3. Dead ends - do not spend time here again
 
@@ -99,17 +101,21 @@ verification.
 
 ## 4. Genuinely open
 
-1. **Domain-entry field offsets past DNAME** still rest on the manual's field order. The monitor
-   prints domain-entry doubles at words `0, 17B, 21B, 23B, 25B, 30B, 32B` with labels `$Domain :`,
-   `  Start address:`, `$Owner:`, `  Childindex:` (bank-2 strings `0x80C6`-`0x8140`). Pairing them
-   the same way the segment entry was done would confirm or refute STADR/ENABLEINT/THA/SYSENABL/
-   PBITMAP/DBITMAP. This is the last unverified part of the record.
-2. **Segment entry bytes 74-84**: the manual says `COMSEGSIZE` / `N100SEGNO` arrays; the monitor
-   prints two byte strings there using a count at word `37B`. Both cannot be right. Recorded as
-   unadjudicated in both the `.md` and the `.json` - keep it that way until settled.
-3. **Write-side proof of the size rule.** The monitor only displays; it never adjusts. The rule is
+The two items that used to lead this list - the domain-entry offsets past DNAME, and the
+segment-entry bytes 74-84 conflict - were both settled from the monitor's code on 2026-08-17.
+The results are in `DESCRIPTION-FILE-FORMAT.md` sections 3 and 4 and the evidence in
+`SINTRAN/ND500/nd-500-mon/CARVE-ANSWER-FOUR-OPEN-QUESTIONS-2026-08-17.md`. PBITMAP and DBITMAP
+turned out to sit at bytes 48 and 52, not the manual's 46 and 50; on bytes 74-84 the manual was
+right and the "two byte strings" reading was a misread loop.
+
+1. **Write-side proof of the size rule.** The monitor only displays; it never adjusts. The rule is
    proven from files, and the monitor's reader uses the same inclusive-last-index convention twice
    (`277B`=191 for the 192-byte record, `67B`=55 for the 56-byte entry), but the writer is NLL.
+   NLL's PSEG is now staged in `SINTRAN/ND500/nll-re/`, which is where this would come from.
+2. **`MINPAGES` / `MAXPAGES` offsets** in the segment entry are manual-order only; the monitor
+   does not print them. The inner layout of a 12-byte `ADDSGELEM` element is manual-only too.
+3. **A DESC with a segment chain longer than one entry**, or a domain with children. All 13
+   samples have neither, so that code path is proven in the monitor but never seen in a file.
 
 ## 5. Two nd500x defects found while doing this
 
@@ -156,11 +162,11 @@ Neither was chased; both are real and reproducible.
 
 ## 8. Suggested order
 
-1. Re-verify the LDN fix, then commit `pcc-nd500` (exact path only).
-2. Commit the NDInsight File-Formats set by exact path.
-3. Fix the `0x4120`/`0x4124` citation; make sure the size rule is stated as
-   `PLB+PSIZE+1 = .pseg` / `DLB+DSIZE+1 = .dseg` everywhere, and that no document still calls the
-   LINKAGE-LOAD-H02 entry anomalous.
-4. Carve the domain-entry offsets - last gap, method already proven.
-5. Adjudicate bytes 74-84.
-6. The two nd500x defects, in that repo.
+Outstanding only - finished steps have been removed.
+
+1. The two nd500x defects in section 5, in that repo. Not checked since 2026-08-11, so look
+   first whether they still reproduce.
+2. The three open items in section 4.
+3. `:LINK`: the string/module regions of `SL202-FO-L27` and the non-symbol cell types - see
+   `LINK-FILE-FORMAT.md` section 6 and `link-format.json` `openQuestions`. Needs the L-series
+   NLL binary.

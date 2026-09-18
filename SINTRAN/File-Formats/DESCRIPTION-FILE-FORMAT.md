@@ -16,15 +16,23 @@ Linker/NLL builds domains *from*, which is a separate concern from `:DESC`).
    J04), carved 2026-08-11. It reads this file and prints every segment-entry field with
    the field's own name beside it, which pins each offset. Full carve:
    [`../ND500/nd-500-mon/CARVE-ANSWER-DESC-FIELD-OFFSETS-2026-08-11.md`](../ND500/nd-500-mon/CARVE-ANSWER-DESC-FIELD-OFFSETS-2026-08-11.md).
-2. Real files on disk - six segment entries across four DESC files from three independently
-   produced product installs (NLL H02, LED B03, COBOL-85 K01).
+2. Real files on disk - six segment entries from three independently produced product
+   installs (NLL H02, LED B03, COBOL-85 K01) worked through in detail in section 5, then the
+   whole 13-floppy corpus in [samples/](samples/README.md) (section 5a).
 3. `ND-60.136.04A ND-500 Loader Monitor.md` (`Reference-Manuals/`), chapter 11
    "DESCRIPTION FILE LAYOUT" - which states plainly that it "does not pretend to give a
    complete description": it gives field *names, sizes and order*, never byte offsets.
 
 **Status 2026-08-11:** the layout below is **resolved**. The fields this document previously
 marked UNABLE TO DETERMINE (`PLB`, `PSIZE`, `DLB`, `DSIZE`, `DEBUGINFO`) are confirmed from
-the monitor's code AND match the real files exactly. One anomaly remains open, section 6.
+the monitor's code AND match the real files exactly.
+
+**Status 2026-08-17:** the domain entry (section 3) is code-proven as well, the bytes 74-84
+conflict is settled in the manual's favour (section 4), and the one anomaly that used to be
+open was a transcription error (section 6). What is still open: the `MINPAGES`/`MAXPAGES`
+offsets and the inner layout of an `ADDSGELEM` element (both manual only), the meaning of the
+five fields that read zero in every sample (section 4 note), a chain of more than one segment
+(section 5a), and a write-side proof of the size-minus-one rule (section 5a).
 
 ---
 
@@ -245,8 +253,8 @@ the entry. Any future investigation should not spend time there.
 **Status 2026-08-11: closed.** This was reported as an anomaly - DSIZE not matching the
 `.dseg` file size - based on a DSIZE-stored value (2,109,654) that turned out to be a
 transcription error in section 5's table, not a byte re-read from the file. The real
-stored value, verified directly against `description-file.desc` offset `0x4120`, is
-**2,109,142** (raw bytes `00 20 2e d6`).
+stored value, verified directly against `description-file.desc` offset `0x4124` (DSIZE; DLB
+is the four bytes before it at `0x4120`), is **2,109,142** (raw bytes `00 20 2e d6`).
 
 With the correct value, `DLB + (DSIZE_stored + 1) = .dseg file size` holds exactly:
 `75834 + 2,109,143 = 2,184,977`, matching `linkage-load-h02.dseg` byte for byte. The same
@@ -311,7 +319,7 @@ same table, one in memory and one persisted.)
 | `description-file.desc` | 22528 | worked example |
 | `linkage-load-h02.pseg` | 123989 | program segment |
 | `linkage-load-h02.dseg` | 2184977 | data segment |
-| `linkage-load-h02.link` | 0 | empty - no unresolved externals |
+| `linkage-load-h02.link` | 0 | empty. Why the linker ships without one is an open question - see `LINK-FILE-FORMAT.md` section 6, question 4. (This row used to say "no unresolved externals"; that was a guess, and `:LINK` holds the label table, not unresolved externals.) |
 
 **LED floppy** (`211160B03-XX-01D`), domains `LED-B03` and `SCRATCH-DOMAIN`: same
 22528-byte DESC geometry, `led-b03.pseg` 223695, `led-b03.dseg` 394525, `led-b03.link` 0,

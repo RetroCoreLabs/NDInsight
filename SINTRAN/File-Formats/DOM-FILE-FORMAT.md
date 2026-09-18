@@ -9,7 +9,7 @@ why it needed a separate index file. `CONVERT-DOMAIN` (ND-500 vendor program,
 
 **Primary source - VERIFIED, code-level ground truth, stronger than the manual alone:**
 
-`/home/ronny/repos/ragge/pcc-nd500/src/include/nd500/dom.h` - the exact `#pragma pack(1)`
+`src/include/nd500/dom.h` in the `pcc-nd500` repository - the exact `#pragma pack(1)`
 struct layout used by `dom_utils.c` (`libdom.a`), consumed by both `nd500-dis` and
 `nd500-dump` in the pcc-nd500 toolchain to load and run real `.DOM` files (this is the
 code path behind the working `HELLO.DOM` compile/link/run chain documented in the
