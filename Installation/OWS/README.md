@@ -345,7 +345,7 @@ a PC rides the same TCP/IP stack as Telnet and FTP.
 
 ## 8. What the software archive holds
 
-MS-DOS floppies in the [norskdata-software-archive](https://github.com/HackerCorpLabs/norskdata-software-archive),
+MS-DOS floppies in the [norskdata-software-archive](https://github.com/RetroCoreLabs/norskdata-software-archive),
 grouped by the ND number carried in the FAT volume label:
 
 | Label group | Disks | Labels | Likely product |
