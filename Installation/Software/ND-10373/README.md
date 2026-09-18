@@ -23,7 +23,7 @@ not diffed byte-for-byte).
 **What this floppy adds over the base product:**
 - `XMSG-HDLC-TEST-J:PROG` — a compiled HDLC link test program, confirming this "Inter System"
   variant is specifically about the wire-level link between systems (HDLC being the physical/link
-  layer XMSG rides on for inter-system traffic — see [ND LAPB reference](../../../SINTRAN/XMSG/DOC/lapb-nd-spec.md) if present).
+  layer XMSG rides on for inter-system traffic — see [LAPB-REQUIREMENTS.md](../../../SINTRAN/XMSG/DOC/LAPB-REQUIREMENTS.md), the compact LAPB note kept in this repository; the full ND LAPB spec it is a companion to, `lapb-nd-spec.md`, lives in the separate X25Emulator repository and not here).
 - The load script's comment explicitly lists a third foreground program beyond `XROUT`/`XTRACE`:
   **`XFTRA`** (XMSG File Transfer) — "Create foreground programs XROUT, XTRACE and XFTRA" — real
   evidence that inter-system file transfer support is what distinguishes this product from

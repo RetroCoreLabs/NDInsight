@@ -314,7 +314,7 @@ Cross-development tools for the Intel-8080 microprocessor, hosted on NORD hardwa
 **Key Topics:** Linking, loading, relocation, symbol resolution, library management
 
 **Related:**
-- [Developer/Workflow/LINKING-GUIDE-100-DEEP-DIVE.md](../Developer/Workflow/LINKING-GUIDE-100-DEEP-DIVE.md)
+- [Developer/Workflow/LINKING-GUIDE.md](../Developer/Workflow/LINKING-GUIDE.md) - NRL, BRF, BPUN, PROG and NRF (the ND-100 side; a separate `LINKING-GUIDE-100-DEEP-DIVE.md` was listed here but was never written)
 - [Developer/Workflow/LINKING-GUIDE-500-DEEP-DIVE.md](../Developer/Workflow/LINKING-GUIDE-500-DEEP-DIVE.md)
 
 ---
@@ -412,7 +412,7 @@ Test-program and diagnostic documentation for the ND-100/ND-110/ND-120 processor
 
 | Tool | Reference Manuals | Workflow Guide | Status |
 |------|-------------------|----------------|--------|
-| **Linker** | ND-860289-2 EN | LINKING-GUIDE-100/500-DEEP-DIVE.md | ✅ Complete |
+| **Linker** | ND-860289-2 EN | LINKING-GUIDE.md, LINKING-GUIDE-500-DEEP-DIVE.md | ✅ Complete |
 | **Loader** | ND-60.066.04 | (Covered in linking guides) | ✅ Complete |
 | **Debuggers** | ND-60158-5, ND-10335B | (Covered in language/tool guides) | 🚧 Reference only |
 | **Editors** | ND-60.031.04, ND-60.121.4 | [Developer/Editors/](../Developer/Editors/) | ✅ Complete |

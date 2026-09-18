@@ -3,7 +3,7 @@
 Carved analysis of **`RCBLO = 035766B`** (SINTRAN III VSX/500 **L07**, segment
 `006-S3FS`, load base **26000B**), the disk-buffer-cache routine that turns a
 filesystem "read page 0" request into a device transfer. This folder closes the
-OPEN boundary that [`enter-directory.md`](../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md)
+OPEN boundary that [`enter-directory.md`](../../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md)
 Section 4.2 left at the `JPL I ,B 10` device dispatch, and explains why the mount
 `@ENTER-DIRECTORY ,,DISC-SCSI-1,0` issued INQUIRY -> READ CAPACITY -> one READ(6)
 of the last block and then went silent, never reading page 0.
@@ -314,6 +314,6 @@ exoneration per the mount-debug session.
   writes A/D before setting Z, in
   `E:\Dev\Repos\Ronny\RetroCore\Emulated.HW\ND\CPU\ND100\Instructions.RegisterOperations.cs`.
   This is the actual fix that closed the SCSI ENTER-DIRECTORY mount failure (Section 4).
-- [`../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md`](../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md) - the mount trace this folder extends (Section 4.2 boundary now closed/narrowed).
-- [`../../../../../../SINTRAN/Filesystem/code-logic/scsi-mount-geometry.md`](../../../../../../SINTRAN/Filesystem/code-logic/scsi-mount-geometry.md) - the last-block = control-record framing (corrected).
-- [`../../../../../../SINTRAN/Filesystem/DEBUG-scsi-enter-directory.md`](../../../../../../SINTRAN/Filesystem/DEBUG-scsi-enter-directory.md) - the 243B "accounting file" red herring.
+- [`../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md`](../../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md) - the mount trace this folder extends (Section 4.2 boundary now closed/narrowed).
+- [`../../../../../../SINTRAN/Filesystem/code-logic/scsi-mount-geometry.md`](../../../../../../../SINTRAN/Filesystem/code-logic/scsi-mount-geometry.md) - the last-block = control-record framing (corrected).
+- [`../../../../../../SINTRAN/Filesystem/DEBUG-scsi-enter-directory.md`](../../../../../../../SINTRAN/Filesystem/DEBUG-scsi-enter-directory.md) - the 243B "accounting file" red herring.

@@ -19,7 +19,7 @@ This EXTENDS the sibling folder [`../RCBLO/`](../RCBLO/README.md) (which already
 carved RCBLO + GSIZE and answered "why no page-0 read is issued") to add the
 full **RXDIR** body, the **R3BUF/R3IBU** release logic, and to name the cache
 helpers RCBLO depends on (**COMPP**, **G3NWT**). It also closes the boundary that
-[`enter-directory.md`](../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md)
+[`enter-directory.md`](../../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md)
 Section 4 left at the `JPL I ,B 10` dispatch.
 
 **Grades.** VERIFIED = re-read from carved `006-S3FS.bin` bytes (offset =
@@ -275,5 +275,5 @@ Command form (Git Bash):
 
 ## See also
 - [`../RCBLO/README.md`](../RCBLO/README.md) - the original RCBLO+GSIZE carve and the "why no page-0 read" analysis this folder extends.
-- [`../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md`](../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md) - the mount trace (Section 4 boundary now closed with the RXDIR body).
-- [`../../../../../../SINTRAN/Filesystem/code-logic/scsi-mount-geometry.md`](../../../../../../SINTRAN/Filesystem/code-logic/scsi-mount-geometry.md) - the last-block = control-record framing.
+- [`../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md`](../../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md) - the mount trace (Section 4 boundary now closed with the RXDIR body).
+- [`../../../../../../SINTRAN/Filesystem/code-logic/scsi-mount-geometry.md`](../../../../../../../SINTRAN/Filesystem/code-logic/scsi-mount-geometry.md) - the last-block = control-record framing.

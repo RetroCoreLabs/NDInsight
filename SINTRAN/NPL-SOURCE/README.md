@@ -180,9 +180,9 @@ The file system code is particularly significant because it represents a large p
 
 For NPL language reference and development guides, see:
 
-- **[Developer/Languages/System/NPL-REFERENCE.md](../../Developer/Languages/System/NPL-REFERENCE.md)** - Complete NPL language reference
+- **[Developer/Languages/System/NPL-DEVELOPER-GUIDE.md](../../Developer/Languages/System/NPL-DEVELOPER-GUIDE.md)** - NPL language guide
 - **[Developer/SINTRAN-DEVELOPER-GUIDE.md](../../Developer/SINTRAN-DEVELOPER-GUIDE.md)** - System programming guide
-- **[Reference-Manuals/ND-60.128.1 EN NPL Programmers Reference Manual.md](../../Reference-Manuals/ND-60.128.1%20EN%20NPL%20Programmers%20Reference%20Manual.md)** - Official NPL manual
+- **[Reference-Manuals/ND-60.047.03 NORD PL User's Guide.md](../../Reference-Manuals/ND-60.047.03%20NORD%20PL%20User's%20Guide.md)** - The official NORD PL (NPL) manual that is in this repository. This list used to name an `ND-60.128.1 NPL Programmers Reference Manual`; no such file has ever been in `Reference-Manuals/`.
 
 ---
 
@@ -268,11 +268,11 @@ The NPL files in the `NPL/` subfolder were extracted from `s3vs-4.symb` by:
 
 ### ND-500 Coprocessor
 - [SINTRAN/ND500/ - ND-500 Integration](../ND500/)
-- [SINTRAN/ND500/ND500-INTEGRATION-GUIDE.md](../ND500/ND500-INTEGRATION-GUIDE.md)
+- [SINTRAN/Emulator/ND500-INTEGRATION-GUIDE.md](../Emulator/ND500-INTEGRATION-GUIDE.md)
 
 ### Reference Manuals
 - [Reference-Manuals/ND-860228-2-EN SINTRAN III Monitor Calls.md](../../Reference-Manuals/ND-860228-2-EN%20SINTRAN%20III%20Monitor%20Calls.md)
-- [Reference-Manuals/ND-60.128.1 EN NPL Programmers Reference Manual.md](../../Reference-Manuals/ND-60.128.1%20EN%20NPL%20Programmers%20Reference%20Manual.md)
+- [Reference-Manuals/ND-60.047.03 NORD PL User's Guide.md](../../Reference-Manuals/ND-60.047.03%20NORD%20PL%20User's%20Guide.md)
 
 ---
 

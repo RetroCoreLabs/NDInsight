@@ -31,7 +31,7 @@ Four floppies, downloaded via NDwiki (imaged by Torfinn "Tingo" Ingolfsen):
 | `10191E00-3S` | `FORT32-1BANK-E0:BRF`, `FORT32-2BANK-E0:BRF` — 32-bit floating runtime, both bank splits |
 | `10191E00-1D` | The same 5 files bundled onto a single double-density disk (compiler + all 4 runtime BRFs) |
 
-See [TWO-BANK-PROGRAMS.md](../../../Developer/Workflow/TWO-BANK-PROGRAMS.md) for the 1-bank/
+See [TWO-BANK-PROGRAMS.md](../../../../Developer/Workflow/TWO-BANK-PROGRAMS.md) for the 1-bank/
 2-bank distinction.
 
 ## Documentation

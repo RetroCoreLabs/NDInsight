@@ -20,7 +20,7 @@ Cross-linked carves:
 [`../ENTER-DIRECTORY/`](../ENTER-DIRECTORY/) (device-agnostic mount path),
 [`../RCBLO/`](../RCBLO/) (cache-block dispatcher + "no page-0 read" analysis),
 [`../SCSI-DRIVER/`](../SCSI-DRIVER/) (SCSDISK / SCLLD), and narrative
-[`../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md`](../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md).
+[`../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md`](../../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md).
 
 ---
 
@@ -205,7 +205,7 @@ path to `RP-P2-ACCRT`. So the message is either a coincidental logout event or
 (more likely) the genuine mass-storage read-error code (e.g. 141B transfer error
 via `SCDTS`) **mis-rendered** by the emulator's error-to-string table. Full
 analysis:
-[`../../../../../../SINTRAN/Filesystem/DEBUG-scsi-enter-directory.md`](../../../../../../SINTRAN/Filesystem/DEBUG-scsi-enter-directory.md).
+[`../../../../../../SINTRAN/Filesystem/DEBUG-scsi-enter-directory.md`](../../../../../../../SINTRAN/Filesystem/DEBUG-scsi-enter-directory.md).
 **Verdict: red herring - not raised by the mount itself.**
 
 ---

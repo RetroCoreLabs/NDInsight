@@ -69,15 +69,19 @@ GPIP in-doorbell), 512 KB DRAM. No EPROM - loaded by the host. [V]
 - [ARCHITECTURE.md](ARCHITECTURE.md) - the whole-RTOS map: layered software stack (Mermaid), coroutine
   task model, MBOXH host handshake, and the DRAM memory map. Start here for the big picture. **NEW.**
 
-- [SCHEDULER.md](SCHEDULER.md) - the cooperative-coroutine kernel: signal/enqueue + reaper primitives,
-  continuation dispatch, the two work queues (MBOXH `0x4C2`, second queue `0x4C6`), task table. [to fill]
+- `SCHEDULER.md` - NOT WRITTEN, planned only: the cooperative-coroutine kernel: signal/enqueue + reaper
+  primitives, continuation dispatch, the two work queues (MBOXH `0x4C2`, second queue `0x4C6`), task
+  table. Until it exists, the scheduler chapter of the other PIOC-OS document set is
+  [04-SCHEDULER.md](../../x/stripped/docs/PIOC-OS/04-SCHEDULER.md).
 - [LOC-XMSG-CLIENT.md](LOC-XMSG-CLIENT.md) - the on-card XMSG program-to-program client: MBOXH element
   layout, the 6-word PIOC param block, the virgin XFDBK+XFWDF, **where the kernel writes the reply back
   (param P0/P2, verified in `MP-P2-PIOC-DRIV.NPL` PISAC)**, function/service/error codes, the coroutine
   model, and the two OPEN items (the `*XM-ENNS0` host-vs-card registration tension, and the ungrounded
   XRTRA trace cause). **FILLED 2026-07-26.**
-- [MEMORY-MAP.md](MEMORY-MAP.md) - DRAM map: low mailbox `0x400-0x500`, control-block pointer table
-  @ `0x4CA`, LANCE window, SCIP port `0xEF0080`, code/data banks. [to fill]
+- `MEMORY-MAP.md` - NOT WRITTEN, planned only: DRAM map: low mailbox `0x400-0x500`, control-block pointer
+  table @ `0x4CA`, LANCE window, SCIP port `0xEF0080`, code/data banks. Until it exists, see the DRAM
+  memory map in [ARCHITECTURE.md](ARCHITECTURE.md) and the memory chapter of the other PIOC-OS document
+  set, [08-MEMORY.md](../../x/stripped/docs/PIOC-OS/08-MEMORY.md).
 
 ## 4. Verified anchors (seed for the subsystem docs)
 

@@ -18,7 +18,7 @@ PD sheet: [../../../Reference-Manuals/19831207_ND-10076J_PASCAL_for_ND-100_NORD_
 
 This product's install procedure is already this repo's **canonical worked example** for the
 generic install methodology — see
-[../../INSTALL-METHODOLOGY.md](../../INSTALL-METHODOLOGY.md) §5, which quotes it verbatim. This
+[../../INSTALL-METHODOLOGY.md](../INSTALL-METHODOLOGY.md) §5, which quotes it verbatim. This
 product folder gives it a proper catalog entry.
 
 ## Versions

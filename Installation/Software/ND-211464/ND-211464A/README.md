@@ -38,7 +38,7 @@ given beyond a plain file copy. [PD]
 **If you want the compounded tables loaded together with the application itself** (rather than
 relying on the system-wide `DDBTABLES:VTM`), load `VTM-ARRAY-D:NRF` (ND-500) or
 `VTM-(128/129)-ARRAY-D:BRF` (ND-100) with the program system — see
-[LINKING-GUIDE.md](../../../Developer/Workflow/LINKING-GUIDE.md).
+[LINKING-GUIDE.md](../../../../Developer/Workflow/LINKING-GUIDE.md).
 
 **Adding this VT200 terminal type to the system's terminal-table file (version B onward):**
 ```
@@ -64,12 +64,12 @@ E    (E-Version)
 
 The standard terminal types the `VTM-COMPOUND` programs already ship with (types 2 and 11 are
 line-oriented; the rest are the standard ND screen-oriented set) are listed verbatim on the PD
-sheet — see [../../../Developer/Workflow/VTM-TERMINAL-INTERFACES.md](../../../Developer/Workflow/VTM-TERMINAL-INTERFACES.md) §3
+sheet — see [../../../Developer/Workflow/VTM-TERMINAL-INTERFACES.md](../../../../Developer/Workflow/VTM-TERMINAL-INTERFACES.md) §3
 for the full list.
 
 ## Configuration / post-install
 Set each terminal's type with `@QSET-TERMINAL-TYPE (<terminal number>) (<terminal type>)` — see
-the [VTM chapter](../../../Developer/Workflow/VTM-TERMINAL-INTERFACES.md) §2 for the full command
+the [VTM chapter](../../../../Developer/Workflow/VTM-TERMINAL-INTERFACES.md) §2 for the full command
 reference (not part of this product's own PD sheet, sourced from the System Supervisor manual).
 
 ## Documentation

@@ -91,7 +91,7 @@ None beyond the per-program load described above — there is no resident subsys
 across a cold start; the debugger is loaded fresh with each debugged program.
 
 ## Documentation
-- PD-sheet: [../../../Reference-Manuals/ND-10335B ND-500 SYMBOLIC DEBUGGER.md](../../../Reference-Manuals/ND-10335B%20ND-500%20SYMBOLIC%20DEBUGGER.md)
+- PD-sheet: [../../../Reference-Manuals/ND-10335B ND-500 SYMBOLIC DEBUGGER.md](../../../../Reference-Manuals/ND-10335B%20ND-500%20SYMBOLIC%20DEBUGGER.md)
 - PI-sheet: [../../../Product-Info/ND-10335-C1-EN.md](../../../Product-Info/ND-10335-C1-EN.md) (covers ND-10335/ND-10336 together)
 - Manual(s): `ND-60.158.01` Symbolic Debugger Reference Manual
 

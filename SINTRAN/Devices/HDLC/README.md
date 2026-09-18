@@ -63,50 +63,50 @@
 
 | Document | Description | Lines |
 |----------|-------------|-------|
-| [01-Getting-Started.md](learning/01-Getting-Started.md) | System architecture and component overview | ~300 |
-| [02-Understanding-Packets.md](learning/02-Understanding-Packets.md) | HDLC packet structure and lifecycle | ~250 |
-| [03-Hardware-Overview.md](learning/03-Hardware-Overview.md) | COM5025, X.21 interface, IOX bus | ~400 |
-| [04-Software-Flow.md](learning/04-Software-Flow.md) | SINTRAN software organization | ~350 |
+| [01-Getting-Started.md](learning/01-Getting-Started.md) | System architecture and component overview | 217 |
+| [02-Understanding-Packets.md](learning/02-Understanding-Packets.md) | HDLC packet structure and lifecycle | 95 |
+| [03-Hardware-Overview.md](learning/03-Hardware-Overview.md) | COM5025, X.21 interface, IOX bus | 328 |
+| [04-Software-Flow.md](learning/04-Software-Flow.md) | SINTRAN software organization | 32 |
 
 ### Technical Reference (Complete Specifications)
 **Detailed technical reference material**
 
 | Document | Description | Lines |
 |----------|-------------|-------|
-| [Register-Reference.md](reference/Register-Reference.md) | Complete register map and bit definitions | ~600 |
-| [DMA-Reference.md](reference/DMA-Reference.md) | DMA descriptors, LKEY field, operations | ~500 |
-| [Interrupt-Reference.md](reference/Interrupt-Reference.md) | HIINT/HOINT analysis, WRTC/WTTC control | ~700 |
-| [Protocol-Reference.md](reference/Protocol-Reference.md) | LAPB, X.25, X.21, PAD protocols | ~500 |
+| [Register-Reference.md](reference/Register-Reference.md) | Complete register map and bit definitions | 495 |
+| [DMA-Reference.md](reference/DMA-Reference.md) | DMA descriptors, LKEY field, operations | 86 |
+| [Interrupt-Reference.md](reference/Interrupt-Reference.md) | HIINT/HOINT analysis, WRTC/WTTC control | 212 |
+| [Protocol-Reference.md](reference/Protocol-Reference.md) | LAPB, X.25, X.21, PAD protocols | 200 |
 
 ### Implementation Guides (Practical)
 **Step-by-step implementation guidance**
 
 | Document | Description | Lines |
 |----------|-------------|-------|
-| [Emulator-Implementation-Guide.md](implementation/Emulator-Implementation-Guide.md) | Complete emulator development guide | ~800 |
-| [Buffer-Pool-and-Emulator-Usage.md](implementation/Buffer-Pool-and-Emulator-Usage.md) | Buffer setup (`CHANGE-BUFFER-SIZE`), pool sizing, receive-arm tuning, running HDLC apps under nd100x | ~230 |
-| [Testing-Scenarios.md](implementation/Testing-Scenarios.md) | Comprehensive test cases | ~400 |
-| [Debugging-Guide.md](implementation/Debugging-Guide.md) | Troubleshooting and debugging strategies | ~450 |
+| [Emulator-Implementation-Guide.md](implementation/Emulator-Implementation-Guide.md) | Complete emulator development guide | 253 |
+| [Buffer-Pool-and-Emulator-Usage.md](implementation/Buffer-Pool-and-Emulator-Usage.md) | Buffer setup (`CHANGE-BUFFER-SIZE`), pool sizing, receive-arm tuning, running HDLC apps under nd100x | 272 |
+| [Testing-Scenarios.md](implementation/Testing-Scenarios.md) | Comprehensive test cases | 32 |
+| [Debugging-Guide.md](implementation/Debugging-Guide.md) | Troubleshooting and debugging strategies | 39 |
 
 ### Deep Dives (Advanced Topics)
 **In-depth analysis of breakthrough discoveries**
 
 | Document | Description | Lines |
 |----------|-------------|-------|
-| [Deep-Dive-COM5025-Interface.md](deep-dives/Deep-Dive-COM5025-Interface.md) | LKEY field breakthrough discovery | ~400 |
-| [Deep-Dive-Interrupt-Control.md](deep-dives/Deep-Dive-Interrupt-Control.md) | WRTC/WTTC interrupt enable analysis | ~400 |
-| [Deep-Dive-XSSDATA.md](deep-dives/Deep-Dive-XSSDATA.md) | Complete transmitter analysis | ~500 |
-| [Deep-Dive-PROCPKT.md](deep-dives/Deep-Dive-PROCPKT.md) | Complete receiver packet processing | ~500 |
+| [Deep-Dive-COM5025-Interface.md](deep-dives/Deep-Dive-COM5025-Interface.md) | LKEY field breakthrough discovery | 278 |
+| [Deep-Dive-Interrupt-Control.md](deep-dives/Deep-Dive-Interrupt-Control.md) | WRTC/WTTC interrupt enable analysis | 217 |
+| [Deep-Dive-XSSDATA.md](deep-dives/Deep-Dive-XSSDATA.md) | Complete transmitter analysis | 1161 |
+| [Deep-Dive-PROCPKT.md](deep-dives/Deep-Dive-PROCPKT.md) | Complete receiver packet processing | 291 |
 
 ### Appendices (Reference Data)
 **Complete pseudocode, constants, traces, history**
 
 | Document | Description | Lines |
 |----------|-------------|-------|
-| [Appendix-A-Pseudocode.md](appendices/Appendix-A-Pseudocode.md) | Complete SINTRAN HDLC pseudocode | ~1000 |
-| [Appendix-B-Constants-Variables.md](appendices/Appendix-B-Constants-Variables.md) | All constants, variables, memory map | ~600 |
-| [Appendix-C-Packet-Traces.md](appendices/Appendix-C-Packet-Traces.md) | Real packet trace analysis | ~800 |
-| [Appendix-D-Bug-History.md](appendices/Appendix-D-Bug-History.md) | Bug discoveries and corrections | ~400 |
+| [Appendix-A-Pseudocode.md](appendices/Appendix-A-Pseudocode.md) | Complete SINTRAN HDLC pseudocode | 268 |
+| [Appendix-B-Constants-Variables.md](appendices/Appendix-B-Constants-Variables.md) | All constants, variables, memory map | 44 |
+| [Appendix-C-Packet-Traces.md](appendices/Appendix-C-Packet-Traces.md) | Real packet trace analysis | 41 |
+| [Appendix-D-Bug-History.md](appendices/Appendix-D-Bug-History.md) | Bug discoveries and corrections | 84 |
 
 ### Special Documents
 **Comprehensive reference and quick lookup**
@@ -114,10 +114,16 @@
 | Document | Description | Size |
 |----------|-------------|------|
 | [HDLC-ALL.md](HDLC-ALL.md) | **Master reference** - All content aggregated for searching | 23,358 lines |
-| [Quick-Reference-Card.md](Quick-Reference-Card.md) | One-page cheat sheet with critical info | ~150 lines |
-| [01-HDLC-Hardware-Reference.md](01-HDLC-Hardware-Reference.md) | Consolidated hardware reference (root copy) | - |
-| [REORGANIZATION-PROPOSAL.md](REORGANIZATION-PROPOSAL.md) | Documentation reorganization proposal | - |
-| [REORGANIZATION-SUMMARY.md](REORGANIZATION-SUMMARY.md) | Summary of documentation reorganization | - |
+| [Quick-Reference-Card.md](Quick-Reference-Card.md) | Cheat sheet with critical info | 272 lines |
+| [HDLC-Raw-Programming-Guide.md](HDLC-Raw-Programming-Guide.md) ([PDF](HDLC-Raw-Programming-Guide.pdf)) | Sending and receiving raw data over HDLC without XMSG: the MON 201B (HDLCfunction) API, DCB layout, send/receive flow | 2386 lines |
+| [HDLC-Frame-Format-Reference.md](HDLC-Frame-Format-Reference.md) | Wire-level decoding reference: the bit-stuffed flag layer, LAPB address/control/FCS framing, and COM5025/DMA/DCB handling | 625 lines |
+| [ND-100 Pico PCB-Interface Reference.md](<ND-100 Pico PCB-Interface Reference.md>) | Design reference for an RS-422 interface board between the ND-100/110 HDLC card and a Raspberry Pi Pico W | 297 lines |
+| [WireShark/](WireShark/README.md) | `hdlc_tcp.lua` - Wireshark/tshark dissector for SINTRAN III traffic on the `nd100x --hdlc` TCP bridge and the COSMOS Ethernet hub | 2 files |
+| [archive/](archive/README.md) | The analysis files this documentation was built from, kept for history | 57 files |
+
+The old consolidated `01-HDLC-Hardware-Reference.md` and the two `REORGANIZATION-*.md` notes
+that this table used to list were deleted; the hardware reference now lives in
+[learning/03-Hardware-Overview.md](learning/03-Hardware-Overview.md).
 
 ---
 
@@ -169,7 +175,7 @@ SINTRAN III's implementation of the HDLC protocol for synchronous serial communi
 ## 🎓 Learning Resources
 
 ### For Visual Learners
-All documents include Mermaid diagrams following [MERMAID_COLOR_STANDARDS.md](../MERMAID_COLOR_STANDARDS.md):
+All documents include Mermaid diagrams following [MERMAID_COLOR_STANDARDS.md](../../../MERMAID_COLOR_STANDARDS.md):
 - System architecture diagrams
 - Data flow charts
 - State machines
@@ -213,13 +219,15 @@ Detailed hardware specifications:
 
 ## 📊 Document Statistics
 
-- **Total Documentation**: 20 focused documents + HDLC-ALL master reference
-- **Learning Documents**: 4 files (~1,300 lines)
-- **Reference Documents**: 4 files (~2,300 lines)
-- **Implementation Guides**: 3 files (~1,650 lines)
-- **Deep Dives**: 4 files (~1,800 lines)
-- **Appendices**: 4 files (~2,800 lines)
-- **Master Reference**: HDLC-ALL.md (23,358 lines, 0.84 MB)
+Measured 2026-09-18.
+
+- **Total Documentation**: 20 focused documents + HDLC-ALL master reference + the 4 standalone references under "Special Documents" (87 tracked files in the folder, 57 of them in `archive/`)
+- **Learning Documents**: 4 files (672 lines)
+- **Reference Documents**: 4 files (993 lines)
+- **Implementation Guides**: 4 files (596 lines)
+- **Deep Dives**: 4 files (1,947 lines)
+- **Appendices**: 4 files (437 lines)
+- **Master Reference**: HDLC-ALL.md (23,358 lines, 0.83 MB)
 
 ---
 
@@ -232,8 +240,9 @@ This documentation was reorganized from comprehensive analysis files to provide:
 - ✅ Complete technical reference
 - ✅ Preserved historical analysis
 
-**Last Major Reorganization**: Current session  
-**Source Material**: 59 analysis files consolidated into structured documentation
+**Last Major Reorganization**: 2025-10-17 (the date the structured folders were first committed)  
+**Source Material**: 59 analysis files consolidated into structured documentation  
+**Added since**: the raw programming guide, the frame format reference, the Pico interface board reference, the Wireshark dissector, and `implementation/Buffer-Pool-and-Emulator-Usage.md` (2026-09-18)
 
 ---
 
@@ -266,14 +275,19 @@ When updating this documentation:
 
 ### Document Map
 ```
-📁 hdlc-analysis/
+📁 SINTRAN/Devices/HDLC/
 ├── 📖 README.md ← You are here
 ├── ⚡ Quick-Reference-Card.md
+├── 🛠️ HDLC-Raw-Programming-Guide.md (+ .pdf) (MON 201B from your own program)
+├── 📐 HDLC-Frame-Format-Reference.md (wire-level decoding)
+├── 🔌 ND-100 Pico PCB-Interface Reference.md (RS-422 interface board)
 ├── 📚 learning/ (4 docs - start here if new)
 ├── 📋 reference/ (4 docs - technical specs)
-├── 🎮 implementation/ (3 docs - build & debug)
+├── 🎮 implementation/ (4 docs - build, run & debug)
 ├── 🔬 deep-dives/ (4 docs - advanced topics)
 ├── 📝 appendices/ (4 docs - reference data)
+├── 🦈 WireShark/ (hdlc_tcp.lua dissector)
+├── 🗄️ archive/ (source analysis files, history only)
 └── 📚 HDLC-ALL.md (master reference - 23K lines)
 ```
 

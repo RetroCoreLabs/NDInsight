@@ -40,7 +40,7 @@ a new `tused()` library function wrapping the SINTRAN `TUSED` monitor call. [PD]
   ND-500 Linkage-Loader (`ND-10319`) for the final `COPY-DOMAIN` step, and
   [ND-210337 Backup-System](../../ND-210337/README.md) — installing the Linkage-Loader itself is
   documented as hard-blocked without Backup-System already present, see
-  [../../../Installation/INSTALL-ND-LINKAGE-LOADER-AND-BACKUP-SYSTEM.md](../../../Installation/INSTALL-ND-LINKAGE-LOADER-AND-BACKUP-SYSTEM.md). `[INF]`
+  [../../../Installation/INSTALL-ND-LINKAGE-LOADER-AND-BACKUP-SYSTEM.md](../../../INSTALL-ND-LINKAGE-LOADER-AND-BACKUP-SYSTEM.md). `[INF]`
 
 ## Release package (ND Software Library — 4 parts)
 

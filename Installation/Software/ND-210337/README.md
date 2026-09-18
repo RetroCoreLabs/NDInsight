@@ -30,7 +30,7 @@ formal dependency:
 - [ND-210761 C-Compiler for ND-500 (CC-500)](../ND-210761/ND-210761B/README.md) — install steps
   are `@MODE`/`@ENTER-DIRECTORY` based, not BACKUP-SYSTEM, but the ND-500 domain copy path
   (`COPY-DOMAIN`) has the same "must already have a working file-copy subsystem" character.
-- [ND-10760 C-Compiler for ND-100 (CC-100)](../../ND-10760/ND-10760A/README.md) — `INSTALL-1:MODE`
+- [ND-10760 C-Compiler for ND-100 (CC-100)](../ND-10760/ND-10760A/README.md) — `INSTALL-1:MODE`
   and `INSTALL-2:MODE` both open with `@BACKUP-SYSTEM` directly.
 - The ND-500 Linkage-Loader install is documented as having this as a **hard, verified**
   prerequisite (the installer fails outright without it) — see

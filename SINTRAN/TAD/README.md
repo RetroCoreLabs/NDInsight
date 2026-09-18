@@ -85,7 +85,7 @@ TAD-specific message structures:
 
 ### HDLC Layer
 - [../Devices/HDLC/](../Devices/HDLC/) - HDLC hardware and driver
-- [../Devices/HDLC/01-HDLC-Hardware-Reference.md](../Devices/HDLC/01-HDLC-Hardware-Reference.md) - COM5025 controller
+- [../Devices/HDLC/learning/03-Hardware-Overview.md](../Devices/HDLC/learning/03-Hardware-Overview.md) - COM5025 controller
 
 ### Protocol Implementation
 - [../Devices/HDLC/reference/Protocol-Reference.md](../Devices/HDLC/reference/Protocol-Reference.md) - HDLC/LAPB protocols

@@ -46,7 +46,7 @@ floppy or for `INSTALL-TABLES:PROG`, which has no analog on the `ND-211464` prod
 against.**
 
 ## Configuration / post-install
-See [../../../../Developer/Workflow/VTM-TERMINAL-INTERFACES.md §2](../../../Developer/Workflow/VTM-TERMINAL-INTERFACES.md)
+See [../../../../Developer/Workflow/VTM-TERMINAL-INTERFACES.md §2](../../../../Developer/Workflow/VTM-TERMINAL-INTERFACES.md)
 for setting a terminal's type once the tables are installed (`QSET-TERMINAL-TYPE`).
 
 ## Documentation

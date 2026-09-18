@@ -95,7 +95,7 @@ so ("The file should, if used, be edited to reflect the wanted environment").
 ## Documentation
 - PD-sheet: not located
 - PI-sheet: [../../../Product-Info/ND-211224-A1-EN.md](../../../Product-Info/ND-211224-A1-EN.md)
-- Manual(s): `ND-60.289` ND Linker User Guide and Reference Manual — [../../../Reference-Manuals/ND-860289-2-EN ND Linker User Guide and Reference Manual.md](../../../Reference-Manuals/ND-860289-2-EN%20ND%20Linker%20User%20Guide%20and%20Reference%20Manual.md)
+- Manual(s): `ND-60.289` ND Linker User Guide and Reference Manual — [../../../Reference-Manuals/ND-860289-2-EN ND Linker User Guide and Reference Manual.md](../../../../Reference-Manuals/ND-860289-2-EN%20ND%20Linker%20User%20Guide%20and%20Reference%20Manual.md)
 
 ## Provenance & open items
 - Source: `ndtool -t`/`-x` on the downloaded image; `LINKER-B01:INIT` and all `LINKER-AUTO*:JOB`

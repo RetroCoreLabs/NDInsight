@@ -51,7 +51,7 @@ None known beyond the reentrant dump.
 ## Documentation
 - PD-sheet: not located
 - PI-sheet: [../../../Product-Info/ND-10311-A1-EN.md](../../../Product-Info/ND-10311-A1-EN.md)
-- Manual(s): `ND-60.113` NORD-500 Assembler Reference Manual — [../../../Reference-Manuals/ND-60.113.02 EN Assembler Reference Manual.md](../../../Reference-Manuals/ND-60.113.02%20EN%20Assembler%20Reference%20Manual.md)
+- Manual(s): `ND-60.113` NORD-500 Assembler Reference Manual — [../../../Reference-Manuals/ND-60.113.02 EN Assembler Reference Manual.md](../../../../Reference-Manuals/ND-60.113.02%20EN%20Assembler%20Reference%20Manual.md)
 
 ## Provenance & open items
 - Source: floppy directory listing via `ndtool`; install command from the System Supervisor

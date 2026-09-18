@@ -183,7 +183,7 @@ EXIT
    running program (not decoded further — likely a demo menu selection).
 
 ## Documentation
-- Product Information (PI-sheet): [../../Product-Info/ND-10745-A1-EN.md](../../Product-Info/ND-10745-A1-EN.md)
+- Product Information (PI-sheet): [../../Product-Info/ND-10745-A1-EN.md](../../../Product-Info/ND-10745-A1-EN.md)
 - Manual(s): `ND-60.198` ND-Ada User Manual · `ND-60.158` Symbolic Debugger User Manual ·
   `ND-60.136` ND-500 Loader/Monitor — none located in this repo
 

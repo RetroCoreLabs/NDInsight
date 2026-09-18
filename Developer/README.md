@@ -63,6 +63,7 @@ Developer/
 │       ├── NPL-DEVELOPER-GUIDE.md (Intro - 70KB)
 │       ├── NPL-EXPERT-GUIDE.md (Future)
 │       ├── MAC-DEVELOPER-GUIDE.md (Intro - 21KB)
+│       ├── MAC-COOKBOOK.md (What actually assembles and runs through @MAC)
 │       ├── MAC-EXPERT-GUIDE.md (Future)
 │       ├── NORD-500-ASSEMBLER-DEVELOPER-GUIDE.md (Intro)
 │       └── NORD-500-ASSEMBLER-EXPERT-GUIDE.md (Expert)
@@ -162,7 +163,7 @@ Developer/
 | Language | Intro Guide | Expert Guide | When to Use |
 |----------|-------------|--------------|-------------|
 | **NPL** | [NPL-DEVELOPER-GUIDE.md](Languages/System/NPL-DEVELOPER-GUIDE.md) (70KB) | *Future* | OS development, drivers |
-| **MAC** | [MAC-DEVELOPER-GUIDE.md](Languages/System/MAC-DEVELOPER-GUIDE.md) (21KB) | *Future* | Assembly, optimization |
+| **MAC** | [MAC-DEVELOPER-GUIDE.md](Languages/System/MAC-DEVELOPER-GUIDE.md) (21KB), then the [MAC-COOKBOOK.md](Languages/System/MAC-COOKBOOK.md) for what runs on a real system | *Future* | Assembly, optimization |
 | **NORD-500 ASM** | [NORD-500-ASSEMBLER-DEVELOPER-GUIDE.md](Languages/System/NORD-500-ASSEMBLER-DEVELOPER-GUIDE.md) | [NORD-500-ASSEMBLER-EXPERT-GUIDE.md](Languages/System/NORD-500-ASSEMBLER-EXPERT-GUIDE.md) | ND-500 CPU programming |
 
 ### Workflow & Tools

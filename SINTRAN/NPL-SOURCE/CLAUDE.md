@@ -41,7 +41,7 @@ NPL files follow the pattern: `[Prefix]-P2-[Component].NPL`
 | **IP-P2-SCSI-DRIV.NPL** | SCSI protocol driver | ../Devices/SCSI/SCSI-Commands-Analysis.md |
 | **MP-P2-HDLC-DRIV.NPL** | HDLC communication | ../Devices/HDLC/ |
 | **CC-P2-N500.NPL** | ND-500 command processor | ../ND500/ + ../OS/06-MULTIPORT-MEMORY-AND-ND500-COMMUNICATION.md |
-| **MP-P2-N500.NPL** | ND-500 monitor routines | ../ND500/ND500-INTEGRATION-GUIDE.md |
+| **MP-P2-N500.NPL** | ND-500 monitor routines | ../Emulator/ND500-INTEGRATION-GUIDE.md |
 | **RP-P2-N500.NPL** | ND-500 RT coordination | ../OS/12-ND500-DOMAIN-SETUP-AND-MEMORY-MAPPING.md |
 | **IP-P2-SEGADM.NPL** | Segment administration | ../OS/16-PAGE-FAULT-HANDLER.md |
 | **IP-P2-DISK-START.NPL** | Disk startup/initialization | ../OS/15-DISK-IO-SUBSYSTEM.md |
@@ -209,12 +209,12 @@ grep "^SYMB.*=04" SYMBOLS/L07/SYMBOL-1-LIST.SYMB.TXT  # Addresses starting with 
 
 **HDLC Driver (MP-P2-HDLC-DRIV.NPL):**
 1. Read ../Devices/HDLC/README.md for overview
-2. Understand COM5025 chip (../Devices/HDLC/01-HDLC-Hardware-Reference.md)
-3. Review register map (../Devices/HDLC/02-HDLC-Register-Reference.md)
-4. Analyze interrupt handlers (../Devices/HDLC/04-HDLC-Interrupt-Handlers.md)
+2. Understand COM5025 chip (../Devices/HDLC/learning/03-Hardware-Overview.md)
+3. Review register map (../Devices/HDLC/reference/Register-Reference.md)
+4. Analyze interrupt handlers (../Devices/HDLC/reference/Interrupt-Reference.md)
 
 **ND-500 Interface (CC-P2-N500.NPL, MP-P2-N500.NPL, RP-P2-N500.NPL):**
-1. Start with ../ND500/ND500-INTEGRATION-GUIDE.md
+1. Start with ../Emulator/ND500-INTEGRATION-GUIDE.md
 2. Understand 5MPM shared memory (../OS/06-MULTIPORT-MEMORY-AND-ND500-COMMUNICATION.md)
 3. Check N500-SYMBOLS.SYMB.TXT for message structure addresses
 4. Cross-reference with ../Emulator/ND500-MESSAGE-STRUCTURE-VERIFIED.md
@@ -282,8 +282,8 @@ The following SINTRAN III components do **not** have NPL source code available:
 
 ### NPL Language Reference
 
-- ../../Reference-Manuals/ND-60.128.1 EN NPL Programmers Reference Manual.md (if available)
-- ../../Developer/Languages/System/NPL-REFERENCE.md (if available)
+- ../../Reference-Manuals/ND-60.047.03 NORD PL User's Guide.md (the NPL manual that is in the repository; an `ND-60.128.1 NPL Programmers Reference Manual` was named here before and has never been in it)
+- ../../Developer/Languages/System/NPL-DEVELOPER-GUIDE.md
 
 ---
 

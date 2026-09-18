@@ -4,7 +4,7 @@ Full carve of the `@ENTER-DIRECTORY` command path in SINTRAN III VSX/500 **L07**
 segment `006-S3FS` (load base **26000B**), from the top-level worker `ENDIR`
 down to the per-device transfer hand-off. This folder is the comprehensive,
 byte-verified companion to
-[`enter-directory.md`](../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md)
+[`enter-directory.md`](../../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md)
 (the narrative trace) and [`../RCBLO/`](../RCBLO/) (the cache-block dispatcher).
 
 **The user's question:** `@ENTER-DIRECTORY ,,DISC-SCSI-1,0` FAILS on SCSI but
@@ -183,7 +183,7 @@ static bytes; a live DAP break at `CHDSI 037763` / `RXDIR 037643` / `RCBLO
 
 Driver-layer codes (232B/141B/224B/252B via `SCDTS`) belong to the SCSI driver
 and are documented in
-[`../../../../../../SINTRAN/Filesystem/DEBUG-scsi-enter-directory.md`](../../../../../../SINTRAN/Filesystem/DEBUG-scsi-enter-directory.md).
+[`../../../../../../SINTRAN/Filesystem/DEBUG-scsi-enter-directory.md`](../../../../../../../SINTRAN/Filesystem/DEBUG-scsi-enter-directory.md).
 
 ---
 
@@ -211,5 +211,5 @@ symbols `SINTRAN/NPL-SOURCE/SYMBOLS/L07/FILSYS-SYMBOLS.SYMB.TXT`; driver logic
 
 ## See also
 - [`../RCBLO/README.md`](../RCBLO/README.md) - the cache-block dispatcher + the "no page-0 read" analysis.
-- [`../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md`](../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md) - the narrative end-to-end trace.
+- [`../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md`](../../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md) - the narrative end-to-end trace.
 - [`../../segments-ref/006-S3FS/006-S3FS.asm`](../../segments-ref/006-S3FS/006-S3FS.asm) - the whole-segment listing.

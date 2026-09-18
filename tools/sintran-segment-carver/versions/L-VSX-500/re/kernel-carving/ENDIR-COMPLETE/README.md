@@ -148,7 +148,7 @@ POST-MOUNT 140436+  in-core directory-table update
   140252 dispatches to (and MON 125B ForceRelease that the error exits use).
 - [`../../../re/segments-ref/006-S3FS/006-S3FS.asm`](../../segments-ref/006-S3FS/006-S3FS.asm)
   - the byte-identity-checked whole-segment listing this carve is cut from.
-- [`SINTRAN/Filesystem/code-logic/enter-directory.md`](../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md)
+- [`SINTRAN/Filesystem/code-logic/enter-directory.md`](../../../../../../../SINTRAN/Filesystem/code-logic/enter-directory.md)
   - the human end-to-end trace (integrated here; 40B address corrected in sec 1).
 
 ---

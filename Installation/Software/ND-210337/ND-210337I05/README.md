@@ -13,7 +13,7 @@
 
 ## Description
 Same product, one version letter newer than the fully verified I04 install documented in
-[../../INSTALL-ND-LINKAGE-LOADER-AND-BACKUP-SYSTEM.md §3](../../INSTALL-ND-LINKAGE-LOADER-AND-BACKUP-SYSTEM.md).
+[../../INSTALL-ND-LINKAGE-LOADER-AND-BACKUP-SYSTEM.md §3](../../../INSTALL-ND-LINKAGE-LOADER-AND-BACKUP-SYSTEM.md).
 The floppy's file set is identical in shape — only the version-letter suffix on each file name
 changed (`I04` → `I05`). No install text specific to I05 has been read (the installer is a
 compiled `:PROG` executable, not a `:MODE`/`:BATC` script, so its dialogue cannot be extracted

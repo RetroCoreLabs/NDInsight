@@ -31,13 +31,19 @@ NDInsight/
 ├── CLAUDE.md                    ← AI assistant guidance
 ├── MERMAID_COLOR_STANDARDS.md   ← Diagram color standards
 ├── Developer/                   ← Developer guides and language references
+│   ├── Case-Studies/            ← Worked examples (an HTTP server over HDLC, written in MAC)
+│   └── Reverse-Engineering/     ← Disassembling a :PROG, ND-100 instruction decoding
+├── Hardware/                    ← Cabinet sizes and weights from the manuals, FreeCAD 3D models
+├── History/                     ← History of the machines, one chapter per generation
 ├── Installation/                ← Installing SINTRAN III and application software
 │   ├── OS/                      ← Installing SINTRAN III from distribution floppies
 │   ├── Communication/           ← Installing COSMOS/Ethernet/TCP-IP/X.21/X.25 products
 │   ├── Software/                ← Installing application software (later phase)
 │   ├── OWS/                     ← Office Work Station: WinLink/WinPrint/WinSMX, PC-NOTIS, SPRINT printing, SIBAS/R
+│   ├── Machines/                ← ND-500 / ND-5000 cabinets, cages and board sets, with cutaway diagrams
 │   ├── Installation-Description/← OCR'd "Program Description" install/requirements sheets
-│   └── Product-Info/            ← OCR'd product data-sheets/brochures
+│   ├── Product-Info/            ← OCR'd product data-sheets/brochures
+│   └── Sales-Info/              ← OCR'd internal "Sales Information Document" sheets
 ├── Operations/                  ← Operator and user guides (COSMOS, SINTRAN)
 ├── Reference-Manuals/           ← Official Norsk Data reference manuals (incl. NORD-1, NORD-10, ND-500/5000, NOTIS)
 ├── scripts/                     ← Documentation processing scripts (Python, PowerShell)
@@ -47,9 +53,10 @@ NDInsight/
 └── SINTRAN/                     ← SINTRAN III Operating System
     ├── Devices/                 ← Hardware device documentation (HDLC, SCSI, DOMINO/NUCLEUS)
     ├── Emulator/                ← C# emulator implementation guides
-    ├── File-Formats/            ← On-disk / on-tape file format analysis
+    ├── File-Formats/            ← Object and executable file formats (BRF, :PROG, :NRF, :DOM/:SEG, :LINK, DESC) + browser viewer
     ├── Filesystem/              ← SINTRAN filesystem structures
     ├── ND500/                   ← ND-500 coprocessor documentation
+    ├── ND500-APPS/              ← Real ND-500 vendor programs, runnable in nd500x, with a user guide each
     ├── ND5000/                  ← ND-5000 / Octobus documentation
     ├── NPL-SOURCE/              ← ⭐ SINTRAN III source code & symbols
     ├── OS/                      ← Core OS kernel documentation
@@ -106,8 +113,10 @@ Each top-level folder has its own README with full navigation; this page only su
 
 | Section | Contents | Index |
 |---|---|---|
-| **[Developer/](Developer/)** | Language guides (NPL, MAC, PLANC, PASCAL, FORTRAN, COBOL, BASIC, C), editors (QED, PED, LED), build workflow | [README.md](Developer/README.md) |
-| **[Installation/](Installation/)** | How to install SINTRAN III and applications; OCR'd install-description and product-info sheets; the [OWS/](Installation/OWS/README.md) office-workstation family | [README.md](Installation/README.md) |
+| **[Developer/](Developer/)** | Language guides (NPL, MAC, PLANC, PASCAL, FORTRAN, COBOL, BASIC, C), editors (QED, PED, LED), build workflow incl. cross-development with nd100x, [case studies](Developer/Case-Studies/README.md) and [reverse-engineering guides](Developer/Reverse-Engineering/README.md) | [README.md](Developer/README.md) |
+| **[Hardware/](Hardware/)** | Physical reference for the machines - cabinet dimensions, weights and power quoted from the manuals - and FreeCAD 3D models of the ND-100 Compact, ND-100 Satellite, ND-5900 and the ND 246 terminal | [README.md](Hardware/README.md) |
+| **[History/](History/)** | History of the machines: what each one was, how it worked, what changed between generations, with a timeline, verbatim sources and credited images | [README.md](History/README.md) |
+| **[Installation/](Installation/)** | How to install SINTRAN III and applications; OCR'd install-description, product-info and sales-info sheets; the [OWS/](Installation/OWS/README.md) office-workstation family; [Machines/](Installation/Machines/README.md) - what is inside the ND-500 and ND-5000 cabinets | [README.md](Installation/README.md) |
 | **[Operations/](Operations/)** | Operator/admin guides for COSMOS networking and SINTRAN system operation | [README.md](Operations/README.md) |
 | **[Reference-Manuals/](Reference-Manuals/)** | Official Norsk Data reference manuals across the whole product line - CPU architecture, assemblers, languages, editors, NOTIS office suite, NORD-1/NORD-10 | [README.md](Reference-Manuals/README.md) |
 | **[SINTRAN/](SINTRAN/)** | The core: kernel docs, source code, device drivers, ND-500/ND-5000 integration, protocols, emulator | [README.md](SINTRAN/README.md) |
@@ -130,7 +139,8 @@ The largest and oldest part of the repository.
 | **[TAD/](SINTRAN/TAD/)** | Terminal Access Device protocol |
 | **[XMSG/](SINTRAN/XMSG/)** | Inter-node messaging: wire protocol, monitor-call API, C# library |
 | **[Print/](SINTRAN/Print/)** | Printing/spooling subsystem |
-| **[Filesystem/](SINTRAN/Filesystem/)**, **[File-Formats/](SINTRAN/File-Formats/)** | On-disk structures and file formats |
+| **[Filesystem/](SINTRAN/Filesystem/)**, **[File-Formats/](SINTRAN/File-Formats/)** | On-disk structures, and the object and executable file formats with a browser viewer |
+| **[ND500-APPS/](SINTRAN/ND500-APPS/)** | Real ND-500 vendor programs with every file needed to run them in nd500x, and a user guide per program |
 | **[TSS/](SINTRAN/TSS/)** | TSS subsystem |
 
 📖 **[See SINTRAN/README.md for the complete overview](SINTRAN/README.md)**
@@ -143,13 +153,17 @@ The largest and oldest part of the repository.
 
 | Section | Markdown Files | Size | Highlights |
 |---|---|---|---|
-| **SINTRAN/** | ~550 | ~92MB | NPL source (45 files), kernel docs (ch. 00-19), ND-500/5000, XMSG, TSS |
-| **tools/** | ~400 | ~200MB | Segment carver + boot-floppy RE toolkit; also 250+ carved binaries, 200+ C/ASM/NPL source files |
-| **Installation/** | ~700 | ~21MB | 284 OCR'd install-description sheets + 364 OCR'd product-info sheets + install guides |
-| **Reference-Manuals/** | ~160 | ~29MB | Official manuals: NORD-1, NORD-10, ND-500/5000, NOTIS suite, languages, editors |
-| **Developer/** | ~35 | ~4MB | Language guides, editors, build workflow |
+| **SINTRAN/** | ~860 | ~92MB | NPL source (45 files), kernel docs (ch. 00-19), ND-500/5000, XMSG, TSS |
+| **tools/** | ~410 | ~200MB | Segment carver + boot-floppy RE toolkit; also 250+ carved binaries, 200+ C/ASM/NPL source files |
+| **Installation/** | ~900 | ~21MB | 284 OCR'd install-description sheets + 364 OCR'd product-info sheets + sales-info sheets + install guides + machine cabinets |
+| **Reference-Manuals/** | ~180 | ~29MB | Official manuals: NORD-1, NORD-10, ND-500/5000, NOTIS suite, languages, editors |
+| **History/** | ~80 | - | Machine history, one chapter per generation, with sources |
+| **Developer/** | ~60 | ~4MB | Language guides, editors, build workflow, case studies, reverse-engineering guides |
 | **Operations/** | ~20 | ~3MB | COSMOS and SINTRAN operator guides |
-| **Total** | **~1,900** | **~350MB** | - |
+| **Hardware/** | 5 | - | Physical reference + 3D models |
+| **Total** | **~2,500** | **~350MB** | - |
+
+*Markdown file counts were taken again on 2026-09-18 from the tracked files. The Size column was NOT measured again and still holds the 2026-07-20 figures.*
 
 ### Source Code Coverage
 
@@ -279,7 +293,7 @@ This repository is a work in progress. Areas for contribution:
 
 ---
 
-**Last Updated**: 2026-07-20
+**Last Updated**: 2026-09-18
 
 ---
 
