@@ -32,8 +32,8 @@ The 1987 table is the site-planning ("computer room planning") manual.
 
 **Source**: ND-13.028.1 NO, *Planlegging av datarom*, Norsk Data, version 1, May 1987,
 chapter 18 "Produktspesifikasjoner", page 57.
-File: `D:\OCR` does not hold this one. It is in the norsk-data.com mirror at
-`E:\Dev\Ronny\mirror-sintran-com\mirror\library\libhw\ND-13028-1-NO.pdf` (PDF page 65).
+File: the OCR working folder does not hold this one. It is in the norsk-data.com mirror at
+`library/libhw/ND-13028-1-NO.pdf` in the sintran.com mirror (PDF page 65).
 
 The manual states in its foreword that it applies to ND-100, ND-500 and ND-5000 systems.
 
@@ -157,12 +157,12 @@ The usable cabinet line-art, all undimensioned, is:
 
 - ND-05.017.01 EN figure 3, page 7: ND-5000 Compact cabinet, cutaway isometric showing card
   rack, power supply, drive bays and plinth. This is the **clearest single view** located.
-  File: `D:\OCR\5000\ND-05.017.01 EN ND-5000 HARDWARE MAINTENANCE-Gandalf-OCR.pdf`, PDF page 21.
+  File: `5000/ND-05.017.01 EN ND-5000 HARDWARE MAINTENANCE-Gandalf-OCR.pdf` in the OCR working folder, PDF page 21.
 - ND-05.017.01 EN figure 4, page 11: same view with the power supply sliding out.
 - ND-830102.1B figures 1-5, manual pages 5-12: cabinet, front panel removal, all panels
   exploded (side, top, rear plus bare frame), fan tray and operator panel, backwiring layout
   with the five disk positions.
-  File: `D:\OCR\5000\ND-830102.1B EN ND-5000 ES Model C Hardware Maint. Manual-Sintran-OCR.pdf`,
+  File: `5000/ND-830102.1B EN ND-5000 ES Model C Hardware Maint. Manual-Sintran-OCR.pdf` in the OCR working folder,
   PDF pages 13-22.
 
 Note that the repo markdown of both manuals **lost every image** during OCR. Read the PDFs.
@@ -269,7 +269,7 @@ disk, SIBAS database software and a menu-driven administration layer.
 ... Based on ND-5000/DOMINO technology"*
 Source: ND-830127.1 EN, *ND tpServer System Administrator Guide*, Norsk Data, version 1,
 April 1989, chapter 1, page 3.
-File: `E:\Dev\Ronny\mirror-sintran-com\mirror\library\libhw\ND-830127-1-EN.pdf`
+File: `library/libhw/ND-830127-1-EN.pdf` in the sintran.com mirror
 
 Key physical facts from the 1993 edition (ND-830127.3 EN, February 1993, published by
 Comma, chapter 1 page 1):
@@ -286,7 +286,7 @@ Neither tpServer administrator guide contains a dimensions table, and the produc
 the 1987 site-planning manual, so it is absent there too.
 
 **RESOLVED by photograph.** A surviving **ND tpServer A25** is pictured at
-`\\Nas9t\data\NorskData\Pictures\ronny\FB_IMG_1754589509271.jpg`, and it is a
+`Pictures/ronny/FB_IMG_1754589509271.jpg` in the Norsk Data photo archive on the NAS, and it is a
 **Compact-shell machine** - the same stepped front, upper recess, operator-panel ledge and
 lower panel as the ND-100/CX Compact. So at least this model sits in the 69 x 54 x 76 cm
 box. See section 8.7 for the detail.
@@ -307,7 +307,7 @@ Ranked by usefulness for physical reconstruction.
 ### Primary, with real measurements
 
 1. **ND-13.028.1 NO** *Planlegging av datarom*, May 1987, 76 pp.
-   `E:\Dev\Ronny\mirror-sintran-com\mirror\library\libhw\ND-13028-1-NO.pdf`
+   `library/libhw/ND-13028-1-NO.pdf` in the sintran.com mirror
    The only source of exact external dimensions found. Chapter 18, page 57.
    An English twin (ND-13.028.1 EN, June 1987) is indexed in the mirror but **not
    downloaded**.
@@ -315,13 +315,13 @@ Ranked by usefulness for physical reconstruction.
 ### Primary, with drawings but no dimensions
 
 2. **ND-05.017.01 EN** *ND-5000 Hardware Maintenance*.
-   `D:\OCR\5000\ND-05.017.01 EN ND-5000 HARDWARE MAINTENANCE-Gandalf-OCR.pdf`
+   `5000/ND-05.017.01 EN ND-5000 HARDWARE MAINTENANCE-Gandalf-OCR.pdf` in the OCR working folder
    Chapter 1: model range, both cabinets, card racks, power supplies, CPU types. The repo
    markdown copy is table-of-contents only, so use the PDF.
    In repo (TOC only): [ND-5000 Hardware Maintenance](../Reference-Manuals/500/ND-05.017.01%20EN%20ND-5000%20HARDWARE%20MAINTENANCE.md)
 
 3. **ND-830102.1B EN** *ND-5000 ES Model C Hardware Maintenance Manual*.
-   `D:\OCR\5000\ND-830102.1B EN ND-5000 ES Model C Hardware Maint. Manual-Sintran-OCR.pdf`
+   `5000/ND-830102.1B EN ND-5000 ES Model C Hardware Maint. Manual-Sintran-OCR.pdf` in the OCR working folder
    Chapter 2 is an explicit physical description: cabinet, panels, fan tray, operator panel,
    backwiring, card crate, plug-in modules, disk positions. Figures lost in the repo markdown.
    In repo: [ND-5000 ES Model C Hardware Maint.](../Reference-Manuals/500/ND-830102.1B%20EN%20ND-5000%20ES%20Model%20C%20Hardware%20Maint.%20Manual-Sintran.md)
@@ -334,13 +334,13 @@ Ranked by usefulness for physical reconstruction.
 
 5. **ND-830127.1 EN** and **ND-830127.3 EN**, *ND tpServer System Administrator Guide*,
    1989 and 1993.
-   `E:\Dev\Ronny\mirror-sintran-com\mirror\library\libhw\ND-830127-1-EN.pdf`
-   `E:\Dev\Ronny\mirror-sintran-com\mirror\library\libhw\ND-830127-3-EN.pdf`
+   `library/libhw/ND-830127-1-EN.pdf` in the sintran.com mirror
+   `library/libhw/ND-830127-3-EN.pdf` in the sintran.com mirror
 
 ### Primary, with measurements and dimensioned floor drawings
 
 6. **ND-13.014.04 EN Revision A** *Site Preparation and Installation Manual*, August 1985,
-   76 pp. `E:\Dev\Ronny\mirror-sintran-com\mirror\library\libhw\ND-13014-04A-EN.pdf`
+   76 pp. `library/libhw/ND-13014-04A-EN.pdf` in the sintran.com mirror
    Pre-dates the ND-5000, but is the **more detailed of the two dimension sources** for
    everything it does cover, and the only one with dimensioned drawings. Fully transcribed
    in section 7. Appendix F pages 51-52 = floor cutouts; appendix H pages 57-64 = the
@@ -362,7 +362,7 @@ Ranked by usefulness for physical reconstruction.
 - ND mechanical / parts drawings - none located in any archive so far
 
 The mirror indexes to grep are `docs\library\library.md` and `docs\library\libhw\libhw.md`
-under `E:\Dev\Ronny\mirror-sintran-com`.
+under the sintran.com mirror.
 
 ---
 
@@ -371,7 +371,7 @@ under `E:\Dev\Ronny\mirror-sintran-com`.
 **Source**: ND-13.014.04 EN, *Site Preparation and Installation Manual*, Norsk Data,
 version 4, revision A, August 1985. Copyright 1985. Specification tables carry their own
 revision date, **1 December 1984**.
-File: `E:\Dev\Ronny\mirror-sintran-com\mirror\library\libhw\ND-13014-04A-EN.pdf`
+File: `library/libhw/ND-13014-04A-EN.pdf` in the sintran.com mirror
 
 Its preface states it applies to "the entire family of Norsk Data configurations: the
 ND-100, the ND-500 system configurations and the Compact model IV". It pre-dates the
@@ -542,7 +542,7 @@ Not transcribed, but present and worth knowing about:
 Sources here are photographs and marketing material rather than manuals. They carry
 information the manuals do not: construction breakdown, front-face layout, and colour.
 
-Location: `\\Nas9t\data\NorskData\Pictures`
+Location: the Norsk Data photo archive on the NAS
 
 ### 8.1 A third dimension figure, from ND's own marketing
 
@@ -550,8 +550,8 @@ The NORD-100 sales brochure states plainly:
 
 *"Only 54 cm wide, 96 cm high and 84 cm deep, the NORD-100 cabinet is easily situated as
 any copier or filing cabinet."*
-Source: `\\Nas9t\data\NorskData\Pictures\Reklame\images\nd-7.jpg`, brochure page 7.
-The full brochure is at `\\Nas9t\data\NorskData\Pictures\Reklame\nord-100 computer system.pdf`.
+Source: `Pictures/Reklame/images/nd-7.jpg` in the Norsk Data photo archive on the NAS, brochure page 7.
+The full brochure is at `Pictures/Reklame/nord-100 computer system.pdf` in the Norsk Data photo archive on the NAS.
 
 Height 96 cm and width 54 cm agree **exactly** with the 1984 service table for the 6-module
 ND-100 cabinet. Depth is quoted as 84 cm against the service table's 92 cm.
@@ -584,7 +584,7 @@ cabinet. Read off it directly, with no measurement involved:
   front face**, so the cabinet does not meet the floor flush.
 
 Colour scheme, from this photograph and the peripherals spread
-(`\\Nas9t\data\NorskData\Pictures\Reklame\images\building-block-1-2.jpg`): frame and plinth
+(`Pictures/Reklame/images/building-block-1-2.jpg` in the Norsk Data photo archive on the NAS): frame and plinth
 in a light warm grey or off-white, module fronts in a very dark brown-black, and **signal
 red** used as the accent on terminals, printers and disk drives.
 
@@ -625,7 +625,7 @@ specific machine.
 | Part | PCB | Keyswitch legend | Seen on |
 |---|---|---|---|
 | **ND-323163** | ND **1835B** | LOCKED / ON / STANDBY | the photographs measured below; also the ND-100/CX Compact and the tpServer A25 |
-| **ND-323165** | ND **1844B-2** | ON LOCK / ON / OFF | `E:\Dev\Repos\Ronny\nd-120\Code\68705\ND-5000C-PANEL.png` |
+| **ND-323165** | ND **1844B-2** | ON LOCK / ON / OFF | `Code/68705/ND-5000C-PANEL.png` in the nd-120 repository |
 
 The 1844 board additionally carries a **TELEFIX** silkscreen legend near its lower edge.
 
@@ -640,7 +640,7 @@ the Compact panel, both being fitted to the same 540 mm cabinet family. On that 
 its height is 455 / 1.847 = **246 mm**, giving **455 x 246 mm**. The aspect is measured; the
 width is assumed and the height is derived from the assumption.
 
-Related part numbers, from `E:\Dev\Repos\Ronny\nd-120\Code\68705\readme.md`, which also
+Related part numbers, from `Code/68705/readme.md` in the nd-120 repository, which also
 records that the panel is driven by an **MC68705P3** microcontroller (the ND-120 CPU board
 uses a different one, an MC68705U3):
 
@@ -652,10 +652,10 @@ uses a different one, an MC68705U3):
 
 Three photographs, all square-on:
 
-- `\\Nas9t\data\NorskData\Pictures\ND-5000-Compact\nd-323163-B1.jpg` - component side
-- `\\Nas9t\data\NorskData\Pictures\ND-5000-Compact\nd-323163-B2.jpg` - solder side, board
+- `Pictures/ND-5000-Compact/nd-323163-B1.jpg` in the Norsk Data photo archive on the NAS - component side
+- `Pictures/ND-5000-Compact/nd-323163-B2.jpg` in the Norsk Data photo archive on the NAS - solder side, board
   marked **ND 1835B**, legend "S SIDE"
-- `\\Nas9t\data\NorskData\Pictures\ND-5000-Compact\nd-323163-B3.jpg` - the membrane switch
+- `Pictures/ND-5000-Compact/nd-323163-B3.jpg` in the Norsk Data photo archive on the NAS - the membrane switch
   layer behind the buttons, made by **Hoffmann & Krippner GmbH, D-6967 Buchen**, marked
   831284 / 1186 / 871088
 
@@ -711,9 +711,9 @@ Scripts used are in the session scratchpad and are not part of the repository.
 
 ### 8.4 A surviving ND-100/CX Compact, photographed
 
-`\\Nas9t\data\NorskData\Pictures\ND-100_CX_Compact_front.jpg` (square-on front)
-`\\Nas9t\data\NorskData\Pictures\ND-100_CX_Compact_front_upper.jpg` (upper section, angled)
-`\\Nas9t\data\NorskData\Pictures\ronny\*.jpg` (the same machine in situ, six shots, one with
+`Pictures/ND-100_CX_Compact_front.jpg` in the Norsk Data photo archive on the NAS (square-on front)
+`Pictures/ND-100_CX_Compact_front_upper.jpg` in the Norsk Data photo archive on the NAS (upper section, angled)
+`Pictures/ronny/*.jpg` in the Norsk Data photo archive on the NAS (the same machine in situ, six shots, one with
 the covers off and the operator panel powered up)
 
 This is a **running machine, owned by the repository author**, so it is the authoritative
@@ -752,7 +752,7 @@ being modelled, not the family.
 
 #### Operator panel graphics, read from the powered-up photo
 
-`\\Nas9t\data\NorskData\Pictures\ronny\20230618_193546.jpg`
+`Pictures/ronny/20230618_193546.jpg` in the Norsk Data photo archive on the NAS
 
 - The display is alphanumeric and was showing **`DAY:02  TIME:12:00:02`**, with bargraph
   segments to its right and the words **OFF** under INTERRUPT and **OFF** under PAGING.
@@ -780,7 +780,7 @@ because the machine itself is available to measure - see section 8.5.
 
 Taken with a tape from the machine itself by the repository author, 2026-08-02. Photograph
 with the measurements marked on it:
-`\\Nas9t\data\NorskData\Pictures\ronny\compact-wedge.jpg`
+`Pictures/ronny/compact-wedge.jpg` in the Norsk Data photo archive on the NAS
 
 **The front of the Compact is a wedge, not a flat face.** The upper front section projects
 progressively further forward as it descends, reaching a maximum at the lip where it
@@ -883,9 +883,9 @@ dots on a regular square grid, and it appears this way on every machine seen her
 ND-100/CX Compact, the ND-100 Satellite, the ND-5830 and the tpServer - varying only in
 colour.
 
-Extracted from `\\Nas9t\data\NorskData\Pictures\logo\Logo_Big.png` by detecting the dot rows
+Extracted from `Pictures/logo/Logo_Big.png` in the Norsk Data photo archive on the NAS by detecting the dot rows
 and columns and sampling each grid intersection. A matching KiCad footprint of the same logo
-exists at `\\Nas9t\data\NorskData\Pictures\logo\nd-logo.kicad_mod`, generated by
+exists at `Pictures/logo/nd-logo.kicad_mod` in the Norsk Data photo archive on the NAS, generated by
 bitmap2component, if exact vector outlines are wanted.
 
 **Grid: 18 columns x 8 rows.** Pitch is square, measured at 54.0 px horizontally and 53.5 px
@@ -945,7 +945,7 @@ figure, figure 2, separate from figure 3 which covers the other three.
 #### Colour - the front panel is NOT the same colour as the rest
 
 Reported by the owner and confirmed by sampling the photograph
-`\\Nas9t\data\NorskData\Pictures\ronny\compact-wedge.jpg`. Median colour of each surface:
+`Pictures/ronny/compact-wedge.jpg` in the Norsk Data photo archive on the NAS. Median colour of each surface:
 
 | Surface | Hue | Saturation |
 |---|---|---|
@@ -969,7 +969,7 @@ both surfaces in the same light.
 
 #### The top section is three planes, not one
 
-From `\\Nas9t\data\NorskData\Pictures\ronny\compact-top-1.jpg`, `compact-top-2.jpg` and
+From `Pictures/ronny/compact-top-1.jpg` in the Norsk Data photo archive on the NAS, `compact-top-2.jpg` and
 `compact-top-3.jpg`, plus the owner's description. The upper front is **not** a single
 sloping face with things stuck on it:
 
@@ -1054,7 +1054,7 @@ the model needs slots cut or just surface relief.
 #### The shape of the lip - CORRECTED, from photographs
 
 The wedge does **not** step straight back from its maximum projection to the grille. Verified
-by zooming into `\\Nas9t\data\NorskData\Pictures\ronny\compact-grill-side.jpg`, the profile
+by zooming into `Pictures/ronny/compact-grill-side.jpg` in the Norsk Data photo archive on the NAS, the profile
 below the maximum is, in order:
 
 1. a **rounded external corner** at the nose, not a sharp 90 degree edge
@@ -1075,7 +1075,7 @@ in the measurement sheet below.
 #### The lower front and grille - MEASURED
 
 Measured by the owner, 2026-08-02. Photographs:
-`\\Nas9t\data\NorskData\Pictures\ronny\compact-grill-front.jpg`,
+`Pictures/ronny/compact-grill-front.jpg` in the Norsk Data photo archive on the NAS,
 `compact-grill-side.jpg`, `compact-grill-side-bottom.jpg`
 
 Heights are from the floor. Projections are forward of the main box front face.
@@ -1256,7 +1256,7 @@ section 7.4 and section 8.1 is settled for the Compact.
 
 ### 8.6 Other photographic material not yet examined
 
-In `\\Nas9t\data\NorskData\Pictures`:
+In the Norsk Data photo archive on the NAS:
 
 - `ND-100 i Bergen.zip` (22 MB) - not opened
 - `ND-100-PANEL\nd-322691-*.jpg` - four photographs of the ND-100 operator panel, part
@@ -1313,4 +1313,110 @@ Source: ND-13.028.1 NO page 61. "STROMFORDELER/PDU" = power distributor.
 
 ---
 
-**Last updated**: 2026-08-01
+## 9. The NORD machines: NORD-1, NORD-10 and NORD-50
+
+Added 2026-09-13. These pre-date every table above, which starts at the ND-100.
+
+### 9.1 NORD-10/S and NORD-50 cabinet, measured
+
+Both machines use the same cabinet and the Operator's Guide states the figures twice,
+once per machine, identically.
+
+| Item | Value |
+|---|---|
+| Height | 160 cm |
+| Width | 59.5 cm |
+| Depth | 60.5 cm |
+| Volume | 0.576 m3 |
+| Weight | 100 kg |
+| Mains | 220 V AC, 50 Hz +/- 2 Hz, 2.7 A |
+| Cooling | forced |
+| Ambient | 0 to 55 degrees C, 10 to 90 percent humidity, non-condensing |
+
+The 2.7 A figure applies to a NORD-10 CPU with memory management, cache, large disk
+interface, bus receiver, bus brancher and 128 Kbytes of MOS memory. The NORD-50 cabinet
+is rated at 1000 W.
+
+Source: `../Reference-Manuals/10/ND-30001-01A-EN-Nord 10 Operators Guide.md`,
+sections 1.2.5 and 4.2.4.
+
+Note how close this is to the later ND-100 6-module cabinet at 96 x 54 x 92 cm and to
+the 11-module cabinet at 169 x 60 x 91 cm. The NORD-10 is the same width class and
+roughly the height of the later large cabinet, but **30 cm shallower**.
+
+### 9.2 NORD-10/S cage stack, measured by hole number
+
+Figure 1.7 of the same manual, "NORD-10/S layout, front view, max. configuration", is a
+dimensioned front elevation that locates each unit by frame hole number, exactly as the
+later 11-module cabinet does. Top to bottom:
+
+| Holes | Unit |
+|---|---|
+| 3-7 | Power panel 2 |
+| 17-23 | Operator panel |
+| 31-38 | CPU rack A |
+| 41-43 | Fan assembly |
+| 46-53 | Channel expander rack B |
+| 58-65 | Channel expander rack C |
+| 68-70 | Fan assembly |
+| 89-95 | Power panel 1 |
+
+So the NORD-10 hole grid runs to at least 95, against 66 on the 1985 cabinet.
+
+Figure 1.6, "Cabinet overview", is a pair of section views with 25 numbered items. The
+list, read off the scan: top fan right; top fan left; power supply unit no 1; operator's
+panel; crate A, the CPU crate; fan for crate A; formatter for floppy disk; floppy
+driver 1; floppy driver 2; crate B, an I/O crate; crate C, an I/O crate; fan for crates
+B and C; power panel if 115 V AC; power supply unit no 1; terminal no 1; M1 crate, the
+multiport memory; terminal no 2; fans for the M1 crate; cross rail no 3; terminal no 3;
+frame for plug panel with sub-panels; cabinet front side; cabinet back side; power panel
+if 230 V AC.
+
+Figure 1.8 shows the mains distribution bar running down the right side from power
+panel 1 at the bottom to power panel 2 at the top. Figure 1.9 shows the 5 V and 24 V
+distribution from three supplies A, B and C to the CPU and two channel expanders, all in
+4 mm square wire, with 0.4 mm square twisted pair for +24 V to the TTY interface.
+
+### 9.3 NORD-1 cage heights, measured in inches
+
+**No overall cabinet size has been found for the NORD-1.** What exists is better in one
+way: a dimensioned side section, ND drawing **2B28 "NORD-1 LAY OUT"**, dated March 1972,
+printed as page 4-2 of ND-01.005.01. It gives module heights in inches down two columns.
+
+Front column, top to bottom, as the dimension chain reads:
+
+| Value | Unit the dimension sits beside |
+|---|---|
+| 5 1/2 in | Power panel 2 |
+| 4 3/4 in | gap |
+| 4 3/4 in | Operator panel |
+| 3/4 in | gap |
+| 7 in | CPU crate |
+| 7 in | CPU crate |
+| 7 in | I/O crate |
+| 7 in | I/O crate |
+| 6 3/4 in | Plug panel |
+| 5 1/4 in | Power panel 1 |
+
+Rear column, top to bottom: power supply 7 in, power supply 7 in, a 3 in gap, memory
+13 in on slide rails, then the fan box at the bottom with a cable trench beside it.
+
+So a **NORD-1 CPU or I/O cage is 7 inches high, about 178 mm**, and the machine is two
+CPU crates plus two I/O crates, which matches ndwiki's "two racks with 64 cards".
+
+The chain adds to about 55 3/4 inches, roughly 142 cm, for the front column. That is the
+stack, not the cabinet, so do not quote it as a cabinet height.
+
+**Caution on the top two dimensions.** The 5 1/2 and the first 4 3/4 sit close together
+on the scan and it is not certain which belongs to the panel and which to the gap below
+it. The 7 inch crate heights are unambiguous.
+
+Source: the sintran.com mirror, external collection from heim.bitraf.no, file
+`ND-01.005.01_NORD-1_Connectors_..._September_1972_ocr.pdf`, PDF page 31. The repo's OCR
+of that manual, `../Reference-Manuals/1/ND-01.005.01_NORD-1_...md`, kept the heading
+"NORD-1 LAYOUT / Dimensions" but lost the drawing, which is why these figures were not
+already here.
+
+---
+
+**Last updated**: 2026-09-13
