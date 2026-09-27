@@ -25,6 +25,24 @@ through a small host bridge.
 via high-byte-first packing, the broadcast-vs-request/response design
 decision (and the transmitter-restart-after-receive requirement behind it).
 
+### [TCP-Echo-Server.md](TCP-Echo-Server.md)
+**TCP and UDP echo servers on SINTRAN III, in PLANC and in MAC**
+
+Three small servers on port 7, built against ND's socket library SLIB and tested from a
+Windows host. They are a PLANC TCP server, a PLANC UDP server, and a MAC TCP server that
+calls SLIB through a PLANC shim of `STANDARD` routines.
+
+**Ties together:**
+- [SLIB API Reference](../Languages/Application/SLIB-API-REFERENCE.md) and [TCP and UDP Programs in PLANC](../Languages/Application/PLANC-TCP-UDP-SOCKETS.md) - the library and how to use it
+- [MAC Cookbook section 11](../Languages/System/MAC-COOKBOOK.md#11-tcp-and-udp-from-mac-through-a-planc-shim) - calling a PLANC library from MAC
+- [Running COSMOS TCP/IP on RetroCore](../../Installation/Communication/TCP/RUNNING-TCPIP-ON-RETROCORE.md) - the network underneath
+
+**Highlights:** PLANC-100-F00 cannot compile ND's `SLIB:DEFS` as shipped. SLinit fails with
+20234 when the reserved messages are more than the sockets. MAC reaches PLANC through the
+FORTRAN calling sequence. The reentrant `@MAC` on the M pack will not start.
+
+Verified on SINTRAN III VSX/500 M under RetroCore.
+
 ---
 
 *Case studies are verified end-to-end on SINTRAN III VSX/500 L under nd100x.*

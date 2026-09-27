@@ -53,6 +53,8 @@ Developer/
 ├── Languages/
 │   ├── Application/ (Intro-level guides)
 │   │   ├── PLANC-DEVELOPER-GUIDE.md
+│   │   ├── PLANC-TCP-UDP-SOCKETS.md (TCP/UDP programs with SLIB)
+│   │   ├── SLIB-API-REFERENCE.md (the socket library)
 │   │   ├── C-DEVELOPER-GUIDE.md
 │   │   ├── COBOL-DEVELOPER-GUIDE.md
 │   │   ├── FORTRAN-DEVELOPER-GUIDE.md
@@ -76,7 +78,9 @@ Developer/
 │   └── TOOLS-REFERENCE.md
 │
 ├── Case-Studies/ (End-to-end worked examples)
-│   └── HTTP-Server-over-HDLC.md
+│   ├── HTTP-Server-over-HDLC.md
+│   ├── TCP-Echo-Server.md (TCP and UDP echo servers in PLANC and MAC)
+│   └── TCP-Echo-Server/ (their sources and MODE files)
 │
 ├── Reverse-Engineering/ (Disassembly + binary RE)
 │   ├── Disassembling-a-PROG.md
@@ -147,6 +151,14 @@ Developer/
 | [PLANC-XMSG-API-RULES.md](Languages/Application/PLANC-XMSG-API-RULES.md) | XMP library rules a linter can check |
 | [COSMOS-XMP-LIBRARY.md](Languages/Application/COSMOS-XMP-LIBRARY.md) | The COSMOS XMP library, and its FORTRAN twin XMF |
 
+**TCP/IP sockets (SLIB)**
+
+| Guide | What it is for |
+|-------|----------------|
+| [PLANC-TCP-UDP-SOCKETS.md](Languages/Application/PLANC-TCP-UDP-SOCKETS.md) | Writing, building and testing a TCP or UDP program in PLANC |
+| [SLIB-API-REFERENCE.md](Languages/Application/SLIB-API-REFERENCE.md) | Every SLIB call, record, constant and status code, marked run / manual / declared |
+| [TCP-Echo-Server.md](Case-Studies/TCP-Echo-Server.md) | Working TCP and UDP echo servers in PLANC, and a TCP one in MAC |
+
 **Screen programs (VTM)**
 
 | Guide | What it is for |
@@ -163,7 +175,7 @@ Developer/
 | Language | Intro Guide | Expert Guide | When to Use |
 |----------|-------------|--------------|-------------|
 | **NPL** | [NPL-DEVELOPER-GUIDE.md](Languages/System/NPL-DEVELOPER-GUIDE.md) (70KB) | *Future* | OS development, drivers |
-| **MAC** | [MAC-DEVELOPER-GUIDE.md](Languages/System/MAC-DEVELOPER-GUIDE.md) (21KB), then the [MAC-COOKBOOK.md](Languages/System/MAC-COOKBOOK.md) for what runs on a real system | *Future* | Assembly, optimization |
+| **MAC** | [MAC-DEVELOPER-GUIDE.md](Languages/System/MAC-DEVELOPER-GUIDE.md) (21KB), then the [MAC-COOKBOOK.md](Languages/System/MAC-COOKBOOK.md) for what runs on a real system (section 11: TCP/UDP from MAC) | *Future* | Assembly, optimization |
 | **NORD-500 ASM** | [NORD-500-ASSEMBLER-DEVELOPER-GUIDE.md](Languages/System/NORD-500-ASSEMBLER-DEVELOPER-GUIDE.md) | [NORD-500-ASSEMBLER-EXPERT-GUIDE.md](Languages/System/NORD-500-ASSEMBLER-EXPERT-GUIDE.md) | ND-500 CPU programming |
 
 ### Workflow & Tools

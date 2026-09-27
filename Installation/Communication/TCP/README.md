@@ -14,6 +14,7 @@ checked and **nothing in either kit is damaged**.
 | Path | What |
 |------|------|
 | [`COPYING-FILES-TO-SINTRAN.md`](COPYING-FILES-TO-SINTRAN.md) | **How to get the files onto a pack** — four routes, the parity rules, and the traps. Read this first. |
+| [`RUNNING-TCPIP-ON-RETROCORE.md`](RUNNING-TCPIP-ON-RETROCORE.md) | **Running the D02 stack on an emulated ND-100 in RetroCore**: npcap, the host loopback adapter, addresses, start-up, TCPIP-MONITOR, known console messages, and telnet/FTP from the Windows host |
 | [`x/D02-gateway-and-clients/`](x/) | Gateway **D02** + Telnet/FTP/RSH clients **D01**, from the c3 pack |
 | [`x/B05-gateway-and-telnet-server/`](x/) | Gateway **B05**, which is the one with an **ND-100 telnet server**, from the Tingo pack |
 | [`RE/`](RE/) | Reverse engineering of the 68000 PIOC firmware — every routine named, the TCP state machine fully decoded |

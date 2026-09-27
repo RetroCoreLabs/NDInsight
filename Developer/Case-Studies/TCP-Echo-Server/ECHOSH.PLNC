@@ -1,0 +1,162 @@
+% ============================================================================
+% ECHOSH:PLNC  -  SLIB routines for a MAC program, in PLANC
+%
+% The TCP echo server ECHOMA:MAC is written in MAC, but the socket library
+% SLIB is a PLANC library, and no ND document describes how a hand-written
+% MAC program calls an ordinary PLANC routine on the ND-100. A STANDARD
+% routine uses the FORTRAN calling sequence, which IS documented (ND FORTRAN
+% Reference Manual ND-60.145.7, appendix F.1):
+%
+%    T = number of parameters
+%    A = address of a list with one word per parameter, each word holding
+%        the ADDRESS of that parameter
+%    L = return address (JPL sets it), B is restored by the called routine
+%    the INTEGER result comes back in the A register
+%
+% So this module offers six STANDARD routines, one per socket step, and the
+% MAC program calls them with JPL. Each starts with INISTACK (appendix F.3:
+% a PLANC routine called from outside PLANC must), which is why nothing here
+% is a local variable: everything lives at module level.
+%
+% The receive buffer lives here, not in the MAC program. A STANDARD routine
+% gets arrays as a bare word address, and SLrecv / SLsend want a PLANC BYTE
+% POINTER, which is not the same thing; keeping the buffer on this side
+% avoids converting between the two.
+%
+% Names are five characters so that MAC (labels significant to five) and the
+% BRF linker (seven) cannot disagree about them.
+%
+% Every routine returns a number: >= 0 is a result, a negative number is
+% minus an SLIB status code (SLIB codes are 20225..20258, SLIB:DEFS).
+% ============================================================================
+
+MODULE echosh
+   EXPORT esini, eslis, esacc, esrcv, essnd, escls
+
+% SLIB sizes its work area from these five; see ECHOPL:PLNC for the rules.
+% SLMaxSockets must be at least max_nsallocmsg + max_nballocmsg (6 + 0).
+CONSTANT SLMaxPorts = 1
+CONSTANT SLMaxSockets = 10
+CONSTANT SLMaxSLFork = 1
+CONSTANT SLSubTaskStackSize = 1
+CONSTANT SLMainTaskStackSize = 1
+
+% SLIBF00:DEFS is ND's (TCP-IP)SLIB:DEFS with one word removed so that the
+% PLANC-100-F00 compiler accepts it; its header says exactly what changed.
+$LIST OFF
+$INCLUDE SLIBF00:DEFS
+$INCLUDE (TCP-IP)SLIB:IMPT
+$LIST ON
+
+CONSTANT bufSize = 512
+
+INTEGER ARRAY : stack ( 0 : 4095 )
+INTEGER ARRAY : SocketHeap ( 0 : SLSzWorkArea - 1 )
+BYTES : buf ( 0 : bufSize - 1 )
+SLmaxima : maxval
+SLin_sockaddr : myaddr
+SLin_sockaddr : peer
+SLiocInt : ioArg
+INTEGER : rstat, sock, newSock, got, sent, off
+
+
+% ESINI - start SLIB. Returns 0, or -status.
+ROUTINE STANDARD VOID, INTEGER : esini
+   INISTACK stack
+   SLMaxPorts =: maxval.max_nports
+   SLMaxSockets =: maxval.max_nsockets
+   FALSE =: maxval.max_debug
+   1 =: maxval.max_debfd
+   NIL =: maxval.max_AUserDataP
+   6 =: maxval.max_nsallocmsg
+   0 =: maxval.max_nballocmsg
+   0 =: maxval.max_nxballocmsg
+   SLDominoPioc =: maxval.max_tcpdev
+   SLinit ( ADDR SocketHeap, maxval, NIL, SLMainTaskStackSize, NIL ) =: rstat
+   IF rstat >< SLEok THEN
+      -rstat RETURN
+   ENDIF
+   0 RETURN
+ENDROUTINE
+
+
+% ESLIS(port) - a TCP socket listening on port, any local address, backlog 1.
+% Returns the socket id, or -status.
+ROUTINE STANDARD VOID, INTEGER ( INTEGER ) : eslis ( port )
+   INISTACK stack
+   SLsocket ( af_inet, sock_stream, 0, sock ) =: rstat
+   IF rstat >< SLEok THEN
+      -rstat RETURN
+   ENDIF
+   af_inet =: myaddr.sa_family
+   port =: myaddr.sin_port
+   0 =: myaddr.sin_addr.in_l1
+   SLbind ( sock, myaddr ) =: rstat
+   IF rstat >< SLEok THEN
+      SLclose ( sock )
+      -rstat RETURN
+   ENDIF
+   SLlisten ( sock, 1 ) =: rstat
+   IF rstat >< SLEok THEN
+      SLclose ( sock )
+      -rstat RETURN
+   ENDIF
+   sock RETURN
+ENDROUTINE
+
+
+% ESACC(lsock) - wait for a connection, set it to blocking mode as ND's
+% TCCOM does. Returns the new socket id, or -status.
+ROUTINE STANDARD VOID, INTEGER ( INTEGER ) : esacc ( lsock )
+   INISTACK stack
+   SLaccept ( lsock, newSock, peer ) =: rstat
+   IF rstat >< SLEok THEN
+      -rstat RETURN
+   ENDIF
+   0 =: ioArg.SliocNumber
+   SLioctl ( newSock, SLiocNBIO, ADDR ioArg, SIZE ( ioArg ) ) =: rstat
+   newSock RETURN
+ENDROUTINE
+
+
+% ESRCV(csock) - receive up to bufSize bytes into this module's buffer.
+% Returns the byte count (0 = the peer closed), or -status.
+ROUTINE STANDARD VOID, INTEGER ( INTEGER ) : esrcv ( csock )
+   INISTACK stack
+   SLrecv ( csock, ADDR ( buf ( 0 ) ), bufSize, 0, got ) =: rstat
+   IF rstat >< SLEok THEN
+      -rstat RETURN
+   ENDIF
+   got RETURN
+ENDROUTINE
+
+
+% ESSND(csock, count) - send the first count bytes of the buffer, all of
+% them, even when SLsend takes fewer at a time. Returns 0, or -status.
+ROUTINE STANDARD VOID, INTEGER ( INTEGER, INTEGER ) : essnd ( csock, count )
+   INISTACK stack
+   0 =: off
+   DO
+      WHILE off < count
+      SLsend ( csock, ADDR ( buf ( off ) ), count - off, 0, sent ) =: rstat
+      IF rstat >< SLEok THEN
+         -rstat RETURN
+      ENDIF
+      WHILE sent > 0
+      off + sent =: off
+   ENDDO
+   0 RETURN
+ENDROUTINE
+
+
+% ESCLS(csock) - close a socket. Returns 0, or -status.
+ROUTINE STANDARD VOID, INTEGER ( INTEGER ) : escls ( csock )
+   INISTACK stack
+   SLclose ( csock ) =: rstat
+   IF rstat >< SLEok THEN
+      -rstat RETURN
+   ENDIF
+   0 RETURN
+ENDROUTINE
+
+ENDMODULE

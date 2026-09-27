@@ -418,6 +418,7 @@ Every entry here cost real debugging time. Symptom → cause → fix.
 | program runs the error path even though the call worked | mis-applied skip-on-success (or left a skip slot after `MON 35`) | error path is PC+1, success PC+2; `MON 35` does not skip |
 | reading a file truncates near ~456 bytes | `MON 1` sequential read hits the internal buffer cap | open access=3 and use `MON 117` (word count) |
 | `STA I (CELL)` seems to corrupt a nearby variable | wrote past a buffer because the counter/loop ran one extra iteration | re-check the `JAZ`/decrement order; the test is *before* the next write |
+| `@MAC` prints no banner and ignores every line | the reentrant MAC was dumped with the wrong start address (0B instead of -1) | `@PLACE-BINARY MAC-1415C`, `@GOTO-USER 177777`; see section 11 |
 
 ---
 
@@ -460,6 +461,117 @@ When a MAC program assembles but misbehaves at runtime, in order of payoff:
 4. **Read the device/emulator logs.** For I/O (HDLC, disk), the `nd100x`
    logs show every IOX register access and DMA command, which pins down
    whether the chip saw what you intended.
+
+---
+
+## 11. TCP and UDP from MAC through a PLANC shim
+
+ND's socket library SLIB is a PLANC library, and no ND document describes calling an
+ordinary PLANC routine from hand-written MAC on the ND-100. What IS documented is the
+FORTRAN calling sequence, and a PLANC routine declared `STANDARD` uses it (ND FORTRAN
+Reference Manual ND-60.145.7, appendix F.1):
+
+| Register | On the call |
+|---|---|
+| `T` | number of parameters |
+| `A` | address of the parameter list: one word per parameter, each holding the **address** of that parameter |
+| `L` | return address (`JPL` sets it). `B` is restored by the routine. |
+| `A` on return | the INTEGER result |
+
+So the MAC program calls a small PLANC module of `STANDARD` routines, one per socket step,
+and that module calls SLIB. This was measured on SINTRAN III VSX/500 M: the MAC echo server
+built this way echoes 14, 200 and 768 bytes correctly and serves one connection after
+another. The sources are in the
+[TCP echo server case study](../../Case-Studies/TCP-Echo-Server.md): `ECHOMA.MAC`,
+`ECHOSH.PLNC` and `ECHOMA.MODE`.
+
+**The PLANC side.** Each routine starts with `INISTACK` (appendix F.3 says a PLANC routine
+called from outside PLANC must). That is why the shim has no local variables at all:
+everything it uses is at module level. Keep the names to five characters so that MAC and
+the linker cannot disagree about them.
+
+```planc
+MODULE echosh
+   EXPORT esini, eslis, esacc, esrcv, essnd, escls
+...
+ROUTINE STANDARD VOID, INTEGER ( INTEGER ) : eslis ( port )
+   INISTACK stack
+   SLsocket ( af_inet, sock_stream, 0, sock ) =: rstat
+   ...
+   sock RETURN                 % >= 0 is a result, negative is minus an SLIB status
+ENDROUTINE
+```
+
+**Keep the data buffer in the PLANC module.** `SLrecv` and `SLsend` want a PLANC
+`BYTE POINTER`. A STANDARD routine receives an array as a bare word address, which is not
+the same thing. With the buffer on the PLANC side, MAC only passes socket numbers and byte
+counts.
+
+**The MAC side.** Declare the routines external, and call them *indirectly* through the
+literal pool:
+
+```mac
+        )9BEG START
+        )9EXT ESINI ESLIS ESACC ESRCV ESSND ESCLS
+START,  SAT  0               % ESINI() - no parameters
+        JPL  I (ESINI
+        JAF  FAIL1           % not zero: A = -status
+        LDA  (PLIS           % ESLIS(PORTV)
+        SAT  1
+        JPL  I (ESLIS
+        JAN  FAIL2
+        STA  LSOCK
+...
+PORTV,  7
+PLIS,   PORTV                % the parameter list holds ADDRESSES
+PSND,   CSOCK                % ESSND(CSOCK, BCNT): two words
+        BCNT
+```
+
+A routine that prints text must save `L` before its first monitor call and put it back
+before `EXIT`, because `EXIT` is `COPY SL DP`: `COPY SL DA; STA PRET` on entry, then
+`LDA PRET; COPY SA DL; EXIT`.
+
+**Build order:** compile the PLANC module, assemble the MAC program, then link MAC first:
+
+```
+@BRF-LINKER-C01
+PROGRAM-FILE "ECHOMA"
+LOAD ECHOMA
+LOAD ECHOSH
+LIBRARY-MODE ON
+LOAD (TCP-IP)SLIB-NRE-1B-B01
+LOAD (TCP-IP)SLIB-REE-1B-B01
+LOAD MON-CALL-1B-A00
+LOAD PLANC-1BANK-F00
+LIST-ENTRIES-UNDEFINED
+EXIT
+```
+
+**Text constants keep their closing quote.** The manual says so (ND-60.096 "the
+terminating single quote is considered to be part of the text string"), so a print loop
+must stop at byte 47 (the quote) as well as at 0. `ECHOMA.MAC` does both.
+
+### When `@MAC` does nothing at all
+
+On the VSX/500 M pack, `@MAC` started the reentrant MAC. It printed no `- MAC -`
+banner, read no input, and a break showed it running at 124010B. `LIST-REENTRANT`
+showed it dumped with **start 0B, restart 0B**. ND's product sheet for MAC-1415C gives start
+-1 and restart -3 (see
+[SINTRAN-BOOT-AND-MODE-FILES-GUIDE.md](../../../Installation/OS/SINTRAN-BOOT-AND-MODE-FILES-GUIDE.md)).
+Starting MAC from its BPUN file at the right address works, from a terminal and in a MODE
+file:
+
+```
+@PLACE-BINARY MAC-1415C
+@GOTO-USER 177777
+- MAC -
+)9ASSM ECHOMA:SYMB,TERM,"ECHOMA:BRF"
+)9EXIT
+```
+
+If `@MAC` prints no banner, check its start address with `LIST-REENTRANT` before
+anything else.
 
 ---
 

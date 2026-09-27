@@ -1,0 +1,573 @@
+% ==========================================================================
+% SLIBF00:DEFS - ND's SLIB:DEFS (socket library B01, user TCP-IP), with ONE
+% line changed so that the PLANC-100-F00 compiler accepts it.
+%
+% F00 does not know the word UNSIGNED. ND's file uses it once, in the
+% timer-report record SLiocTimers:
+%    INTEGER2 UNSIGNED ARRAY: TIMtim(0:maxTimeType)
+% which here reads
+%    INTEGER2 ARRAY: TIMtim(0:maxTimeType)
+% Both are two bytes per element, so the record layout does not change. Only
+% the SLiocGTimers ioctl uses this record. Everything else is ND's text as
+% shipped. With a newer PLANC that knows UNSIGNED, include (TCP-IP)SLIB:DEFS.
+% ==========================================================================
+%***************************************************************************%
+%                                                                           %
+%                     S O C K E T   L I B R A R Y                           %
+%                         D E F I N I T I O N S                             %
+%                                                                           %
+%===========================================================================%
+
+%
+% E R R O R   C O D E S
+%
+CONSTANT  SLEok             = 0                  % OK
+CONSTANT  SLEnoerror        = 0                  % OK
+CONSTANT  SLEfirst          = 20225              % first error
+CONSTANT  SLEwksz           = 20225              % work size error
+CONSTANT  SLEptr            = 20226              % pointer error
+CONSTANT  SLEilsid          = 20227              % illegal socket id
+CONSTANT  SLElostPL         = 20228              % lost contact with PL (packet level)
+CONSTANT  SLEconstart       = 20229              % error when establishing conntact with PL.
+CONSTANT  SLEnospace        = 20230              % no more space
+CONSTANT  SLEnospinmsg      = 20231              % too little space in message
+CONSTANT  SLEslibfatal      = 20232              % fatal internal slib error
+CONSTANT  SLEtryagain       = 20233              % used between slib and protocols
+CONSTANT  SLEinval          = 20234              % argument invalid
+CONSTANT  SLEprototype      = 20235              % protocol wrong type for socket
+CONSTANT  SLEnoprotoopt     = 20236              % bad protocol option
+CONSTANT  SLEprotonosupport = 20237              % protocol not supported
+CONSTANT  SLEsocktnosupport = 20238              % socket type not supported
+CONSTANT  SLEaddrinuse      = 20239              % address already in use
+CONSTANT  SLEaddrnotavail   = 20240              % can't assign request address
+CONSTANT  SLEnetdown        = 20241              % network is down
+CONSTANT  SLEnetunreach     = 20242              % network is unreachable
+CONSTANT  SLEnetreset       = 20243              % network dropped connection on reset
+CONSTANT  SLEconnaborted    = 20244              % software caused connection abort
+CONSTANT  SLEconnreset      = 20245              % connection reset by peer
+CONSTANT  SLEisconn         = 20246              % socket is allready connected
+CONSTANT  SLEnotconn        = 20247              % socket is not connected
+CONSTANT  SLEshutdown       = 20248              % can't send after shutdown
+CONSTANT  SLEtimedout       = 20249              % connection timed out
+CONSTANT  SLEconnrefused    = 20250              % connection refused
+CONSTANT  SLEnobufs         = 20251              % no buffer space availble
+CONSTANT  SLEunexpected     = 20252              % unexpected subsystem error
+CONSTANT  SLEwouldblock     = 20253              % io would have blocked you
+CONSTANT  SLEhostnotfound   = 20254
+CONSTANT  SLErestryagain    = 20255
+CONSTANT  SLEnodata         = 20256
+CONSTANT  SLEnorecovery     = 20257
+CONSTANT  SLEnoaddress      = 20258
+CONSTANT  SLElast           = 20258
+%
+% B A S I C   T Y P E S
+%
+TYPE SLu_char    = INTEGER RANGE(0:2**8  - 1)
+TYPE SLu_short   = INTEGER RANGE(0:2**16 - 1)
+TYPE SLu_int     = INTEGER RANGE(0:2**16 - 1)
+TYPE SLu_long    = INTEGER RANGE(0:37777777777B)
+TYPE SLchar      = INTEGER1
+TYPE SLshort     = INTEGER2
+TYPE SLcaddr     = BYTE POINTER
+TYPE SLsockid    = INTEGER
+TYPE SLrvv       = ROUTINE VOID,VOID
+TYPE SLrvvp      = SLrvv POINTER
+
+%
+% S O C K E T  T Y P E
+%
+CONSTANT SOCK_stream         =  1                % stream socket
+CONSTANT SOCK_dgram          =  2                % datagram socket
+CONSTANT SOCK_raw            =  3                % raw-protocol interface
+CONSTANT SOCK_rdm            =  4                % reliably-delivered message
+CONSTANT SOCK_seqpacket      =  5                % sequenced packet stream
+
+%
+% O P T I O N   F L A G S   P E R - S O C K E T.
+%
+CONSTANT SO_debug            =  1                % turn on debugging info recording
+CONSTANT SO_acceptconn       =  2                % socket has had listen()
+CONSTANT SO_reuseaddr        =  4                % allow local address reuse
+CONSTANT SO_keepalive        =  8                % keep connections alive
+CONSTANT SO_dontroute        =  16               % just use interface addresses
+CONSTANT SO_useloopback      =  32               % bypass hardware when possible
+CONSTANT SO_linger           =  64               % linger on close if data present
+CONSTANT SO_dontlinger       =  128              % ~SO_LINGER
+
+%
+%  S O C K E T   L E V E L  N U M B E R
+%   FOR SLgetsockopt, SLsetsockopt
+%
+CONSTANT sol_socket          = -1                % options for ssocket level
+
+%
+% A D D R E S S   F A M I L I E S.
+%
+CONSTANT AF_unspec           =  0                % unspecified
+CONSTANT AF_unix             =  1                % local to host (pipes, portals)
+CONSTANT AF_inet             =  2                % internetwork: UDP, TCP, etc.
+CONSTANT AF_implink          =  3                % arpanet imp addresses
+CONSTANT AF_pup              =  4                % pup protocols: e.g. BSP
+CONSTANT AF_chaos            =  5                % mit CHAOS protocols
+CONSTANT AF_ns               =  6                % XEROX NS protocols
+CONSTANT AF_nbs              =  7                % nbs protocols
+CONSTANT AF_ecma             =  8                % european computer manufacturers
+CONSTANT AF_datakit          =  9                % datakit protocols
+CONSTANT AF_ccitt            = 10                % CCITT protocols, X.25 etc
+CONSTANT AF_sna              = 11                % IBM SNA
+CONSTANT AF_iso              = 12                % ISO expr.
+CONSTANT AF_tcpdebug         = 13
+CONSTANT AF_rdpdebug         = 14
+CONSTANT AF_max              = 15
+
+%
+% I N T E R N E T   P R O T O C O L   N U M B E R S
+%
+CONSTANT    in_pro_tcp      = 6
+CONSTANT    in_pro_udp      = 17
+CONSTANT    in_pro_icmp     = 1
+%
+% I N T E R N E T   T C P   P O R T   N U M B E R S
+%
+CONSTANT    TCP_ftpd        = 20                 % File Transfer (default data)
+CONSTANT    TCP_ftpc        = 21                 % File Transfer (control)
+CONSTANT    TCP_telnet      = 23                 % Telnet
+
+%
+% S O C K E T   A D D R E S S
+%
+TYPE  SLinaddr = RECORD PACKED                   % internet address class B
+   SLu_char : in_b1, in_b2, in_b3, in_b4
+   SLu_short: in_w1 = in_b1
+   SLu_short: in_w2 = in_b3
+   SLu_long : in_l1 = in_b1
+ENDRECORD
+
+TYPE  SLsockaddr = RECORD                        % socket address general part
+   SLu_short:  sa_family MOD 2                   % address family
+ENDRECORD
+
+TYPE SLin_sockaddr = SLsockaddr RECORD           % socket address internet style
+   SLu_short: sin_port  MOD 2                    % internet port number
+   SLinaddr : sin_addr  MOD 2
+ENDRECORD
+%
+% Record used with slsendv
+%
+CONSTANT slIOVMAX = 8
+TYPE sliovvt = RECORD
+   BYTE POINTER : sliov_base
+   INTEGER      : sliov_len
+ENDRECORD
+TYPE sliov = RECORD
+   INTEGER : sliov_cnt
+   sliovvt ARRAY : sliov_vect(0:slIOVMAX)
+ENDRECORD
+
+%
+%  H O S T   E N T R Y
+%
+TYPE SLhostent = RECORD
+   BYTES           : h_name(0:31)                % official name of host
+   BYTES ARRAY POINTER : h_aliases               % alias list
+   INTEGER         : h_addrtype                  % host address type
+   SLinaddr        : h_addr                      % address
+   BYTES POINTER   : h_comment
+ENDRECORD
+
+CONSTANT maxaliases  =35
+CONSTANT maxaddrs    =12
+TYPE SLNewhostent = SLhostEnt RECORD
+   BYTES ARRAY    : h_alias_list(0:maxaliases-1,0:31) % list of alias
+   SLinaddr ARRAY : h_addr_list(0:maxaddrs-1)    % list of addresses from name server */
+ENDRECORD
+
+%
+%  N E T W O R K  E N T R Y
+%
+TYPE SLnetent = RECORD
+   BYTES           : n_name(0:31)                % official name of net
+   BYTES ARRAY POINTER : n_aliases               % alias list
+   INTEGER         : n_addrtype                  % net address type
+   SLinaddr        : n_addr                      % network address
+ENDRECORD
+
+%
+%  S E R V I C E   E N T R Y
+%
+TYPE SLservent = RECORD
+   BYTES           : s_name(0:31)                % official service name
+   BYTES ARRAY POINTER : s_aliases               % alias list
+   INTEGER         : s_port                      % port number
+   BYTES           : s_proto(0:31)               % name of protocol
+ENDRECORD
+
+%
+%  P R O T O C O L   E N T R Y
+%
+TYPE SLprotoent = RECORD
+   BYTES           : p_name(0:31)                % official service name
+   BYTES ARRAY POINTER : p_aliases               % alias list
+   INTEGER         : p_proto                     % protocol number
+ENDRECORD
+
+%
+% S L I O C T L   R E Q U E S T
+%
+CONSTANT SLiocNBIO   = 1                         % set/reset nonblocking io.
+CONSTANT SLiocSNOACT = 2                         % set no activity timer
+CONSTANT SLiocGNOACT = 3                         % get no activity timer
+CONSTANT SLiocSOEV   = 4                         % Set event bits for the socket
+CONSTANT SLiocSSEV   = 5                         % Set  routine called when
+%                                                  strange events from SK
+CONSTANT SLiocGActConn = 6                       % Get active connections
+CONSTANT SLiocGMbStat  = 7                       % Get mbuf statistics
+CONSTANT SLiocGNetwork = 8                       % Get network statistics
+CONSTANT SLiocGArpTable = 9                      % Get arp table
+CONSTANT SLiocGHwStat  = 10                      % Get hardware statistics
+CONSTANT SLiocGGenInfo = 11                      % Get generation information
+CONSTANT SLiocGLoad    = 12                      % Get load information
+CONSTANT SLiocSAipAddr = 13                      % Set Aip Address
+CONSTANT SLiocKill     = 14                      % Kill SlAp in PIOC/DIOC
+CONSTANT SLiocGTimers  = 15                      % Get timer information
+CONSTANT SLiocDIEV     = 16                      % disable slib waiting for these
+CONSTANT SLiocSndQue   = 17                      % get info in socket sendque
+%                                                  only for domino/pioc
+CONSTANT SLiocSdelResp = 18                      % delay PRU_SEND response
+%                                                  only for domino/pioc
+CONSTANT SLiocAroute   = 19                      % Add route
+CONSTANT SLiocDroute   = 20                      % Delete route
+CONSTANT SLiocAx25     = 21                      % map internet to DTE address
+CONSTANT SLiocDx25     = 22                      % delete mapping of internet to DTE address
+CONSTANT SLiocGx25     = 23                      % get X25 statistics
+
+%
+% R E C O R D   T O   B E   U S E D   B Y   S L I O C T L
+%
+TYPE SLiocArg = RECORD
+ENDRECORD
+TYPE SLiocINT = SLiocArg RECORD
+   INTEGER4 : SLiocNumber        MOD 2
+ENDRECORD
+TYPE SLri4i4 = ROUTINE INTEGER4,INTEGER4
+TYPE SLiocRout = SLiocArg RECORD                 % used when SLiocSSEV
+   SLri4i4 POINTER : SLiocRoutName MOD 2
+ENDRECORD
+TYPE SLiocTSndQue = SLiocarg RECORD
+   INTEGER4  : SLiocSQused
+   INTEGER4  : SLiocSQfree
+ENDRECORD
+%
+% Statistics for active connections
+%
+TYPE SLiocActConn = SLiocArg RECORD PACKED       % packed!
+   INTEGER4:     STAaddr                         % address of requested/returned SlAp (0 if none)
+   INTEGER4:     STAnext                         % address of next SlAp (0 if none)
+   INTEGER2:     STArcvQ                         % size of receive queue in bytes
+   INTEGER2:     STAsndQ                         % size of send queue in bytes
+   SLin_sockaddr:  STAladdr                      % local address, 8 bytes
+   SLin_sockaddr:  STAfaddr                      % foreign address, 8 bytes
+   INTEGER2:     STAconid                        % local interface conn id
+   BYTE:         STAproto                        % protocol type: TCP, UDP,...
+   BYTE:         STAstate                        % connection state for TCP
+   INTEGER4:     STASbytes                       % no of bytes sent
+   INTEGER4:     STARbytes                       % no of bytes received
+   BYTES:        STAbytes(0:39) = STAaddr
+ENDRECORD
+%
+% Get generation information
+%
+TYPE SLiocGenInfo = SLiocArg RECORD PACKED       % packed!
+   INTEGER4: GENconfig                           % configuration mask
+   INTEGER4: GENconnections                      % maximum no. of connections
+   INTEGER4: GENmbufs                            % maximum no. of mbufs
+   INTEGER4: GENactiveTime                       % number of seconds since started
+   INTEGER4: GENaipaddr                          % Aip address
+   INTEGER4: GENgatewayaddr                      % Gateway address
+   INTEGER4: GENnetmask                          % Network mask (from Aip)
+   INTEGER4: GENdummy1                           % spare (not yet used)
+   INTEGER4: GENdummy2                           % spare (not yet used)
+   INTEGER4: GENdummy3                           % spare (not yet used)
+   BYTE    : GENlen1                MOD 2        % # of significant bytes in GENdate
+   BYTES   : GENdate(0:31)          MOD 2        % generation date (eg. '1 April, 1988')
+   BYTE    : GENlen2                MOD 2        % # of significant bytes in GENversion
+   BYTES   : GENversion(0:5)        MOD 2        % version (eg. 'B00')
+   BYTE    : GENlen3                MOD 2        % # of significant bytes in GENsystem
+   BYTES   : GENsystem(0:15)        MOD 2        % system (eg. 'Ethernet II')
+   BYTE    : GENlen4                MOD 2        % # of significant bytes in GENportname
+   BYTES   : GENportname(0:31)      MOD 2        % port name (eg. '*TCP')
+   BYTE    : GENlen5                MOD 2        % # of significant bytes in GENeventinfo
+   BYTES   : GENeventinfo(0:63)     MOD 2        % Trace/statistics/error/netproblem event block
+   BYTE    : GENlen6                MOD 2        % # of significant bytes in GENext1
+   BYTES   : GENext1(0:31)          MOD 2        % spare (not yet used)
+   BYTE    : GENlen7                MOD 2        % # of significant bytes in GENext2
+   BYTES   : GENext2(0:31)          MOD 2        % spare (not yet used)
+   BYTE    : GENlen8                MOD 2        % # of significant bytes in GENext3
+   BYTES   : GENext3(0:31)          MOD 2        % spare (not yet used)
+   BYTES   : GENbytes(0:Size(SLiocGenInfo)-1) = GENconfig
+ENDRECORD
+%
+% Get X.25 statistics form SNDCF
+%
+TYPE SLiocX25CEP = SLiocArg RECORD PACKED        % packed!
+   INTEGER4:     CEPaddr                         % address of requested/returned CEP (0 if none)
+   INTEGER4:     CEPnext                         % address of next CEP (0 if none)
+   INTEGER4:     CEPconid                        % size of receive queue in bytes
+   INTEGER2:     CEPstate                        % size of send queue in bytes
+   SLinaddr:     CEPfaddr                        % foreign address, 4 bytes
+   BYTES:        CEPdteMain(0:15)
+   BYTES:        CEPdteSub(0:3)
+   INTEGER2:     CEPsent
+   INTEGER2:     CEPrcvd
+   INTEGER2:     CEPdropped
+   INTEGER2:     CEPttl
+   BYTES:        CEPbytes(0:45) = CEPaddr
+ENDRECORD
+$IF Size SLiocX25Cep >< 46 $THEN
+   $MESSAGE Size of SLiocX25CEP >< 46
+$ENDIF
+
+TYPE SLiocRoute = SLiocArg RECORD PACKED         % packed!
+   INTEGER4: ROnetw
+   INTEGER4: ROgway
+   INTEGER4: ROintf                              % ( Eth=1.X25=2 )
+ENDRECORD
+
+TYPE SLiocX25 = SLiocArg RECORD PACKED           % packed!
+   INTEGER4: ROinaddr
+   BYTES   : ROdtemain(0:15)
+   BYTES   : ROdtesub(0:3)
+ENDRECORD
+% Define Mbuf types
+CONSTANT mt_free      = 0                        % should be on free list
+CONSTANT mt_data      = 1                        % receive data from user
+CONSTANT mt_header    = 2                        % send packet header
+CONSTANT mt_deliver   = 3                        % receive data from AIP
+CONSTANT mt_rcvoob    = 4                        % out-of-band data from user
+CONSTANT mt_extoob    = 5                        % extract incomming out-of-band data
+CONSTANT mt_udpdtgm   = 6                        % send UDP datagram
+CONSTANT mt_aiparp    = 7                        % AIP arp (dedicated to AIP)
+CONSTANT mt_aipdtgm   = 8                        % AIP datagram (for use by AIP)
+CONSTANT mt_max_val   = mt_aipdtgm               % max buffer type (see mb_mtypes)
+
+%
+% Mbuf statistics.
+%
+TYPE SLiocMbStat = SLiocArg RECORD
+   INTEGER2      : mb_mbufs                      % mbufs obtained from page pool
+   INTEGER2      : mb_mfree                      % mbufs on our free list
+   INTEGER2      : mb_mdrops                     % times failed to find space
+   INTEGER2 ARRAY: mb_mtypes(0:mt_max_val)       % type specific mbuf allocations
+   INTEGER2 ARRAY: mb_mtdrop(0:mt_max_val)       % times failed to get an mbuf
+   BYTES         : mb_mbytes(0:Size(SLiocMbStat)-1) = mb_mbufs
+ENDRECORD
+
+TYPE   SLiocNetwork = SLiocArg RECORD
+   INTEGER4: ip_total                            % total # ip packets received
+   INTEGER4: ip_badsum                           % #bad ip checksums
+   INTEGER4: ip_tooshort                         % #couldn't pullup ip header
+   INTEGER4: ip_drops                            % #ip packets not addressed to us, not fwded
+   INTEGER4: ip_forwarded                        % #ip packets not addressed to us
+   INTEGER4: ip_broadcast                        % #broadcast packets received
+
+   INTEGER4: t_total                             % total # tcp packets received
+   INTEGER4: t_sndtotal                          % total # tcp packets sent
+   INTEGER4: t_badsum                            % #bad tcp checksums
+   INTEGER4: t_tooshort                          % #couldn't pullup tcp header
+   INTEGER4: t_badsegs                           % #bad tcp segments (to which we send RST)
+   INTEGER4: t_unack                             % #tcp segs placed on rcv_unack
+   INTEGER4: t_retransmit                        % #retransmissions we sent
+   INTEGER4: t_ackonly                           % #send_pkt just to send ack, no data
+
+   INTEGER4: ic_total                            % total # icmp packets received
+   INTEGER4: ic_badsum                           % #bad icmp checksums
+   INTEGER4: ic_tooshort                         % #couldn't pullup icmp header
+   INTEGER4: ic_broadcast                        % #icmp pkts rcv that were broadcast (ign)
+   INTEGER4: ic_drops                            % #icmp messages with invalid type (ignored)
+   INTEGER4: ic_quenches                         % #icmp source quenches received
+   INTEGER4: ic_redirects                        % #icmp redirects received
+   INTEGER4: ic_echoes                           % #icmp echo requests respond to
+   INTEGER4: ic_svpings                          % #pings saved by -1 hack
+   INTEGER4: ic_pings                            % #pings actually sent
+   INTEGER4: ic_timex                            % #icmp time exceeded messages received
+   INTEGER4: ic_parm                             % #icmp parameter problem received
+
+   INTEGER4: u_total                             % total # udp packets received
+   INTEGER4: u_sndtotal                          % total # udp packets sent
+   INTEGER4: u_badsum                            % #udp bad checksums
+   INTEGER4: u_tooshort                          % #couldn't pullup udp header
+   INTEGER4: u_drops                             % #udp drops (no user process wants packet)
+   INTEGER4: u_sonospace                         % #udp pkts user socket rcv buf full (drop)
+   INTEGER4: u_nobuf                             % #udp pkts can't m_get for socket code
+
+   INTEGER4: o_total                             % total # other packets received
+
+   BYTES:    nS_bytes(0:Size(SLiocNetwork)-1) = ip_total
+ENDRECORD
+%
+% hardware statistics
+%
+TYPE LNMAtype = ENUMERATION(LNMA2cardEthernet,&  % original Ethernet
+                            LNMAlanceEthernet,&  % LANCE ethernet
+                            LNMAtokenRing,&      % guess
+                            LNMAtokenBus,&
+                            LNMAfddi)
+TYPE SLiocLNMAST = SLiocArg RECORD PACK
+   LNMAtype: LNMASTtype                          % defines interpretation of following record
+   BYTE:     LNMASTversion                       % statistics version number for that MA type
+   INTEGER4: ENMASTtransmitted                   % total successful transmissions (after
+   % N retransmissions, 0<=N<=15)
+   INTEGER4: ENMASToneCollision                  % transmitted after one collision
+   INTEGER4: ENMASTmultiCollision                % transmitted after multiple collisions
+   INTEGER2: ENMASTaborted                       % aborted transmission(excess collisions)
+   INTEGER4: ENMASTreceived                      % frames received and sent to user
+   INTEGER4: ENMASTdropped                       % dropped since no user receive request
+   INTEGER4: ENMASTmissed                        % no buffer for receive frame
+   INTEGER2: ENMASTcrcErrors                     % received with bad CRC
+   INTEGER2: ENMASTalignErrors                   % octet alignment errors
+   INTEGER2: ENMASTfifoOverflow                  % internal FIFO overflow
+   INTEGER2: ENMASToverflow                      % incoming frame exceeded buffer length
+   INTEGER2: ENMASTbadMAlength                   % MA length field not in accord with
+   % frame length
+   INTEGER2: ENMASTrestarts                      % number of restarts performed by ENMA
+   INTEGER2: ENMASTlossOfCarrier                 % carrier lost during transmit
+   INTEGER2: ENMASTbadLength                     % bad received frame length read
+   % (outside min/max frame size limits)
+   INTEGER2: ENMASTbadAddress                    % frame received which should not have
+   % passed address check
+   INTEGER2: ENMASTjabber                        % jabber detected
+   INTEGER2: ENMASTunderflow                     % transmit underflow
+   INTEGER2: ENMASTlateCollision                 % collision outside window => not sent
+   INTEGER2: ENMASTheartbeatGone                 % no heartbeat from transceiver
+   INTEGER2: ENMASTmemoryError                   % LANCE got no response in time
+   INTEGER2: ENMASThangingTransmit               % transmit channel hung
+ENDRECORD
+
+TYPE SLiocArpTable = SLiocArg RECORD PACKED
+   INTEGER2:  TARPinterf                         % interface number
+   INTEGER4:  TARPipAddr                         % IP address
+   BYTES   :  TARPethAddr(0:5)                   % Ethernet Address
+   BYTES   :  TARPbytes(0:11) = TARPinterf
+ENDRECORD
+%
+% Record for timer reports
+%
+%
+CONSTANT maxTimeType = 13                        % 901022: was 12 (wrong).
+TYPE SLiocTimers = SLiocArg RECORD PACKED        % packed!
+   INTEGER4   :  TIMaddr                         % address of req SlAp or next higher (0 if none)
+   INTEGER4   :  TIMnext                         % address of next SlAp (0 if none)
+   INTEGER2   :  TIMconid
+   INTEGER2 ARRAY: TIMtim(0:maxTimeType)          % to contain timers (UNSIGNED removed, see top)
+   BYTES      :  TIMbytes(0:37) = TIMaddr        % 901022: was 35 (wrong).
+ENDRECORD
+%
+% S L M A X I M A
+%
+TYPE SLmaxima = RECORD
+   INTEGER : max_nports                          % Max number of ports (tcp,udp...)
+   INTEGER : max_nsockets                        % Max number of sockets
+   BOOLEAN : max_debug                           % TRUE if debug print mode on.
+   INTEGER : max_debfd                           % file number for debug print
+   INTEGER POINTER POINTER : max_AUserDatap      % address of user data pointer
+   INTEGER : max_nsallocmsg                      % number of small allocated messages
+   INTEGER : max_nballocmsg                      % number of big allocated messages
+   INTEGER : max_nxballocmsg                     % number of huge messages
+   INTEGER : max_tcpdev                          % device number for tcp
+ENDRECORD
+
+%
+% T C P   D E V I C E   V A L U E S
+%
+CONSTANT SLDominoPioc = -1                       % domino first then Pioc
+CONSTANT SLPiocDomino = -2                       % piocs first then dominos
+CONSTANT SLDominoOnly = -3
+CONSTANT SLPiocOnly   = -4
+
+%
+% Define SKP parameters used by SLIB
+% to determine the size of the DYNAMIC storage
+% must be provided to the SKP library in SKPinit
+CONSTANT SLMXtimerEvents     = 5                 % max outstanding timer events
+CONSTANT SLMXopenPorts       = 5                 % max open ports
+CONSTANT SLMXremotePorts     = 5                 % max references to remote ports
+CONSTANT SLMXqueuedMessages = 40                 % max owned messages
+
+%-----------------------------------------------------------------------------%
+%
+%     CONSTANT used in provision of working area for SLib
+%
+%     the user must provide a fixed-size work area for SLib
+%     via SLinit :
+%     INTEGER ARRAY : WorkArea(0: SLSzWorkArea - 1)
+%     where SLSzWorkArea is calculated below .
+%     The user must defined those constants first :
+%        - SLMaxPorts     : maximum number of ports
+%        - SLMaxSockets   : maximum number of sockets
+%        - SLMaxSLFork    : the maximum number of simultaneous active subtaskes.
+%        - SLMainTaskStackSize: size of the stack for the main task routine
+%        - SLSubTaskStackSize:  size of the subtaskroutines stack used by SLFork
+%-----------------------------------------------------------------------------%
+
+$IF $TARGET-machine = 100 $then
+%-- ONLY FOR ND100 VERSION !
+CONSTANT  SzGlobalType = 58
+CONSTANT  SzSockTabType= 2
+CONSTANT  SzPortType   = 22
+CONSTANT  SzSockType   = 74
+CONSTANT  Szjob_desc   = 32
+CONSTANT  SzMsgDesc    = 4
+
+$ELSIF $TARGET-MACHINE = 500 $THEN
+CONSTANT  SzGlobalType = 112
+CONSTANT  SzPortType   = 32
+CONSTANT  SzSockTabType= 4
+CONSTANT  SzSockType   = 104
+CONSTANT  Szjob_desc   = 56
+CONSTANT  SzMsgDesc    = 8
+$ELSIF $TARGET-MACHINE = 68000 $THEN
+   $IF eth_ii $THEN
+CONSTANT  SzGlobalType = 108
+CONSTANT  SzPortType   = 32
+CONSTANT  SzSockTabType= 4
+CONSTANT  SzSockType   = 96
+CONSTANT  Szjob_desc   = 54
+CONSTANT  SzMsgDesc    = 8
+   $ELSE
+CONSTANT  SzGlobalType = 110
+CONSTANT  SzPortType   = 32
+CONSTANT  SzSockTabType= 4
+CONSTANT  SzSockType   = 100
+CONSTANT  Szjob_desc   = 56
+CONSTANT  SzMsgDesc    = 8
+   $ENDIF
+$ELSE
+   $MESSAGE illegal target machine
+   $EXIT
+$ENDIF
+
+$IF FALSE $THEN                                  %$if SLMaxPorts = 0 $then %$IF NOT $PRESENT SLMaxPorts $THEN
+CONSTANT     SLMaxPorts           = 1            % ARBITRARY
+CONSTANT     SLMaxSockets         = 5            % ARBITRARY
+CONSTANT     SLMainTaskStackSize  = 1000         % ARBITRARY
+CONSTANT     SLMaxSLFork          = 10           % ARBITRARY
+CONSTANT     SLSubTaskStackSize   = 500          % ARBITRARY
+$ENDIF
+
+% PLANC storage manager overhead is:
+CONSTANT SLSZfixedSM   = (18*Size(BYTE POINTER))+Size(INTEGER)+100 % fixed overhead (bytes)
+CONSTANT SLSZperItemSM = Size(BYTE POINTER)+Size(INTEGER) % per item overhead (bytes)
+
+
+CONSTANT  SLSzWorkArea =  ( SLSZfixedSM                          +  &
+                                (SzGlobalType  + SLSZperItemSM)  +  &
+                 SLMaxPorts   * (SzPortType    + SLSZperItemSM)  +  &
+                 SLMaxSockets * (SzSockTabType + SLSZperItemSM)  +  &
+                 SLMaxSockets * (SzMsgdesc  + SLSZperItemSM)     +  &
+                 SLMaxSockets * (SzSockType    + SLSZperItemSM)  +  &
+                                 (Szjob_desc    + SLSZperItemSM) +  &
+                 SLMainTaskStackSize + SLSZperItemSM             +  &
+                 SLMaxSLFork  * (Szjob_desc    + SLSZperItemSM)  +  &
+                 SLMaxSLFork  * (SLSubTaskStackSize + SLSZperItemSM)&
+                 )/Size(INTEGER)
+$EOF

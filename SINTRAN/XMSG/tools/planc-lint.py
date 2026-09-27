@@ -10,6 +10,11 @@ so it will miss things and it can be wrong. Its job is the mistakes that repeat.
 
     python tools/planc-lint.py SINTRAN-CHAT/CHAT.PLNC SINTRAN-CHAT/CHATSV.PLNC
 
+    --include-dir DIR   also look for $INCLUDE files in DIR (after the source's own
+                        folder). "(USER)NAME:TYPE" is tried as DIR/USER/NAME.TYPE, then
+                        DIR/NAME.TYPE. For SLIB programs:
+                        --include-dir Installation/Communication/TCP/x/D02-gateway-and-clients
+
 Exit code 1 if anything is reported.
 """
 
@@ -113,44 +118,104 @@ def strip_comment(line):
     return ''.join(out)
 
 
+# Extra folders searched for $INCLUDE files after the source's own folder, set with
+# --include-dir. Added 2026-09-27 for the SLIB (TCP/IP socket library) samples, whose
+# includes live on the ND as (TCP-IP)SLIB:IMPT and in the repo under the TCP kit.
+INCLUDE_DIRS = []
+
+
+def include_text(source_path, inc_name):
+    """The text of a $INCLUDE'd file, parity stripped, or '' when it cannot be found.
+
+    Looked for next to the source first, then in every --include-dir. A leading
+    SINTRAN user prefix such as "(TCP-IP)" is tried two ways in an include dir: as a
+    subfolder of that name ("TCP-IP/SLIB.IMPT"), then without it. The compiler's
+    default file type is SYMB (appendix A section 0.8); an explicit ":TYPE" is
+    honoured."""
+    spec = inc_name.strip().strip("'\"")
+    user = None
+    um = re.match(r'^\(([^)]*)\)(.*)$', spec)
+    if um:
+        user, spec = um.group(1).strip(), um.group(2)
+    base = spec.split(':')[0].strip()
+    suffix = spec.split(':')[1].strip() if ':' in spec else None
+    exts = [suffix] if suffix else ['SYMB', 'INCL', 'PLNC']
+    here = os.path.dirname(os.path.abspath(source_path))
+    folders = [here]
+    for d in INCLUDE_DIRS:
+        if user:
+            folders.append(os.path.join(d, user))
+        folders.append(d)
+    for folder in folders:
+        for ext in exts:
+            for cand in (base + '.' + ext, base.upper() + '.' + ext.upper(),
+                         base.lower() + '.' + ext.lower()):
+                full = os.path.join(folder, cand)
+                if not os.path.exists(full):
+                    continue
+                try:
+                    raw = io.open(full, encoding='utf-8', errors='replace').read()
+                except IOError:
+                    return ''
+                # Strip parity the way the rest of this repo does, so a file copied
+                # straight off an ND floppy reads correctly.
+                return ''.join(chr(ord(c) & 0x7F) for c in raw)
+    return ''
+
+
+def include_types(source_path, inc_name):
+    """The TYPE names a $INCLUDE'd file declares - "TYPE SLin_sockaddr = ..." - so a
+    local declared with one ("SLin_sockaddr : myaddr") is seen as a declaration."""
+    raw = include_text(source_path, inc_name)
+    return re.findall(r'^\s*TYPE\s+([A-Za-z_]\w*)\s*=', raw, re.M | re.I)
+
+
 def include_names(source_path, inc_name):
-    """Every name a local $INCLUDE'd file introduces, upper-cased.
+    """Every name a $INCLUDE'd file introduces, upper-cased.
 
     "$INCLUDE screen" brings in the whole PLANC-SCREEN-H interface - frame,
     bytdis, intacc and the rest. Without this, a screen program reports every
     one of them as undeclared: a page of false alarms that trains you to ignore
-    the tool. The compiler's default file type is SYMB (appendix A section 0.8),
-    so "screen" means SCREEN:SYMB; an explicit ":TYPE" is honoured too.
+    the tool.
 
-    ONLY files sitting NEXT TO the source are read. An include that lives on the
-    ND and not here cannot be resolved, and then this returns nothing - the tool
-    goes quiet rather than guessing at names it cannot see.
+    Collected: every name in a declaration list after a colon (record fields such
+    as "SLu_char : in_b1, in_b2, in_b3, in_b4" declare four, not one); CONSTANT
+    names ("CONSTANT SLEok = 0"); TYPE names; and routine names in IMPORT
+    statements that continue over lines with "&" - ND's SLIB:IMPT writes
+    "(ROUTINE VOID,INTEGER (...) : &" and puts the NAME on the next line, which a
+    per-line reading never saw. Checked 2026-09-27 against ND's own TCCOM, which
+    reported 55 invented problems before and should report none of this kind after.
+
+    A file that cannot be found returns nothing - the tool goes quiet rather than
+    guessing at names it cannot see.
     """
     found = set()
-    base = inc_name.split(':')[0].strip().strip("'\"")
-    suffix = inc_name.split(':')[1].strip() if ':' in inc_name else None
-    exts = [suffix] if suffix else ['SYMB', 'INCL', 'PLNC']
-    here = os.path.dirname(os.path.abspath(source_path))
-    for ext in exts:
-        for cand in (base + '.' + ext, base.upper() + '.' + ext.upper(),
-                     base.lower() + '.' + ext.lower()):
-            full = os.path.join(here, cand)
-            if not os.path.exists(full):
-                continue
-            try:
-                raw = io.open(full, encoding='utf-8', errors='replace').read()
-            except IOError:
-                return found
-            # Strip parity the way the rest of this repo does, so a file copied
-            # straight off an ND floppy reads correctly.
-            raw = ''.join(chr(ord(c) & 0x7F) for c in raw)
-            for ln in raw.splitlines():
-                ls = ln.strip()
-                if ls.startswith('%'):
+    raw = include_text(source_path, inc_name)
+    if not raw:
+        return found
+    lines = []
+    for ln in raw.splitlines():
+        ls = ln.split('%', 1)[0].strip()      # a comment runs to end of line
+        if ls:
+            lines.append(ls)
+    joined = re.sub(r'&\s*\n\s*', ' ', '\n'.join(lines))
+    for ls in joined.split('\n'):
+        cm = re.match(r'^CONSTANT\s+(.+)$', ls, re.I)
+        if cm:
+            for part in cm.group(1).split(','):
+                nm = re.match(r'\s*([A-Za-z][A-Za-z0-9_]*)', part)
+                if nm:
+                    found.add(nm.group(1).upper())
+            continue
+        tm = re.match(r'^TYPE\s+([A-Za-z_]\w*)\s*=', ls, re.I)
+        if tm:
+            found.add(tm.group(1).upper())
+        # names after each colon, up to the next closing bracket, "=" or ":="
+        for seg in re.findall(r':\s*([^:)=]*)', ls):
+            for nm in re.findall(r'[A-Za-z_]\w*', seg):
+                if nm.upper() in ('ALIAS', 'MOD', 'ARRAY', 'PACKED', 'RANGE'):
                     continue
-                for mm in re.finditer(r':\s*([A-Za-z][A-Za-z0-9_]*)', ls):
-                    found.add(mm.group(1).upper())
-            return found
+                found.add(nm.upper())
     return found
 
 
@@ -183,6 +248,11 @@ def check(path):
     # a new type is added in one place rather than in four regexes that had
     # already drifted apart from each other.
     own_types = re.findall(r'^\s*TYPE\s+([A-Za-z_]\w*)\s*=', text, re.M)
+    # A TYPE declared in a $INCLUDE'd file is just as much a type here - SLIB:DEFS
+    # declares SLin_sockaddr, SLmaxima and friends, and a program's locals of those
+    # types were reported as undeclared until 2026-09-27.
+    for _im in re.finditer(r'^\s*\$INCLUDE\s+(\S+)', text, re.M | re.I):
+        own_types += include_types(path, _im.group(1))
     TYPEALT = '|'.join(['INTEGER4', 'INTEGER', 'BYTES', 'BYTE', 'BOOLEAN',
                         'REAL', 'LABEL', 'POINTER']
                        + [re.escape(t) for t in own_types])
@@ -790,7 +860,8 @@ def check(path):
     # variable as undeclared. A lint rule that cries wolf is worse than none.
     declared = set()
     for m in re.finditer(r'^\s*(?:' + TYPEALT + r')'
-                         r'(?:\s+ARRAY)*(?:\s+RANGE\s*\([^)]*\))?\s*:\s*([^%\n]+)', text, re.M):
+                         r'(?:\s+ARRAY)*(?:\s+RANGE\s*\([^)]*\))?\s*:\s*([^%\n]+)', text,
+                         re.M | re.I):   # PLANC names are case-insensitive: SLiocInt is SLiocINT
         for name in re.findall(r'[A-Za-z_]\w*', m.group(1)):
             declared.add(name.upper())
     # a TYPE this file declares is a name like any other
@@ -3037,8 +3108,19 @@ def main(argv):
         print(__doc__)
         return 2
 
+    paths = []
+    rest = argv[1:]
+    i = 0
+    while i < len(rest):
+        if rest[i] == '--include-dir' and i + 1 < len(rest):
+            INCLUDE_DIRS.append(rest[i + 1])
+            i += 2
+            continue
+        paths.append(rest[i])
+        i += 1
+
     total = 0
-    for path in argv[1:]:
+    for path in paths:
         # A MODE file is a BUILD file, not PLANC source - running the language
         # checks over one invents hundreds of undeclared names. It gets its own
         # short check instead.
@@ -3055,7 +3137,7 @@ def main(argv):
 
     # Only meaningful when several sources were given, and then it is the whole
     # point: these are the faults that no single-file check can see.
-    plnc_paths = [a for a in argv[1:] if not a.upper().endswith('.MODE')]
+    plnc_paths = [a for a in paths if not a.upper().endswith('.MODE')]
     crossed = cross_file_exports(plnc_paths)
     crossed += cross_file_interfaces(plnc_paths)
     total += len(crossed)

@@ -1,0 +1,36 @@
+@CC ==================================================================
+@CC ECHOPL:MODE - compile and link the PLANC TCP echo server
+@CC Run as SYSTEM:  @MODE ECHOPL:MODE,,
+@CC Then read ECHOPL:LIST for *** lines, and check that
+@CC LIST-ENTRIES-UNDEFINED printed nothing.
+@CC
+@CC Libraries: ND's SLIB Programmer's Guide (ND-860372, section 2)
+@CC lists SLIB, NK-100-1BANK, PLANC-UTILLIB-1B, MON-CALL-1BANK and
+@CC PLANC-1BANK for a 1-bank program. NK-100-1BANK is not loaded: SLIB
+@CC already contains the NK routines, and loading it only prints
+@CC "Redefinition" lines. PLANC-UTILLIB-1B is not loaded: no copy of it
+@CC is known to exist, and the link resolves every entry without it.
+@CC
+@CC The old outputs are deleted first, as ND's own COMP-TCCOM:MODE does:
+@CC a quoted name below means CREATE, and the compiler and the linker
+@CC both refuse with FILE ALREADY EXISTS if the file is still there. On
+@CC the very first build the deletes answer NO SUCH FILE NAME; that is
+@CC harmless.
+@CC ==================================================================
+@DELETE-FILE ECHOPL:LIST
+@DELETE-FILE ECHOPL:BRF
+@DELETE-FILE ECHOPL:PROG
+@PLANC-100-F00
+COMPILE ECHOPL:PLNC,"ECHOPL:LIST","ECHOPL"
+EXIT
+@BRF-LINKER-C01
+PROGRAM-FILE "ECHOPL"
+LOAD ECHOPL
+LIBRARY-MODE ON
+LOAD (TCP-IP)SLIB-NRE-1B-B01
+LOAD (TCP-IP)SLIB-REE-1B-B01
+LOAD MON-CALL-1B-A00
+LOAD PLANC-1BANK-F00
+LIST-ENTRIES-UNDEFINED
+EXIT
+@CC END OF FILE

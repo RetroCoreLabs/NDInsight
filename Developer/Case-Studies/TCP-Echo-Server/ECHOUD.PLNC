@@ -1,0 +1,129 @@
+% ============================================================================
+% ECHOUD:PLNC  -  a UDP echo server in PLANC for SINTRAN III, using SLIB
+%
+% Waits for datagrams on UDP port 7 (the echo service) and sends each one
+% straight back to the address and port it came from. Run it from a
+% terminal with @ECHOUD; stop it with ESC.
+%
+% Same set-up as the TCP server ECHOPL:PLNC; only the socket part differs.
+% A datagram socket is never connected, so it uses SLrecvFrom / SLsendTo,
+% which carry the peer's address with every message (ND-860372 7.16, 7.18),
+% instead of SLlisten / SLaccept / SLrecv / SLsend.
+%
+% Build: ECHOUD:MODE. Guide: Developer/Case-Studies/TCP-Echo-Server.md.
+% ============================================================================
+
+MODULE echoud
+
+% See ECHOPL:PLNC for these five. SLMaxSockets must be at least
+% max_nsallocmsg + max_nballocmsg (6 + 0), or SLinit answers 20234.
+CONSTANT SLMaxPorts = 1
+CONSTANT SLMaxSockets = 10
+CONSTANT SLMaxSLFork = 1
+CONSTANT SLSubTaskStackSize = 1
+CONSTANT SLMainTaskStackSize = 1
+
+$LIST OFF
+$INCLUDE SLIBF00:DEFS
+$INCLUDE (TCP-IP)SLIB:IMPT
+$LIST ON
+
+IMPORT ( ROUTINE VOID, VOID : MON0 )                       % LEAVE
+
+CONSTANT echoPort = 7
+CONSTANT bufSize = 512
+
+INTEGER ARRAY : stack ( 0 : 4095 )
+INTEGER ARRAY : SocketHeap ( 0 : SLSzWorkArea - 1 )
+
+% SLrecvFrom writes here. On the ND-100 a receive buffer must start on a
+% word boundary (ND-860372 7.15); element 0 of a BYTES array does.
+BYTES : buf ( 0 : bufSize - 1 )
+SLmaxima : maxval
+SLin_sockaddr : myaddr
+SLin_sockaddr : peer
+INTEGER : rstat
+
+
+% Print "ECHOUD: <what> status <code>" on the terminal.
+ROUTINE VOID, VOID ( BYTES, INTEGER ) : report ( what, code )
+   OUTPUT ( 1, 'AL', 'ECHOUD: ' )
+   OUTPUT ( 1, 'AL', what )
+   OUTPUT ( 1, 'AL', ' status ' )
+   OUTPUT ( 1, 'I', code )
+   OUTPUT ( 1, 'AL', '$' )
+ENDROUTINE
+
+
+% Start SLIB, exactly as ECHOPL:PLNC does.
+ROUTINE VOID, INTEGER : initSlib
+   SLMaxPorts =: maxval.max_nports
+   SLMaxSockets =: maxval.max_nsockets
+   FALSE =: maxval.max_debug
+   1 =: maxval.max_debfd
+   NIL =: maxval.max_AUserDataP
+   6 =: maxval.max_nsallocmsg
+   0 =: maxval.max_nballocmsg
+   0 =: maxval.max_nxballocmsg
+   SLDominoPioc =: maxval.max_tcpdev
+   SLinit ( ADDR SocketHeap, maxval, NIL, SLMainTaskStackSize, NIL ) =: rstat
+   rstat RETURN
+ENDROUTINE
+
+
+PROGRAM : udpEcho
+   INTEGER : sock, got, sent
+
+   INISTACK stack
+
+   initSlib =: rstat
+   IF rstat >< SLEok THEN
+      report ( 'SLinit', rstat )
+      MON0
+   ENDIF
+
+   % A datagram socket bound to the echo port on any local address.
+   SLsocket ( af_inet, sock_dgram, 0, sock ) =: rstat
+   IF rstat >< SLEok THEN
+      report ( 'SLsocket', rstat )
+      MON0
+   ENDIF
+   af_inet =: myaddr.sa_family
+   echoPort =: myaddr.sin_port
+   0 =: myaddr.sin_addr.in_l1
+   SLbind ( sock, myaddr ) =: rstat
+   IF rstat >< SLEok THEN
+      report ( 'SLbind', rstat )
+      SLclose ( sock )
+      MON0
+   ENDIF
+   OUTPUT ( 1, 'AL', 'ECHOUD: listening on UDP port 7$' )
+
+   DO WHILE 1 < 2
+      SLrecvFrom ( sock, ADDR ( buf ( 0 ) ), bufSize, 0, ADDR peer, got ) =: rstat
+      IF rstat = SLEok THEN
+         OUTPUT ( 1, 'AL', 'ECHOUD: ' )
+         OUTPUT ( 1, 'I', got )
+         OUTPUT ( 1, 'AL', ' bytes from ' )
+         OUTPUT ( 1, 'I', peer.sin_addr.in_b1 )
+         OUTPUT ( 1, 'AL', '.' )
+         OUTPUT ( 1, 'I', peer.sin_addr.in_b2 )
+         OUTPUT ( 1, 'AL', '.' )
+         OUTPUT ( 1, 'I', peer.sin_addr.in_b3 )
+         OUTPUT ( 1, 'AL', '.' )
+         OUTPUT ( 1, 'I', peer.sin_addr.in_b4 )
+         OUTPUT ( 1, 'AL', ' port ' )
+         OUTPUT ( 1, 'I', peer.sin_port )
+         OUTPUT ( 1, 'AL', '$' )
+         SLsendTo ( sock, ADDR ( buf ( 0 ) ), got, 0, ADDR peer, sent ) =: rstat
+         IF rstat >< SLEok THEN
+            report ( 'SLsendTo', rstat )
+         ENDIF
+      ELSE
+         report ( 'SLrecvFrom', rstat )
+         MON0
+      ENDIF
+   ENDDO
+ENDROUTINE
+
+ENDMODULE

@@ -1,0 +1,211 @@
+% ============================================================================
+% ECHOPL:PLNC  -  a TCP echo server in PLANC for SINTRAN III, using SLIB
+%
+% Listens on TCP port 7 (the echo service). Takes one connection at a time,
+% sends back every byte it receives, and goes back to listening when the
+% client closes. Run it from a terminal with @ECHOPL; stop it with ESC.
+%
+% Needs COSMOS TCP/IP D02 running (TCPP holding the Ethernet II controller)
+% and the socket library SLIB B01 from user TCP-IP.
+%
+% The shape is taken from ND's own SLIB program TCCOM:SYMB, which ships in
+% the TCP-COMM user of the D02 kit (Installation/Communication/TCP in this
+% repository): SLinit with an SLmaxima record and a work area sized by
+% SLSzWorkArea, then SLsocket / SLbind / SLlisten / SLaccept / SLrecv.
+% Every routine signature used here is the one declared in ND's SLIB:IMPT.
+%
+% Build: ECHOPL:MODE. Guide: Developer/Case-Studies/TCP-Echo-Server.md.
+% ============================================================================
+
+MODULE echopl
+
+% SLIB sizes its work area from these five. They must be declared BEFORE the
+% $INCLUDE of SLIB:DEFS, which computes SLSzWorkArea from them. Values as in
+% ND's TCCOM. SLMaxPorts MUST be 1 (ND-860372 p.38). SLMaxSockets must be at
+% least the number of messages reserved in initSlib (6 small + 0 large): SLIB
+% refuses SLinit with 20234 SLEinval otherwise (ND-860372 p.39; measured here,
+% 4 sockets with 6 messages failed exactly that way).
+CONSTANT SLMaxPorts = 1
+CONSTANT SLMaxSockets = 10
+CONSTANT SLMaxSLFork = 1
+CONSTANT SLSubTaskStackSize = 1
+CONSTANT SLMainTaskStackSize = 1
+
+% SLIBF00:DEFS is ND's (TCP-IP)SLIB:DEFS with one word removed so that the
+% PLANC-100-F00 compiler accepts it (F00 does not know UNSIGNED). The header
+% of that file says exactly what changed. SLIB:IMPT is used as ND ships it.
+$LIST OFF
+$INCLUDE SLIBF00:DEFS
+$INCLUDE (TCP-IP)SLIB:IMPT
+$LIST ON
+
+IMPORT ( ROUTINE VOID, VOID : MON0 )                       % LEAVE
+IMPORT ( ROUTINE VOID, VOID ( INTEGER, INTEGER ) : MN104 ) % SuspendProgram
+
+% The echo service port. The ND-100 is big-endian, so a port number stored
+% as a 16-bit value is already in network byte order.
+CONSTANT echoPort = 7
+
+% One read or write at a time. SLrecv hands back at most this many bytes.
+CONSTANT bufSize = 512
+
+% The PLANC stack (INISTACK) and SLIB's own work area. Both must be module
+% level: INISTACK needs a global array with lower bound 0, and SLIB keeps
+% pointers into its work area for as long as the program runs.
+INTEGER ARRAY : stack ( 0 : 4095 )
+INTEGER ARRAY : SocketHeap ( 0 : SLSzWorkArea - 1 )
+
+BYTES : buf ( 0 : bufSize - 1 )
+SLmaxima : maxval
+INTEGER : rstat
+
+
+% Print "ECHOPL: <what> status <code>" on the terminal. SLIB status codes are
+% decimal 20225..20258 (SLIB:DEFS); 0 is SLEok.
+ROUTINE VOID, VOID ( BYTES, INTEGER ) : report ( what, code )
+   OUTPUT ( 1, 'AL', 'ECHOPL: ' )
+   OUTPUT ( 1, 'AL', what )
+   OUTPUT ( 1, 'AL', ' status ' )
+   OUTPUT ( 1, 'I', code )
+   OUTPUT ( 1, 'AL', '$' )
+ENDROUTINE
+
+
+% Start SLIB. TCCOM writes these fields with USING ... ENDUSING, which
+% PLANC-100-F00 does not know, so each field is qualified.
+% max_tcpdev = SLDominoPioc tries Ethernet-III (DOMINO) first, then Ethernet II
+% (PIOC); a controller number 0..3 selects one Ethernet II card directly.
+% max_nsallocmsg + max_nballocmsg must not exceed max_nsockets (see the top).
+ROUTINE VOID, INTEGER : initSlib
+   SLMaxPorts =: maxval.max_nports
+   SLMaxSockets =: maxval.max_nsockets
+   FALSE =: maxval.max_debug
+   1 =: maxval.max_debfd
+   NIL =: maxval.max_AUserDataP
+   6 =: maxval.max_nsallocmsg
+   0 =: maxval.max_nballocmsg
+   0 =: maxval.max_nxballocmsg
+   SLDominoPioc =: maxval.max_tcpdev
+   SLinit ( ADDR SocketHeap, maxval, NIL, SLMainTaskStackSize, NIL ) =: rstat
+   rstat RETURN
+ENDROUTINE
+
+
+% Make the listening socket: a stream socket bound to the echo port on any
+% local address, with a backlog of one. Returns the socket id, or -1.
+% Binding to the "any address" 0.0.0.0 works: measured on SINTRAN III M with
+% COSMOS TCP/IP D02, NETSTAT a then shows the listener as 0.0.0.0 port 7 and
+% connections to the machine's address are accepted. ND's TCCOM binds to the
+% host's own address instead (SLgHbyName on the local host name).
+ROUTINE VOID, INTEGER : openListener
+   INTEGER : sock
+   SLin_sockaddr : myaddr
+
+   SLsocket ( af_inet, sock_stream, 0, sock ) =: rstat
+   IF rstat >< SLEok THEN
+      report ( 'SLsocket', rstat )
+      -1 RETURN
+   ENDIF
+
+   af_inet =: myaddr.sa_family
+   echoPort =: myaddr.sin_port
+   0 =: myaddr.sin_addr.in_l1
+
+   SLbind ( sock, myaddr ) =: rstat
+   IF rstat >< SLEok THEN
+      report ( 'SLbind', rstat )
+      SLclose ( sock )
+      -1 RETURN
+   ENDIF
+
+   SLlisten ( sock, 1 ) =: rstat
+   IF rstat >< SLEok THEN
+      report ( 'SLlisten', rstat )
+      SLclose ( sock )
+      -1 RETURN
+   ENDIF
+   sock RETURN
+ENDROUTINE
+
+
+% Echo one connection until the client closes it or an error occurs, then
+% close it. The socket is set to blocking mode first, as TCCOM does for the
+% sockets it accepts.
+% When the peer closes, SLrecv returns SLEok with a count of 0 (ND-860372
+% 7.15, and measured: a client close ends the loop without the "connection
+% ended" report). A non-zero status (for example SLEconnreset) also ends it.
+ROUTINE VOID, VOID ( INTEGER ) : serveOne ( csock )
+   INTEGER : got, sent, off
+   SLiocInt : ioArg
+
+   0 =: ioArg.SliocNumber
+   SLioctl ( csock, SLiocNBIO, ADDR ioArg, SIZE ( ioArg ) ) =: rstat
+
+   DO
+      SLrecv ( csock, ADDR ( buf ( 0 ) ), bufSize, 0, got ) =: rstat
+      WHILE rstat = SLEok
+      WHILE got > 0
+      % SLsend may take fewer bytes than offered; send the rest in turn.
+      0 =: off
+      DO
+         WHILE off < got
+         SLsend ( csock, ADDR ( buf ( off ) ), got - off, 0, sent ) =: rstat
+         WHILE rstat = SLEok
+         WHILE sent > 0
+         off + sent =: off
+      ENDDO
+      WHILE rstat = SLEok
+   ENDDO
+
+   IF rstat >< SLEok THEN
+      report ( 'connection ended', rstat )
+   ENDIF
+   SLclose ( csock )
+ENDROUTINE
+
+
+PROGRAM : echoServer
+   INTEGER : lsock, csock
+   SLin_sockaddr : peer
+
+   INISTACK stack
+
+   initSlib =: rstat
+   IF rstat >< SLEok THEN
+      report ( 'SLinit', rstat )
+      MON0
+   ENDIF
+
+   openListener =: lsock
+   IF lsock < 0 THEN
+      MON0
+   ENDIF
+   OUTPUT ( 1, 'AL', 'ECHOPL: listening on TCP port 7$' )
+
+   DO WHILE 1 < 2
+      SLaccept ( lsock, csock, peer ) =: rstat
+      IF rstat = SLEok THEN
+         OUTPUT ( 1, 'AL', 'ECHOPL: connection from ' )
+         OUTPUT ( 1, 'I', peer.sin_addr.in_b1 )
+         OUTPUT ( 1, 'AL', '.' )
+         OUTPUT ( 1, 'I', peer.sin_addr.in_b2 )
+         OUTPUT ( 1, 'AL', '.' )
+         OUTPUT ( 1, 'I', peer.sin_addr.in_b3 )
+         OUTPUT ( 1, 'AL', '.' )
+         OUTPUT ( 1, 'I', peer.sin_addr.in_b4 )
+         OUTPUT ( 1, 'AL', ' port ' )
+         OUTPUT ( 1, 'I', peer.sin_port )
+         OUTPUT ( 1, 'AL', '$' )
+         serveOne ( csock )
+         OUTPUT ( 1, 'AL', 'ECHOPL: connection closed$' )
+      ELSIF rstat = SLEwouldblock THEN
+         % Nothing waiting on a non-blocking listener: sleep 100 ms.
+         MN104 ( 5, 1 )
+      ELSE
+         report ( 'SLaccept', rstat )
+         MN104 ( 50, 1 )
+      ENDIF
+   ENDDO
+ENDROUTINE
+
+ENDMODULE

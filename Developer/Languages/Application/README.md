@@ -79,6 +79,9 @@ Structured programming language with strong typing and modularity.
   client or server: hello world, every call, the patterns, the traps, the error numbers**
 - [PLANC-XMSG-COMMUNICATION.md](PLANC-XMSG-COMMUNICATION.md) - what XMSG the machine has installed,
   and how to find it
+- **[PLANC-TCP-UDP-SOCKETS.md](PLANC-TCP-UDP-SOCKETS.md) - TCP and UDP programs with ND's socket
+  library SLIB: the program shape, a TCP server, a UDP server, building, testing, the traps**
+- [SLIB-API-REFERENCE.md](SLIB-API-REFERENCE.md) - every SLIB call, record, constant and status code
 - **[PLANC-RT-AND-REENTRANT-PROGRAMS.md](PLANC-RT-AND-REENTRANT-PROGRAMS.md) - INSTALLING a program
   into SINTRAN: as an RT program that holds no terminal and starts at boot, or as a reentrant
   subsystem every user shares one copy of. Where an RT program's name comes from, the RT-LOADER

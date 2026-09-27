@@ -1,0 +1,149 @@
+% ============================================================================
+% ECHOMA:SYMB  -  a TCP echo server in MAC for SINTRAN III (ND-100)
+%
+% Same behaviour as ECHOPL:PLNC: listen on TCP port 7, take one connection
+% at a time, send back every byte, go back to listening when the client
+% closes. Run with @ECHOMA, stop with ESC.
+%
+% The socket calls are made through ECHOSH:PLNC, six PLANC STANDARD routines
+% around the socket library SLIB. A STANDARD routine uses the documented
+% FORTRAN calling sequence (ND-60.145.7 appendix F.1):
+%    T = number of parameters
+%    A = address of the parameter list; each list word is the ADDRESS of
+%        one parameter
+%    JPL I (NAME  - the call; an external must be reached indirectly
+%    result in A  - >= 0 is a result, negative is minus an SLIB status code
+%
+% MAC rules that shape this file (MAC-COOKBOOK.md, ND-60.096.01):
+%  - numbers are OCTAL; symbols are told apart by their LAST five characters
+%  - immediates (SAA, SAT, AAA, SAX, AAX) are signed 8-bit
+%  - monitor calls return to the next word on error, the one after on
+%    success, so the word after MON 2 is the error handler (MON 65 prints
+%    the error text)
+%  - a quoted text keeps its closing apostrophe; PRTX stops at it
+%  - on the machine the source is ECHOMA:SYMB with CR line ends and even
+%    parity on every byte; this repository copy is plain text
+% ============================================================================
+
+        )9BEG START
+        )9EXT ESINI ESLIS ESACC ESRCV ESSND ESCLS
+
+START,  LDA  (TSTRT          % "ECHOMA: starting"
+        JPL  PRTX
+        SAT  0               % ESINI() - start SLIB
+        JPL  I (ESINI
+        JAF  FAIL1           % A not zero: A = -status
+        LDA  (PLIS           % ESLIS(PORTV) - listen on port 7
+        SAT  1
+        JPL  I (ESLIS
+        JAN  FAIL2
+        STA  LSOCK
+        LDA  (TLIS           % "ECHOMA: listening on TCP port 7"
+        JPL  PRTX
+
+WTACC,  LDA  (PLSK           % ESACC(LSOCK) - wait for a client
+        SAT  1
+        JPL  I (ESACC
+        JAN  FAIL3
+        STA  CSOCK
+        LDA  (TCON           % "ECHOMA: connection"
+        JPL  PRTX
+
+RLOOP,  LDA  (PCSK           % ESRCV(CSOCK) - bytes into the shim's buffer
+        SAT  1
+        JPL  I (ESRCV
+        JAN  CLCON           % an error ends this connection
+        JAZ  CLCON           % 0 bytes: the client closed
+        STA  BCNT
+        LDA  (PSND           % ESSND(CSOCK, BCNT) - send them back
+        SAT  2
+        JPL  I (ESSND
+        JAZ  RLOOP           % 0 = all sent, read the next piece
+
+CLCON,  LDA  (PCSK           % ESCLS(CSOCK)
+        SAT  1
+        JPL  I (ESCLS
+        LDA  (TCLO           % "ECHOMA: connection closed"
+        JPL  PRTX
+        JMP  WTACC
+
+FAIL1,  STA  ERRV
+        LDA  (TE1
+        JMP  FAILX
+FAIL2,  STA  ERRV
+        LDA  (TE2
+        JMP  FAILX
+FAIL3,  STA  ERRV
+        LDA  (TE3
+FAILX,  JPL  PRTX            % the failing step
+        LDA  ERRV            % and minus its SLIB status, in decimal
+        SAT  12
+        MON  35
+        MON  0               % leave
+
+% PRTX - print the text whose address is in A, then CR LF.
+% Stops at a zero byte or at the text's closing apostrophe (47).
+PRTX,   STA  PTXT
+        COPY SL DA           % keep the return address: monitor calls
+        STA  PRET            % may use L
+        SAX  0
+PRLP,   LDT  PTXT            % T = text start, X = byte index
+        LBYT                 % A = byte at T + X/2
+        AND  MSK7            % drop a parity bit, if any
+        JAZ  PRNL
+        AAA  -47             % the closing apostrophe?
+        JAZ  PRNL
+        AAA  47
+        SAT  1               % OutByte to terminal 1
+        MON  2
+        MON  65              % error slot: print the error text
+        AAX  1
+        JMP  PRLP
+PRNL,   SAA  15              % CR
+        SAT  1
+        MON  2
+        MON  65
+        SAA  12              % LF
+        SAT  1
+        MON  2
+        MON  65
+        LDA  PRET
+        COPY SA DL
+        EXIT
+
+        )FILL                % the literal pool, within reach of all of it
+
+% ---- data ----------------------------------------------------------------
+LSOCK,  0                    % listening socket id
+CSOCK,  0                    % connected socket id
+BCNT,   0                    % bytes received
+ERRV,   0                    % -status of a failed step
+PORTV,  7                    % TCP port: echo
+PTXT,   0
+PRET,   0
+MSK7,   177
+
+% parameter lists: one word per parameter, holding its ADDRESS
+PLIS,   PORTV                % ESLIS(port)
+PLSK,   LSOCK                % ESACC(lsock)
+PCSK,   CSOCK                % ESRCV(csock) and ESCLS(csock)
+PSND,   CSOCK                % ESSND(csock, count)
+        BCNT
+
+TSTRT,  'ECHOMA: STARTING'
+        0
+TLIS,   'ECHOMA: LISTENING ON TCP PORT 7'
+        0
+TCON,   'ECHOMA: CONNECTION'
+        0
+TCLO,   'ECHOMA: CONNECTION CLOSED'
+        0
+TE1,    'ECHOMA: ESINI (SLINIT) FAILED, -STATUS'
+        0
+TE2,    'ECHOMA: ESLIS (SOCKET/BIND/LISTEN) FAILED, -STATUS'
+        0
+TE3,    'ECHOMA: ESACC (ACCEPT) FAILED, -STATUS'
+        0
+
+        )9END
+        )LINE

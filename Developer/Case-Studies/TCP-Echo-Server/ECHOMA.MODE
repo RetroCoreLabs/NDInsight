@@ -1,0 +1,46 @@
+@CC ==================================================================
+@CC ECHOMA:MODE - build the MAC TCP echo server
+@CC Run as SYSTEM:  @MODE ECHOMA:MODE,,
+@CC
+@CC Three steps: compile the PLANC socket routines ECHOSH, assemble
+@CC the MAC main program ECHOMA, and link both with the SLIB and PLANC
+@CC libraries (the same list as ECHOPL:MODE). Then read ECHOSH:LIST for
+@CC *** lines, read the MAC lines printed on the terminal for errors,
+@CC and check that LIST-ENTRIES-UNDEFINED printed nothing.
+@CC
+@CC MAC prints its listing on the terminal (TERM) so that an error
+@CC shows beside the source line that caused it. Change TERM to 0 for
+@CC a quiet build.
+@CC
+@CC The old outputs are deleted first: a quoted name means CREATE, and
+@CC the compiler, MAC and the linker refuse with FILE ALREADY EXISTS if
+@CC the file is still there. On the very first build the deletes answer
+@CC NO SUCH FILE NAME; that is harmless.
+@CC ==================================================================
+@DELETE-FILE ECHOSH:LIST
+@DELETE-FILE ECHOSH:BRF
+@DELETE-FILE ECHOMA:BRF
+@DELETE-FILE ECHOMA:PROG
+@PLANC-100-F00
+COMPILE ECHOSH:PLNC,"ECHOSH:LIST","ECHOSH"
+EXIT
+@CC MAC is started from its BPUN file, not with @MAC. On this pack the
+@CC reentrant MAC was dumped with start address 0 and runs in a loop
+@CC without reading a line (LIST-REENTRANT shows START 0B). ND's own
+@CC install sheet (210400B) gives MAC-1415C start -1, restart -3.
+@PLACE-BINARY MAC-1415C
+@GOTO-USER 177777
+)9ASSM ECHOMA:SYMB,TERM,"ECHOMA:BRF"
+)9EXIT
+@BRF-LINKER-C01
+PROGRAM-FILE "ECHOMA"
+LOAD ECHOMA
+LOAD ECHOSH
+LIBRARY-MODE ON
+LOAD (TCP-IP)SLIB-NRE-1B-B01
+LOAD (TCP-IP)SLIB-REE-1B-B01
+LOAD MON-CALL-1B-A00
+LOAD PLANC-1BANK-F00
+LIST-ENTRIES-UNDEFINED
+EXIT
+@CC END OF FILE
