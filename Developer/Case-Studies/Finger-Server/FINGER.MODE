@@ -4,9 +4,10 @@
 @CC Then read FINGER:LIST for *** lines, and check that
 @CC LIST-ENTRIES-UNDEFINED printed nothing.
 @CC
-@CC MON-CALL-1B-A00 is not optional here: TerminalStatus (330B) has no
-@CC MONn routine, and MONITOR_CALL by number compiles into 5MON_P,
-@CC which only that library supplies. SLIBF00:DEFS must be on the pack.
+@CC MON-CALL-1B-A00 is needed twice over: TerminalStatus (330B) has no
+@CC MONn routine, so FINGER calls it with MONITOR_CALL, and SLIB itself
+@CC uses MONITOR_CALL too (without the library the link leaves 5MON_P
+@CC undefined - measured). SLIBF00:DEFS must be on the pack.
 @CC
 @CC Libraries: ND's SLIB Programmer's Guide (ND-860372, section 2)
 @CC lists SLIB, NK-100-1BANK, PLANC-UTILLIB-1B, MON-CALL-1BANK and

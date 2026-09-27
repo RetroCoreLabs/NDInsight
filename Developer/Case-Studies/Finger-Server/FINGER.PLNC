@@ -21,8 +21,6 @@
 %   3. TCP           - SLIB: listen, accept, read one bounded line, send, close.
 %
 % THE MONITOR CALLS, all from ND-860228-2-EN "SINTRAN III Monitor Calls":
-%   263B GetDeviceType (MN263, PLANC runtime) - is this logical device a
-%        terminal (type 1) or a terminal access device, TAD (type 2)?
 %   330B TerminalStatus (MONITOR_CALL by number; there is no MONn routine).
 %        44 bytes: 0:15 user name ended by '.', 16:17 mode (1 command,
 %        2 program, 3 WaitForRestart, 4 SuspendProgram), 18:19 state (-1 no one
@@ -41,8 +39,9 @@
 % TerminalStatus is not printed either: it can carry file names and arguments.
 % The user entry's password and friend fields are never read.
 %
-% THE CONSOLE (terminal 1) IS NOT LISTED: to a background program logical
-% device 1 means "own terminal", and the console has no other number.
+% THE CONSOLE is reached through its data field, logical device 646 (1206B),
+% because to a background program device 1 means "own terminal". It is printed
+% as terminal 1, the way @WHO prints it. Batch processors are listed too.
 %
 % CONFIGURATION: FINGER:CONF under the user that runs the server. One setting
 % per line, case does not matter, lines starting with % are comments:
@@ -50,6 +49,18 @@
 %   LIST NONE       the plain query answers that the list is not public
 %   HIDE <USER>     never show this user, in the list or when asked by name
 % No file means LIST ALL with nobody hidden; the server says so at start-up.
+%
+% IT CANNOT BE AN RT PROGRAM. Measured 2026-09-28: loaded with the RT-LOADER
+% (it loads as FINGERS), the first call of TerminalStatus aborts the program
+% with "ERROR 15B.0B". The same happened with ExecuteCommand (317B), and with
+% a MAC routine that issues MON 330 directly, so it is SINTRAN refusing the
+% call in an RT program, exactly as ND-860228 says ("only from background
+% programs, not RT programs"). No documented call lists sessions for an RT
+% program. Run it as a BATCH JOB instead - a background program with no
+% terminal, which is allowed to use TerminalStatus (FINGERB:BATC). Batch
+% processor 1 runs the boot job, so give FINGER one of its own:
+%     @BATCH 2                                       (start processor 2)
+%     @APPEND-BATCH 2 FINGERB:BATC FINGERB-LOG:SYMB  (run FINGER on it)
 %
 % Build: FINGER:MODE. Guide: Developer/Case-Studies/Finger-Server.md.
 % ============================================================================
@@ -71,7 +82,6 @@ $LIST ON
 
 IMPORT ( ROUTINE VOID, VOID : MON0 )                                             % LEAVE
 IMPORT ( ROUTINE VOID, VOID ( INTEGER, INTEGER ) : MN104 )                       % SuspendProgram
-IMPORT ( ROUTINE VOID, VOID ( INTEGER, INTEGER, INTEGER WRITE, INTEGER4 WRITE ) : MN263 ) % GetDeviceType
 IMPORT ( ROUTINE VOID, VOID ( BYTES, INTEGER ARRAY ) : MON44 )                  % GetUserEntry
 IMPORT ( ROUTINE VOID, INTEGER ( BYTES, BYTES, INTEGER ) : MON50 )              % OpenFile
 IMPORT ( ROUTINE VOID, BYTE ( INTEGER ) : MON1 )                                % InByte
@@ -98,6 +108,7 @@ INTEGER ARRAY : sesLdn ( 0 : 63 )
 INTEGER ARRAY : sesMode ( 0 : 63 )
 INTEGER ARRAY : sesCpu ( 0 : 63 )
 INTEGER ARRAY : sesMin ( 0 : 63 )
+INTEGER ARRAY : sesState ( 0 : 63 )
 INTEGER ARRAY : sesNameLen ( 0 : 63 )
 BYTES : sesName ( 0 : 1023 )            % 16 bytes per session
 
@@ -108,7 +119,9 @@ BYTES : hideName ( 0 : 255 )            % 16 bytes per hidden user
 INTEGER ARRAY : hideLen ( 0 : 15 )
 BYTES : cfgLine ( 0 : 79 )
 INTEGER : cfgLen
-BYTES : cfgName := 'FINGER'
+% Named with its user: an RT program runs as user RT, so a bare FINGER:CONF
+% would be looked for under RT, not SYSTEM.
+BYTES : cfgName := '(SYSTEM)FINGER'
 BYTES : cfgType := 'CONF'
 
 % ---- layer 2: text ----------------------------------------------------------
@@ -143,31 +156,6 @@ ENDROUTINE
 % ============================================================================
 % LAYER 1 - SINTRAN DATA
 % ============================================================================
-
-% Is logical device ldn a terminal (type 1) or a TAD (type 2)? A number that is
-% not configured on this system raises; that is a plain "no", not a fault.
-ROUTINE VOID, BOOLEAN ( INTEGER ) : isTerminal ( ldn )
-   INTEGER : dtype
-   INTEGER4 : dattr
-   BOOLEAN : failed
-   FALSE =: failed
-   -1 =: dtype
-   ON ROUTINEERROR DO
-      TRUE =: failed
-   ENDON
-   MN263 ( ldn, 0, dtype, dattr )
-   IF failed THEN
-      FALSE RETURN
-   ENDIF
-   IF dtype = 1 THEN
-      TRUE RETURN
-   ENDIF
-   IF dtype = 2 THEN
-      TRUE RETURN
-   ENDIF
-   FALSE RETURN
-ENDROUTINE
-
 
 % TerminalStatus for one logical device into tbuf. FALSE when the call fails.
 ROUTINE VOID, BOOLEAN ( INTEGER ) : readTerm ( ldn )
@@ -204,6 +192,7 @@ ROUTINE VOID, VOID ( INTEGER ) : keepSes ( ldn )
    wordAt ( 16 ) =: sesMode ( nSes )
    wordAt ( 20 ) =: sesCpu ( nSes )
    wordAt ( 22 ) =: sesMin ( nSes )
+   wordAt ( 18 ) =: sesState ( nSes )
    0 =: sesNameLen ( nSes )
    0 =: i
    DO
@@ -221,40 +210,78 @@ ROUTINE VOID, VOID ( INTEGER ) : keepSes ( ldn )
 ENDROUTINE
 
 
-% Walk every logical device range that appendix B gives for terminals and TADs,
-% and keep each one that has an active user (state 1).
-ROUTINE VOID, VOID : scanSes
-   INTEGER : r, lo, hi, ldn
-   0 =: nSes
-   FOR r IN 1:5 DO
-      IF r = 1 THEN
-         2 =: lo
-         63 =: hi                       % 2-77B: character devices (0 and 1 are not terminals here)
-      ELSIF r = 2 THEN
-         512 =: lo
-         575 =: hi                      % 1000-1077B: terminals 33-64
-      ELSIF r = 3 THEN
-         768 =: lo
-         895 =: hi                      % 1400-1577B: TADs 1-96 (telnet sessions arrive here)
-      ELSIF r = 4 THEN
-         1024 =: lo
-         1087 =: hi                     % 2000-2077B: terminals 65-128
-      ELSE
-         1472 =: lo
-         1599 =: hi                     % 2700-3077B: terminals 129-256
-      ENDIF
-      FOR ldn IN lo:hi DO
-         IF nSes < maxSessions THEN
-            IF isTerminal ( ldn ) THEN
-               IF readTerm ( ldn ) THEN
-                  IF wordAt ( 18 ) = 1 THEN
-                     keepSes ( ldn )
-                  ENDIF
-               ENDIF
-            ENDIF
+% Ask TerminalStatus about one logical device and keep it if someone is on it.
+ROUTINE VOID, VOID ( INTEGER ) : tryLdn ( ldn )
+   IF nSes < maxSessions THEN
+      IF readTerm ( ldn ) THEN
+         % Every state except -1 (no one logged in): 1 is an active terminal,
+         % 0 a batch processor. @WHO lists both, so FINGER does too.
+         IF wordAt ( 18 ) >< -1 THEN
+            keepSes ( ldn )
          ENDIF
-      ENDFOR
+      ENDIF
+   ENDIF
+ENDROUTINE
+
+
+% Find every session. SINTRAN has NO monitor call that lists them: @WHO-IS-ON
+% reads the internal table BACKTAB, and no documented call exposes it. So ask
+% TerminalStatus about each logical device number that appendix B of
+% ND-860228 names as a place a session can be (decimal numbers here):
+%     2-63        terminals 2-32 (the character devices 0-77B)
+%     512-575     terminals 33-64 (1000-1077B)
+%     646         "Terminal 1, data field" (1206B) - THE CONSOLE. From a
+%                 background program device 1 means "own terminal", so this is
+%                 the only number that reaches the console. Measured: it answers
+%                 with the console's user, and @TERMINAL-STATUS 646 prints it
+%                 as log number 1.
+%     670-688     batch processes 1-10, "data field" (1236-1260B, even numbers)
+%     768-895     TADs 1-96 (1400-1577B); telnet and the FTP server log in here
+%     1024-1087   terminals 65-128 (2000-2077B)
+%     1472-1599   terminals 129-256 (2700-3077B)
+%     1600-1638   batch processes 11-30, data field (3100-3146B, even numbers)
+% About 480 calls. A number that is not configured makes TerminalStatus fail,
+% and that is skipped.
+%
+% MEASURED 2026-09-27 against @WHO, which listed 1 RT, 39, 48, 49, 768 SYSTEM
+% and 670 SYSTEM. The first version scanned only the plain terminal ranges and
+% kept state 1, and so missed both the console (646) and batch process 1 (670,
+% state 0).
+ROUTINE VOID, VOID : scanSes
+   INTEGER : ldn
+   0 =: nSes
+   FOR ldn IN 2:63 DO
+      tryLdn ( ldn )
    ENDFOR
+   FOR ldn IN 512:575 DO
+      tryLdn ( ldn )
+   ENDFOR
+   tryLdn ( 646 )
+   FOR ldn IN 0:9 DO
+      tryLdn ( 670 + 2 * ldn )
+   ENDFOR
+   FOR ldn IN 768:895 DO
+      tryLdn ( ldn )
+   ENDFOR
+   FOR ldn IN 1024:1087 DO
+      tryLdn ( ldn )
+   ENDFOR
+   FOR ldn IN 1472:1599 DO
+      tryLdn ( ldn )
+   ENDFOR
+   FOR ldn IN 0:19 DO
+      tryLdn ( 1600 + 2 * ldn )
+   ENDFOR
+ENDROUTINE
+
+
+% The terminal number to print: the logical device number in decimal, as
+% @WHO prints it - except the console's data field 646, which @WHO prints as 1.
+ROUTINE VOID, INTEGER ( INTEGER ) : termNo ( ldn )
+   IF ldn = 646 THEN
+      1 RETURN
+   ENDIF
+   ldn RETURN
 ENDROUTINE
 
 
@@ -607,9 +634,16 @@ ROUTINE VOID, VOID : textList
          ENDIF
          putSesNm ( s )
          putCol ( 18 )
-         putNum ( sesLdn ( s ) )
+         putNum ( termNo ( sesLdn ( s ) ) )
          putCol ( 28 )
-         putText ( 'Logged in' )
+         IF sesState ( s ) = 1 THEN
+            putText ( 'Logged in' )
+         ELSIF sesState ( s ) = 0 THEN
+            putText ( 'Batch' )
+         ELSE
+            putText ( 'State ' )
+            putNum ( sesState ( s ) )
+         ENDIF
          IF qWide THEN
             putCol ( 40 )
             putMode ( sesMode ( s ) )
@@ -663,7 +697,7 @@ ROUTINE VOID, VOID : textUser
    FOR s IN 0:nSes - 1 DO
       IF sesIsUser ( s ) THEN
          putText ( 'On terminal ' )
-         putNum ( sesLdn ( s ) )
+         putNum ( termNo ( sesLdn ( s ) ) )
          putText ( ', logged in ' )
          putNum ( sesMin ( s ) )
          putText ( ' min' )
@@ -900,7 +934,9 @@ ROUTINE VOID, INTEGER : initSlib
 ENDROUTINE
 
 
-PROGRAM : fingerd
+% The PROGRAM name is the RT program name when this is loaded with the
+% RT-LOADER (see FINGERRT:MODE); from a terminal @FINGER runs it as usual.
+PROGRAM : fingersrv
    INTEGER : lsock, csock
 
    INISTACK stack

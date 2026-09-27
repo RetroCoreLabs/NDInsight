@@ -413,6 +413,12 @@ Batch programs run non-interactively from batch processors.
 @START-BATCH <batch-number>
 ```
 
+> **Measured 2026-09-28 on SINTRAN III VSX/500 M: `@START-BATCH` does not exist** - it answers
+> `"START-BATCH" NO SUCH FILE NAME`. The command that starts a passive batch processor is
+> `@BATCH <batch-number>` (it answers `BATCH NUMBER = n`), as in the System Supervisor manual,
+> ND-30.003.7. Appending a job to a passive processor answers `BATCH PASSIVE`.
+
+
 **To list batch processes:**
 
 ```

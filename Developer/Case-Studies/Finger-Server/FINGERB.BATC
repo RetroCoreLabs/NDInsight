@@ -1,0 +1,4 @@
+@ENTER SYSTEM,,,
+@CC Finger server (TCP port 79) as a batch job: a background program
+@CC with no terminal. TerminalStatus is allowed here, not in RT.
+@FINGER

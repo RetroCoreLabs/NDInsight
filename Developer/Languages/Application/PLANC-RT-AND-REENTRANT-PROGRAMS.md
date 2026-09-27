@@ -483,12 +483,27 @@ send anything other than `YES` and every later `STOP-TERMINAL` for that line ans
  - **`END-LOAD` before `CHANGE-RT-DESCRIPTION`**, against the manual's example.
  - **`NO PRIORITY IN: <name>` is not an error.** It is the RT description being created.
  - **`OUTPUT(1, ...)` does not stop an RT load** - it just goes nowhere.
+   *Seen 2026-09-28 on the VSX/500 M pack under RetroCore:* an RT program's `OUTPUT(1, ...)`
+   lines (FINGERS: "listening on TCP port 79", "answered, query kind 2") came out on the
+   operator console, captured by `console log`. Where it goes may depend on the system.
  - **`LIST-FILES` cannot see a subsystem.** Only `LIST-REENTRANT` can.
  - **`HELP` prints no parameters** - ask the command itself and ESC out.
  - **`DUMP-PROGRAM-REENTRANT` says NOTHING when it succeeds.** Check `LIST-REENTRANT`, not the
    screen.
  - **`MON43` is CLOSE, `MON54` is DELETE-FILE.**
  - **Put `SET-AVAILABLE` at the end of any boot MODE file** you write.
+ - **Some monitor calls are for background programs only, and an RT program that calls one
+   is ABORTED, not given an error code.** Measured 2026-09-28 with the Finger server loaded as
+   RT program FINGERS: TerminalStatus (330B) and ExecuteCommand (317B) each ended the program
+   with `ERROR * 15B.0B * <time> * FINGERS.<address>`. That happened through `MONITOR_CALL`
+   and also through a MAC routine issuing `MON 330` directly. Check the caller line on the
+   call's page in ND-860228 ("All users | Background programs") before designing an RT
+   program around a call. GetUserEntry (44B) and all of SLIB worked in RT.
+ - **Need a server with no terminal that uses a background-only call? Make it a batch job.**
+   A batch process is a background program: start a free processor with `@BATCH 2`, then
+   `@APPEND-BATCH 2 <file>:BATC <log file>`, where the file starts `@ENTER SYSTEM,,,` and then
+   runs the program. Processor 1 runs the boot job, so leave it alone. See
+   [the Finger server case study](../../Case-Studies/Finger-Server.md), section 7.
 
 ---
 

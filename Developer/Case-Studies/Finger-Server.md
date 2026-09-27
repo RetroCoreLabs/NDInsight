@@ -29,7 +29,7 @@ the connection. Every line of the answer ends in CR LF.
 
 | Query | Answer |
 |---|---|
-| empty line | everyone logged in: login, terminal, status |
+| empty line | everyone logged in: login, terminal, status (`Logged in`, or `Batch` for an idle batch processor) |
 | `/W` | the same list with mode, CPU minutes and minutes logged in |
 | `USER` | `Login: USER`, then one line per terminal session, or `Not logged in.` |
 | `/W USER` | the same with mode and CPU minutes per session |
@@ -42,23 +42,22 @@ the connection. Every line of the answer ends in CR LF.
 As run on the VSX/500 M reference machine:
 
 ```
-C:\> finger @192.168.199.40
+C:\> finger -l @192.168.199.40
 [192.168.199.40:79]
-Login             Terminal  Status
-SYSTEM            39        Logged in
-SYSTEM            48        Logged in
-SYSTEM            768       Logged in
-
-C:\> finger -l SYSTEM@192.168.199.40
-[192.168.199.40:79]
-Login: SYSTEM
-On terminal 39, logged in 12 min, suspended, CPU 0 min
-On terminal 48, logged in 3 min, command, CPU 1 min
-On terminal 768, logged in 13 min, suspended, CPU 0 min
+Login             Terminal  Status      Mode                  CPU min  On min
+SYSTEM            39        Logged in   suspended             0        27
+SYSTEM            48        Logged in   command               2        18
+SYSTEM            49        Logged in   command               0        2
+RT                1         Logged in   command               0        4
+SYSTEM            670       Batch       command               0        28
+SYSTEM            768       Logged in   suspended             0        28
 ```
 
-"Terminal" is the SINTRAN logical device number in decimal, the same number
-`@TERMINAL-STATUS` prints. 768 is a TAD, which is where telnet sessions arrive.
+At the same moment `@WHO` listed exactly these six: 1 RT, 39, 48, 49, 768 and 670 SYSTEM.
+
+"Terminal" is the number `@WHO` and `@TERMINAL-STATUS` print: the SINTRAN logical device
+number in decimal, and 1 for the operator console. 670 is batch processor 1, and 768 is a
+TAD, where telnet sessions and the FTP server log in.
 
 ---
 
@@ -81,6 +80,9 @@ left undefined.
 | Windows `finger`, with and without `-l`, list and user | all four right |
 | Linux `finger` in WSL, with and without `-l`, list, user, unknown, not logged in | all six right |
 | `FINGER:CONF` with `LIST NONE` and `hide system` | list refused; `SYSTEM` gets `No public information for SYSTEM.` |
+| the list against `@WHO` at the same moment | the same six sessions, the console and the batch processor included |
+| run as a batch job (`FINGERB:BATC`) on batch processor 2, with no terminal | the same answers, from Windows and WSL `finger`; the processor shows as SYSTEM on 672, as in `@WHO` |
+| loaded as an RT program | **does not work**: see section 7 |
 
 ---
 
@@ -91,21 +93,36 @@ knows about TCP. Every call is documented in ND-860228-2-EN, *SINTRAN III Monito
 
 | Need | Call | How PLANC reaches it |
 |---|---|---|
-| is this logical device a terminal or a TAD? | 263B GetDeviceType, type 1 or 2 | `MN263` (PLANC runtime) |
-| who is logged in on it, mode, CPU minutes, minutes logged in | 330B TerminalStatus, 44-byte answer | `MONITOR_CALL(330B, ldn, buffer)` with `MON-CALL-1B-A00` linked |
+| who is logged in on a logical device: user, state, mode, CPU minutes, minutes logged in | 330B TerminalStatus, 44-byte answer | `MONITOR_CALL(330B, ldn, buffer)` with `MON-CALL-1B-A00` linked |
 | does this user exist? | 44B GetUserEntry; error 46B means no such user | `MON44` (PLANC runtime) |
 
-**There is no call that lists sessions.** The server walks every logical device range that
-appendix B of the manual gives for terminals and TADs:
+**There is no call that lists sessions.** `@WHO-IS-ON` reads SINTRAN's internal table
+BACKTAB directly, and no documented monitor call exposes it. The server therefore asks
+TerminalStatus about every logical device number that appendix B of the manual names as a
+place a session can be, about 480 numbers (decimal):
 
-- 2-77B
-- 1000-1077B
-- 1400-1577B, the TADs
-- 2000-2077B
-- 2700-3077B
+| Numbers | What they are |
+|---|---|
+| 2-63 | terminals 2-32 |
+| 512-575 | terminals 33-64 |
+| 646 | "Terminal 1, data field" (1206B): **the operator console** |
+| 670-688, even | batch processes 1-10, data field |
+| 768-895 | TADs 1-96 |
+| 1024-1087 | terminals 65-128 |
+| 1472-1599 | terminals 129-256 |
+| 1600-1638, even | batch processes 11-30, data field |
 
-It keeps each device where TerminalStatus reports state 1, an active terminal. A user on two
-terminals shows as two sessions.
+It keeps every device whose state is not -1 ("no one logged in"). State 1 is an active
+terminal, and state 0 is a batch processor. A user on two terminals shows as two sessions.
+A list answer takes about 3.6 seconds on the emulated machine.
+
+**How these numbers were found, because the first version got them wrong.** It scanned only
+the plain terminal ranges and kept only state 1. Against `@WHO` it missed two sessions:
+
+- **The console.** To a background program, device 1 means "own terminal". The console
+  answers on its data field, 646, and `@TERMINAL-STATUS 646` prints it as log number 1.
+  So FINGER prints 646 as terminal 1, as `@WHO` does.
+- **Batch processor 1 (670).** TerminalStatus reports it as state 0.
 
 **Not shown, because SINTRAN has no documented source for it:**
 
@@ -118,9 +135,6 @@ terminals shows as two sessions.
 
 - **The last command.** TerminalStatus returns it, but it can carry file names and arguments.
 - **The password and friend fields** of the user entry are never read.
-
-**The operator console is not listed.** To a background program, logical device 1 means
-its own terminal, and the console has no other number.
 
 **Run it as SYSTEM.** GetUserEntry on another user's entry is allowed only for SYSTEM and
 RT.
@@ -180,6 +194,60 @@ a line it does not understand.
 3. `@FINGER`. It prints `FINGER: listening on TCP port 79` and then one line per query.
    Stop it with ESC.
 
+To run it with no terminal, give it a batch processor of its own instead (section 7):
+
+```
+@BATCH 2
+@APPEND-BATCH 2 FINGERB:BATC FINGERB-LOG:SYMB
+```
+
 Every connection from a Windows client also prints the TCPP "Invalid argument" line on the
 console. That comes from the card firmware and is harmless. See
 [RE/TCP-OPTION-PARSER.md](../../Installation/Communication/TCP/RE/TCP-OPTION-PARSER.md).
+
+---
+
+## 7. Why it is not an RT program, and what to use instead
+
+An RT program would need no terminal and could start at boot. FINGER loads as one: the
+RT-LOADER names it `FINGERS`, from `PROGRAM : fingersrv` cut to seven characters.
+Queries that need no session data, such as a forwarding refusal or an unknown user, were
+answered.
+
+**The first TerminalStatus call aborts it:**
+
+```
+ERROR   * 15B.0B * 1998-09-27 23:41:40 * FINGERS.66025B
+```
+
+ND-860228 says TerminalStatus "can only be used from background programs, not RT
+programs", and SINTRAN enforces that by aborting the program. Measured three ways:
+
+| Route to the monitor call | As an RT program |
+|---|---|
+| `MONITOR_CALL(330B, ...)` (TerminalStatus) | aborted, ERROR 15B |
+| `MONITOR_CALL(317B, ...)` (ExecuteCommand, to run `TERMINAL-STATUS` into a file) | aborted, ERROR 15B |
+| a MAC routine issuing `MON 330` itself | aborted, ERROR 15B, at the `MON` instruction |
+
+The same MAC routine worked from a terminal. CallCommand (70B) and ExecuteCommand (317B) are
+also documented as background-only. No documented monitor call gives an RT program the
+session list.
+
+**Use a batch job.** A batch process is a background program with no terminal, and
+TerminalStatus is allowed there: the manual says "You may use the monitor call for batch
+jobs". [`FINGERB.BATC`](Finger-Server/FINGERB.BATC) logs in as SYSTEM and runs `@FINGER`.
+A batch processor running FINGER is busy for as long as FINGER runs, and batch processor 1
+runs the boot job (`LOAD-MODE:BATC`), so FINGER gets processor 2 of its own. The machine
+has five, and `@LIST-BATCH-PROCESS` shows which are passive:
+
+```
+@BATCH 2
+BATCH NUMBER =      2
+@APPEND-BATCH 2 FINGERB:BATC FINGERB-LOG:SYMB
+```
+
+A passive processor must be started with `@BATCH <n>` first; appending to it before that
+answers `BATCH PASSIVE`. `@START-BATCH` does not exist on this system ("NO SUCH FILE NAME").
+Run this way, FINGER answered every query, and it lists itself as batch processor 2's
+session on device 672. Its terminal output goes to the batch output file
+`FINGERB-LOG:SYMB`. `@ABORT-BATCH 2` stops it.
