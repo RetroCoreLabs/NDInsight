@@ -828,15 +828,39 @@ All of these are current facts about this machine. None of them stops TCP/IP fro
          Information: 047303B:  Operation not supported on socket
 ```
 
-Appears when a new TCP connection is opened from a Windows client (telnet, FTP, or a bare
-connect from the Windows stack). Quiet while idle, during an open session, and for connects
-made from Linux (WSL through the host NAT). The connection works regardless. Cause unknown:
-it is TCPP doing a socket-library call on a freshly accepted connection that SLIB rejects
-with "Invalid argument" (047301B = 20161) and "Operation not supported on socket"
-(047303B = 20163). Ruled out by capture and replay: every host frame has a valid IP/TCP/UDP/
-ICMP checksum, the 60-byte padding is not the trigger, and the Windows SYN's option set,
-option layout, TTL and window size each reproduce from Linux without the message. The place
-to look is TCPP's socket calls, not the wire. Harmless.
+Appears once for every new TCP connection from a Windows client (telnet, FTP, or your own
+program's listener) and never for one from Linux. **It is harmless: the connection works, and
+nothing on the wire changes.**
+
+**Cause, found 2026-09-27: the TCP option parser in the card's own firmware.** When a SYN
+arrives, the D02 PIOC firmware walks the TCP options in the routine at 0x16CBA of
+`TCP-SER-B0-D02` (see [RE/TCP-OPTION-PARSER.md](RE/TCP-OPTION-PARSER.md)). It knows three
+option kinds, and it handles them like this:
+
+* **End of list (0)** ends the walk.
+* **NOP (1)** is counted but the parser never moves past it, so the walk simply ends.
+* **MSS (2)** is read correctly, and then the parser moves one byte too far (length + 1).
+* **Any other kind** (window scale, SACK, timestamps) is reported to TCPP as 20161
+  "Invalid argument" plus 20163 "Operation not supported on socket". That is this message.
+
+Because of the extra byte, the option the parser looks at after MSS is really byte 5 of the
+option list:
+
+| Client | Options in its SYN | Byte 5 | Result |
+|---|---|---|---|
+| Windows | MSS, NOP, window scale, NOP, NOP, SACK | `03`, the window-scale kind | message |
+| Linux | MSS, SACK, timestamps, NOP, window scale | `02`, read as a second MSS; the walk then ends on a zero inside the timestamp | quiet |
+
+Hosts from the late 1980s sent MSS alone, which is why this never showed then.
+
+**How it was proved.** Hand-made SYNs were sent onto the loopback adapter with npcap, and the
+messages were counted in RetroCore's console log. Thirteen option layouts gave exactly what
+the firmware's code predicts. That includes three that only this off-by-one predicts: an
+end-of-list byte straight after MSS still gives the message, while an unknown kind straight
+after MSS does not. TTL, window size and source port make no difference.
+
+**Nothing to fix on the ND side.** The code is ND's own firmware and runs as written. Windows
+always sends window scale, so a Windows client will always print this line.
 
 **The same event without the message file** prints as bare numbers:
 

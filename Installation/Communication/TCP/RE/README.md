@@ -11,6 +11,7 @@ The TCP state machine is fully decoded.
 | [`TCP-SER-D02-CALL-TREE-FULL.txt`](TCP-SER-D02-CALL-TREE-FULL.txt) | depth-4 call trees from 15 entry points (1227 lines) |
 | [`TCP-SER-D02-FUNCTION-CATALOG.md`](TCP-SER-D02-FUNCTION-CATALOG.md) / [`.csv`](TCP-SER-D02-FUNCTION-CATALOG.csv) | every entry point, one row each. **Pre-naming snapshot** — structural columns are current, the names are historical |
 | [`TELNET-XMSG-SIN.md`](TELNET-XMSG-SIN.md) | how the telnet server reaches SINTRAN over XMSG |
+| [`TCP-OPTION-PARSER.md`](TCP-OPTION-PARSER.md) | the TCP option parser at 0x16CBA, and why every Windows connection prints TCPP "Invalid argument" (an off-by-one after MSS) |
 | [`TCP-SER-D02-GHIDRA-NAMES.csv`](TCP-SER-D02-GHIDRA-NAMES.csv) | **the applied names, exported** — `address,name,kind` for all 906 functions, so the naming survives independently of the local Ghidra database |
 | `TCP-SER-B0-D02.BIN` | the four `:BPUN` banks merged into one flat 512 KB image — the Ghidra input |
 
