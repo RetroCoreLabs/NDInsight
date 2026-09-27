@@ -252,6 +252,10 @@ Run this way, FINGER answered every query, and it lists itself as batch processo
 session on device 672. Its terminal output goes to the batch output file
 `FINGERB-LOG:SYMB`. `@ABORT-BATCH 2` stops it.
 
+**Create the log file with `@CREATE-FILE FINGERB-LOG:SYMB,0`, a file that grows.** Made with
+`,1` it is one fixed page, 2048 bytes. Once FINGER's lines filled it, every new job on that
+batch processor ended at once, with nothing in the queue and nothing in the log.
+
 **Two things a batch job needs that a terminal does not, both found by running it:**
 
 - **A CPU time limit.** Every batch job printed `MAXIMUM TIME IS 1 MINUTES`, and SINTRAN

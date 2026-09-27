@@ -18,7 +18,7 @@ the [echo server README](../TCP-Echo-Server/README.md).
 @MODE FINGER:MODE,,
 @FINGER                                          from a terminal, or with no terminal:
 @BATCH 2
-@APPEND-BATCH 2 FINGERB:BATC FINGERB-LOG:SYMB    (create FINGERB-LOG:SYMB first)
+@APPEND-BATCH 2 FINGERB:BATC FINGERB-LOG:SYMB    (first: @CREATE-FILE FINGERB-LOG:SYMB,0)
 ```
 
 To start it at every boot, put those two lines just before `@SET-AVAILABLE` in
