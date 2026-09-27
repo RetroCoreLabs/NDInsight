@@ -937,16 +937,28 @@ ENDROUTINE
 % The PROGRAM name is the RT program name when this is loaded with the
 % RT-LOADER (see FINGERRT:MODE); from a terminal @FINGER runs it as usual.
 PROGRAM : fingersrv
-   INTEGER : lsock, csock
+   INTEGER : lsock, csock, tries
 
    INISTACK stack
    readCfg
 
-   initSlib =: rstat
-   IF rstat >< SLEok THEN
-      report ( 'SLinit status', rstat )
-      MON0
-   ENDIF
+   % RETRY SLINIT FOR UP TO TEN MINUTES. Started from the boot batch job,
+   % FINGER can run before TCP/IP is ready. Measured 2026-09-28: at boot it got
+   % 20229 (SLEconstart, no contact with the packet level) and ended, while the
+   % TCP start finished a few seconds later. So wait and try again, 10 s at a
+   % time (SuspendProgram, unit 2 = seconds, as @HOLD 3 2 in LOAD-MODE).
+   0 =: tries
+   DO
+      initSlib =: rstat
+      WHILE rstat >< SLEok
+      tries + 1 =: tries
+      IF tries >= 60 THEN
+         report ( 'SLinit gave up, status', rstat )
+         MON0
+      ENDIF
+      report ( 'SLinit not ready, retrying in 10 s, status', rstat )
+      MN104 ( 10, 2 )
+   ENDDO
 
    SLsocket ( af_inet, sock_stream, 0, lsock ) =: rstat
    IF rstat >< SLEok THEN

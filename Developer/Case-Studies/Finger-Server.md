@@ -251,3 +251,32 @@ answers `BATCH PASSIVE`. `@START-BATCH` does not exist on this system ("NO SUCH 
 Run this way, FINGER answered every query, and it lists itself as batch processor 2's
 session on device 672. Its terminal output goes to the batch output file
 `FINGERB-LOG:SYMB`. `@ABORT-BATCH 2` stops it.
+
+**Two things a batch job needs that a terminal does not, both found by running it:**
+
+- **A CPU time limit.** Every batch job printed `MAXIMUM TIME IS 1 MINUTES`, and SINTRAN
+  aborts a batch job whose CPU time passes its maximum (System Documentation, routine
+  TIMER). FINGER used 8 CPU minutes in 40 minutes at a terminal. The maximum is the fourth
+  field of `@ENTER`, so `FINGERB.BATC` starts with `@ENTER SYSTEM,,,32000`. A test job
+  confirmed `MAXIMUM TIME IS  32000 MINUTES`.
+- **A server that waits for TCP/IP.** Started from the boot batch job, FINGER ran seconds
+  before the TCP start had finished, got 20229 from SLinit (SLEconstart, no contact with the
+  packet level), and ended. It now retries SLinit every 10 seconds for up to 10 minutes.
+
+### Starting it at boot
+
+The boot batch job `(SYSTEM)LOAD-MODE:BATC` runs on batch processor 1. Two lines just
+before its `@SET-AVAILABLE` start FINGER on processor 2:
+
+```
+@MODE (TCP-IP)TCP-START-D02:MODE,,
+@CC Finger server (TCP port 79) as a batch job on batch processor 2.
+@CC It must not be RT: TerminalStatus aborts an RT program (ERROR 15B).
+@BATCH 2
+@APPEND-BATCH 2 FINGERB:BATC FINGERB-LOG:SYMB
+@SET-AVAILABLE
+```
+
+Measured on a cold start of the reference machine: port 79 answered 72 seconds after
+RetroCore started, with nobody logged in, and Windows and Linux `finger` got the right
+answers.

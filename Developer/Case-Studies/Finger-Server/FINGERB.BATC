@@ -1,4 +1,6 @@
-@ENTER SYSTEM,,,
+@ENTER SYSTEM,,,32000
 @CC Finger server (TCP port 79) as a batch job: a background program
 @CC with no terminal. TerminalStatus is allowed here, not in RT.
+@CC The 4th ENTER field is the job's MAXIMUM CPU TIME in minutes; the
+@CC default of 1 would abort a server that runs for days.
 @FINGER

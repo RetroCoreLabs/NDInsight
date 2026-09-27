@@ -21,6 +21,9 @@ the [echo server README](../TCP-Echo-Server/README.md).
 @APPEND-BATCH 2 FINGERB:BATC FINGERB-LOG:SYMB    (create FINGERB-LOG:SYMB first)
 ```
 
+To start it at every boot, put those two lines just before `@SET-AVAILABLE` in
+`(SYSTEM)LOAD-MODE:BATC`; the case study, section 7, shows the result.
+
 Lint first. The second `--include-dir` lets the linter find `SLIBF00:DEFS`:
 
 ```
