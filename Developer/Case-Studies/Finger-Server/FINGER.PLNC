@@ -1,0 +1,946 @@
+% ============================================================================
+% FINGER:PLNC  -  a Finger server (RFC 1288) for SINTRAN III, in PLANC
+%
+% Listens on TCP port 79. A client connects, sends ONE query line ending in
+% CR LF, reads the answer, and the server closes the connection. Every output
+% line ends in CR LF. Run it from a terminal logged in as SYSTEM with @FINGER;
+% stop it with ESC.
+%
+% Queries:
+%   <CR LF>              who is logged in
+%   USER<CR LF>          that SINTRAN user, with each terminal session
+%   /W<CR LF>            the list with more columns
+%   /W USER<CR LF>       that user with more detail
+%   user@host            recognised and REFUSED: this server does not forward
+%
+% The program has three layers, kept apart on purpose:
+%   1. SINTRAN DATA  - small routines around documented monitor calls. They
+%      fill a session table and answer "does this user exist". Nothing in them
+%      knows about TCP or text layout.
+%   2. TEXT          - build the answer in obuf, network ASCII, CR LF lines.
+%   3. TCP           - SLIB: listen, accept, read one bounded line, send, close.
+%
+% THE MONITOR CALLS, all from ND-860228-2-EN "SINTRAN III Monitor Calls":
+%   263B GetDeviceType (MN263, PLANC runtime) - is this logical device a
+%        terminal (type 1) or a terminal access device, TAD (type 2)?
+%   330B TerminalStatus (MONITOR_CALL by number; there is no MONn routine).
+%        44 bytes: 0:15 user name ended by '.', 16:17 mode (1 command,
+%        2 program, 3 WaitForRestart, 4 SuspendProgram), 18:19 state (-1 no one
+%        logged in, 0 idle batch processor, 1 active terminal), 20:21 CPU
+%        minutes, 22:23 "time logged in in minutes", 24:43 last command.
+%        "Only from background programs, not RT programs."
+%   44B  GetUserEntry (MON44, PLANC runtime) - the 64-byte user entry. Only
+%        user SYSTEM or RT may read other users' entries, so run this as SYSTEM.
+%        Error 46B "No such user name", 47B "... in main directory".
+%   Logical device numbers from appendix B of the same manual.
+%
+% WHAT IS NOT SHOWN, AND WHY: SINTRAN III has no documented call for a user's
+% full name, for idle time, or for the clock time of a login. The user entry
+% holds dates, but the manual gives no format for them. So none of these is
+% printed and nothing stands in for them. The last-command field of
+% TerminalStatus is not printed either: it can carry file names and arguments.
+% The user entry's password and friend fields are never read.
+%
+% THE CONSOLE (terminal 1) IS NOT LISTED: to a background program logical
+% device 1 means "own terminal", and the console has no other number.
+%
+% CONFIGURATION: FINGER:CONF under the user that runs the server. One setting
+% per line, case does not matter, lines starting with % are comments:
+%   LIST ALL        the plain query lists everyone logged in (the default)
+%   LIST NONE       the plain query answers that the list is not public
+%   HIDE <USER>     never show this user, in the list or when asked by name
+% No file means LIST ALL with nobody hidden; the server says so at start-up.
+%
+% Build: FINGER:MODE. Guide: Developer/Case-Studies/Finger-Server.md.
+% ============================================================================
+
+MODULE finger
+
+% SLIB sizes its work area from these five, and they must come BEFORE the
+% include of SLIB:DEFS. See ECHOPL:PLNC in the TCP echo case study.
+CONSTANT SLMaxPorts = 1
+CONSTANT SLMaxSockets = 10
+CONSTANT SLMaxSLFork = 1
+CONSTANT SLSubTaskStackSize = 1
+CONSTANT SLMainTaskStackSize = 1
+
+$LIST OFF
+$INCLUDE SLIBF00:DEFS
+$INCLUDE (TCP-IP)SLIB:IMPT
+$LIST ON
+
+IMPORT ( ROUTINE VOID, VOID : MON0 )                                             % LEAVE
+IMPORT ( ROUTINE VOID, VOID ( INTEGER, INTEGER ) : MN104 )                       % SuspendProgram
+IMPORT ( ROUTINE VOID, VOID ( INTEGER, INTEGER, INTEGER WRITE, INTEGER4 WRITE ) : MN263 ) % GetDeviceType
+IMPORT ( ROUTINE VOID, VOID ( BYTES, INTEGER ARRAY ) : MON44 )                  % GetUserEntry
+IMPORT ( ROUTINE VOID, INTEGER ( BYTES, BYTES, INTEGER ) : MON50 )              % OpenFile
+IMPORT ( ROUTINE VOID, BYTE ( INTEGER ) : MON1 )                                % InByte
+IMPORT ( ROUTINE VOID, VOID ( INTEGER ) : MON43 )                               % CloseFile
+
+CONSTANT fingerPort = 79
+CONSTANT maxQuery = 64          % longest query line accepted, without CR LF
+CONSTANT idleSecs = 10          % read timeout: seconds with nothing arriving (ND clock)
+CONSTANT maxSessions = 64
+CONSTANT outSize = 4096
+CONSTANT maxHide = 16
+
+INTEGER ARRAY : stack ( 0 : 4095 )
+INTEGER ARRAY : SocketHeap ( 0 : SLSzWorkArea - 1 )
+SLmaxima : maxval
+INTEGER : rstat
+
+% ---- layer 1: SINTRAN data ------------------------------------------------
+BYTES : tbuf ( 0 : 43 )                 % one TerminalStatus answer
+INTEGER ARRAY : uentry ( 0 : 31 )       % one user entry, 64 bytes
+BYTES : uname ( 0 : 16 )                % user name + apostrophe, for MON44
+INTEGER : nSes                          % sessions found by scanSessions
+INTEGER ARRAY : sesLdn ( 0 : 63 )
+INTEGER ARRAY : sesMode ( 0 : 63 )
+INTEGER ARRAY : sesCpu ( 0 : 63 )
+INTEGER ARRAY : sesMin ( 0 : 63 )
+INTEGER ARRAY : sesNameLen ( 0 : 63 )
+BYTES : sesName ( 0 : 1023 )            % 16 bytes per session
+
+% ---- configuration ----------------------------------------------------------
+BOOLEAN : listPublic
+INTEGER : nHide
+BYTES : hideName ( 0 : 255 )            % 16 bytes per hidden user
+INTEGER ARRAY : hideLen ( 0 : 15 )
+BYTES : cfgLine ( 0 : 79 )
+INTEGER : cfgLen
+BYTES : cfgName := 'FINGER'
+BYTES : cfgType := 'CONF'
+
+% ---- layer 2: text ----------------------------------------------------------
+BYTES : obuf ( 0 : 4095 )
+INTEGER : olen
+INTEGER : lineStart                     % obuf index where the current line began
+BYTES : digits := '0123456789'
+INTEGER ARRAY : dig ( 0 : 7 )
+
+% ---- layer 3: TCP and the query -----------------------------------------------
+BYTES : rbuf ( 0 : 127 )                % SLrecv target: module level, word aligned
+BYTES : qline ( 0 : 63 )
+INTEGER : qlen
+BOOLEAN : qWide
+BYTES : qUser ( 0 : 15 )
+INTEGER : qUserLen
+SLin_sockaddr : myaddr
+SLin_sockaddr : peer
+SLiocInt : ioArg
+
+
+% Print "FINGER: <what> <number>" on the server's own terminal.
+ROUTINE VOID, VOID ( BYTES, INTEGER ) : report ( what, code )
+   OUTPUT ( 1, 'AL', 'FINGER: ' )
+   OUTPUT ( 1, 'AL', what )
+   OUTPUT ( 1, 'AL', ' ' )
+   OUTPUT ( 1, 'I', code )
+   OUTPUT ( 1, 'AL', '$' )
+ENDROUTINE
+
+
+% ============================================================================
+% LAYER 1 - SINTRAN DATA
+% ============================================================================
+
+% Is logical device ldn a terminal (type 1) or a TAD (type 2)? A number that is
+% not configured on this system raises; that is a plain "no", not a fault.
+ROUTINE VOID, BOOLEAN ( INTEGER ) : isTerminal ( ldn )
+   INTEGER : dtype
+   INTEGER4 : dattr
+   BOOLEAN : failed
+   FALSE =: failed
+   -1 =: dtype
+   ON ROUTINEERROR DO
+      TRUE =: failed
+   ENDON
+   MN263 ( ldn, 0, dtype, dattr )
+   IF failed THEN
+      FALSE RETURN
+   ENDIF
+   IF dtype = 1 THEN
+      TRUE RETURN
+   ENDIF
+   IF dtype = 2 THEN
+      TRUE RETURN
+   ENDIF
+   FALSE RETURN
+ENDROUTINE
+
+
+% TerminalStatus for one logical device into tbuf. FALSE when the call fails.
+ROUTINE VOID, BOOLEAN ( INTEGER ) : readTerm ( ldn )
+   BOOLEAN : failed
+   FALSE =: failed
+   ON ROUTINEERROR DO
+      TRUE =: failed
+   ENDON
+   MONITOR_CALL ( 330B, ldn, tbuf )
+   IF failed THEN
+      FALSE RETURN
+   ENDIF
+   TRUE RETURN
+ENDROUTINE
+
+
+% The 16-bit big-endian word at byte i of tbuf, as a signed INTEGER.
+ROUTINE VOID, INTEGER ( INTEGER ) : wordAt ( i )
+   INTEGER : hi, lo
+   tbuf ( i ) =: hi
+   tbuf ( i + 1 ) =: lo
+   IF hi >= 128 THEN
+      ( hi - 256 ) * 256 + lo RETURN
+   ENDIF
+   hi * 256 + lo RETURN
+ENDROUTINE
+
+
+% Copy the session in tbuf into slot nSes of the session table.
+ROUTINE VOID, VOID ( INTEGER ) : keepSes ( ldn )
+   INTEGER : i, c, base
+   nSes * 16 =: base
+   ldn =: sesLdn ( nSes )
+   wordAt ( 16 ) =: sesMode ( nSes )
+   wordAt ( 20 ) =: sesCpu ( nSes )
+   wordAt ( 22 ) =: sesMin ( nSes )
+   0 =: sesNameLen ( nSes )
+   0 =: i
+   DO
+      WHILE i < 16
+      tbuf ( i ) =: c
+      c AND 127 =: c
+      WHILE c >< 46                     % '.' ends a name shorter than 16
+      WHILE c >< 39                     % so does an apostrophe
+      WHILE c > 32
+      c =: sesName ( base + i )
+      i + 1 =: i
+   ENDDO
+   i =: sesNameLen ( nSes )
+   nSes + 1 =: nSes
+ENDROUTINE
+
+
+% Walk every logical device range that appendix B gives for terminals and TADs,
+% and keep each one that has an active user (state 1).
+ROUTINE VOID, VOID : scanSes
+   INTEGER : r, lo, hi, ldn
+   0 =: nSes
+   FOR r IN 1:5 DO
+      IF r = 1 THEN
+         2 =: lo
+         63 =: hi                       % 2-77B: character devices (0 and 1 are not terminals here)
+      ELSIF r = 2 THEN
+         512 =: lo
+         575 =: hi                      % 1000-1077B: terminals 33-64
+      ELSIF r = 3 THEN
+         768 =: lo
+         895 =: hi                      % 1400-1577B: TADs 1-96 (telnet sessions arrive here)
+      ELSIF r = 4 THEN
+         1024 =: lo
+         1087 =: hi                     % 2000-2077B: terminals 65-128
+      ELSE
+         1472 =: lo
+         1599 =: hi                     % 2700-3077B: terminals 129-256
+      ENDIF
+      FOR ldn IN lo:hi DO
+         IF nSes < maxSessions THEN
+            IF isTerminal ( ldn ) THEN
+               IF readTerm ( ldn ) THEN
+                  IF wordAt ( 18 ) = 1 THEN
+                     keepSes ( ldn )
+                  ENDIF
+               ENDIF
+            ENDIF
+         ENDIF
+      ENDFOR
+   ENDFOR
+ENDROUTINE
+
+
+% Does the user named in qUser exist? 1 = yes, 0 = no such user,
+% negative = the call failed for another reason (minus the SINTRAN error).
+ROUTINE VOID, INTEGER : userExists
+   INTEGER : i, ec
+   BOOLEAN : failed
+   % The name, then an apostrophe: SINTRAN ends a name shorter than 16 that way.
+   FOR i IN 0:qUserLen - 1 DO
+      qUser ( i ) =: uname ( i )
+   ENDFOR
+   39 =: uname ( qUserLen )
+   FALSE =: failed
+   0 =: ec
+   ON ROUTINEERROR DO
+      TRUE =: failed
+      ErrCode =: ec
+   ENDON
+   MON44 ( uname ( 0 : qUserLen ), uentry )
+   IF NOT failed THEN
+      1 RETURN
+   ENDIF
+   IF ec = 46B THEN
+      0 RETURN
+   ENDIF
+   IF ec = 47B THEN
+      0 RETURN
+   ENDIF
+   -ec RETURN
+ENDROUTINE
+
+
+% ============================================================================
+% CONFIGURATION
+% ============================================================================
+
+% Upper-case one character code.
+ROUTINE VOID, INTEGER ( INTEGER ) : upper ( c )
+   IF c >= 97 THEN
+      IF c <= 122 THEN
+         c - 32 RETURN
+      ENDIF
+   ENDIF
+   c RETURN
+ENDROUTINE
+
+
+% Does cfgLine start with word (case does not matter)?
+ROUTINE VOID, BOOLEAN ( BYTES ) : cfgIs ( word )
+   INTEGER : i, n, a, b
+   MAXINDEX ( word, 1 ) + 1 =: n
+   IF cfgLen < n THEN
+      FALSE RETURN
+   ENDIF
+   FOR i IN 0:n - 1 DO
+      cfgLine ( i ) =: a
+      word ( i ) =: b
+      IF upper ( a ) >< upper ( b ) THEN
+         FALSE RETURN
+      ENDIF
+   ENDFOR
+   TRUE RETURN
+ENDROUTINE
+
+
+% Act on one configuration line held in cfgLine(0 : cfgLen - 1).
+ROUTINE VOID, VOID : cfgApply
+   INTEGER : i, c, n
+   IF cfgLen = 0 THEN
+      RETURN
+   ENDIF
+   cfgLine ( 0 ) =: c
+   IF c = 37 THEN                       % '%' comment
+      RETURN
+   ENDIF
+   IF cfgIs ( 'LIST ALL' ) THEN
+      TRUE =: listPublic
+      RETURN
+   ENDIF
+   IF cfgIs ( 'LIST NONE' ) THEN
+      FALSE =: listPublic
+      RETURN
+   ENDIF
+   IF cfgIs ( 'HIDE ' ) THEN
+      IF nHide < maxHide THEN
+         0 =: n
+         FOR i IN 5:cfgLen - 1 DO
+            cfgLine ( i ) =: c
+            IF c > 32 THEN
+               IF n < 16 THEN
+                  upper ( c ) =: hideName ( nHide * 16 + n )
+                  n + 1 =: n
+               ENDIF
+            ENDIF
+         ENDFOR
+         IF n > 0 THEN
+            n =: hideLen ( nHide )
+            nHide + 1 =: nHide
+         ENDIF
+      ENDIF
+      RETURN
+   ENDIF
+   OUTPUT ( 1, 'AL', 'FINGER: FINGER:CONF line not understood, ignored$' )
+ENDROUTINE
+
+
+% Read FINGER:CONF. A missing file is the ordinary case, not a fault.
+ROUTINE VOID, VOID : readCfg
+   INTEGER : dev, c
+   BOOLEAN : openFailed
+   TRUE =: listPublic
+   0 =: nHide
+   0 =: dev
+   FALSE =: openFailed
+   ON ROUTINEERROR DO
+      TRUE =: openFailed
+   ENDON
+   MON50 ( cfgName, cfgType, 1 ) =: dev
+   IF openFailed THEN
+      OUTPUT ( 1, 'AL', 'FINGER: no FINGER:CONF - listing every user, hiding nobody$' )
+      RETURN
+   ENDIF
+   0 =: cfgLen
+   ON ROUTINEERROR DO
+      -1 =: c                           % end of file arrives as a routine error
+   ENDON
+   DO
+      0 =: c
+      MON1 ( dev ) =: c
+      IF c >= 0 THEN
+         c AND 127 =: c
+      ENDIF
+      IF c = 13 THEN
+         cfgApply
+         0 =: cfgLen
+      ELSIF c = 10 THEN
+         cfgApply
+         0 =: cfgLen
+      ELSIF c >= 32 THEN
+         IF cfgLen < 80 THEN
+            c =: cfgLine ( cfgLen )
+            cfgLen + 1 =: cfgLen
+         ENDIF
+      ENDIF
+      WHILE c >= 0
+   ENDDO
+   cfgApply                             % a last line with no line end
+   MON43 ( dev )
+ENDROUTINE
+
+
+% Is session s one of the hidden users?
+ROUTINE VOID, BOOLEAN ( INTEGER ) : sesHidden ( s )
+   INTEGER : h, i, a, b
+   BOOLEAN : same
+   FOR h IN 0:nHide - 1 DO
+      IF hideLen ( h ) = sesNameLen ( s ) THEN
+         TRUE =: same
+         FOR i IN 0:hideLen ( h ) - 1 DO
+            hideName ( h * 16 + i ) =: a
+            sesName ( s * 16 + i ) =: b
+            IF a >< upper ( b ) THEN
+               FALSE =: same
+            ENDIF
+         ENDFOR
+         IF same THEN
+            TRUE RETURN
+         ENDIF
+      ENDIF
+   ENDFOR
+   FALSE RETURN
+ENDROUTINE
+
+
+% Is the queried user (qUser) hidden?
+ROUTINE VOID, BOOLEAN : userHidden
+   INTEGER : h, i, a, b
+   BOOLEAN : same
+   FOR h IN 0:nHide - 1 DO
+      IF hideLen ( h ) = qUserLen THEN
+         TRUE =: same
+         FOR i IN 0:qUserLen - 1 DO
+            hideName ( h * 16 + i ) =: a
+            qUser ( i ) =: b
+            IF a >< b THEN
+               FALSE =: same
+            ENDIF
+         ENDFOR
+         IF same THEN
+            TRUE RETURN
+         ENDIF
+      ENDIF
+   ENDFOR
+   FALSE RETURN
+ENDROUTINE
+
+
+% Is session s logged in as the queried user?
+ROUTINE VOID, BOOLEAN ( INTEGER ) : sesIsUser ( s )
+   INTEGER : i, a
+   IF sesNameLen ( s ) >< qUserLen THEN
+      FALSE RETURN
+   ENDIF
+   FOR i IN 0:qUserLen - 1 DO
+      sesName ( s * 16 + i ) =: a
+      IF upper ( a ) >< qUser ( i ) THEN
+         FALSE RETURN
+      ENDIF
+   ENDFOR
+   TRUE RETURN
+ENDROUTINE
+
+
+% ============================================================================
+% LAYER 2 - TEXT. Everything goes into obuf as network ASCII, lines end CR LF.
+% ============================================================================
+
+% One character, made safe: parity bit dropped, control characters become '?'.
+ROUTINE VOID, VOID ( INTEGER ) : putCh ( c )
+   INTEGER : x
+   c AND 127 =: x
+   IF x < 32 THEN
+      63 =: x
+   ENDIF
+   IF x = 127 THEN
+      63 =: x
+   ENDIF
+   IF olen < outSize - 2 THEN          % keep room for the final CR LF
+      x =: obuf ( olen )
+      olen + 1 =: olen
+   ENDIF
+ENDROUTINE
+
+% End the current line with CR LF - the only place a line end is written.
+ROUTINE VOID, VOID : putNL
+   IF olen < outSize THEN
+      13 =: obuf ( olen )
+      olen + 1 =: olen
+   ENDIF
+   IF olen < outSize THEN
+      10 =: obuf ( olen )
+      olen + 1 =: olen
+   ENDIF
+   olen =: lineStart
+ENDROUTINE
+
+ROUTINE VOID, VOID ( BYTES ) : putText ( t )
+   INTEGER : i, c
+   FOR i IN 0:MAXINDEX ( t, 1 ) DO
+      t ( i ) =: c
+      putCh ( c )
+   ENDFOR
+ENDROUTINE
+
+% Pad the current line with spaces up to column col.
+ROUTINE VOID, VOID ( INTEGER ) : putCol ( col )
+   DO
+      WHILE olen - lineStart < col
+      WHILE olen < outSize - 2
+      putCh ( 32 )
+   ENDDO
+ENDROUTINE
+
+ROUTINE VOID, VOID ( INTEGER ) : putNum ( n )
+   INTEGER : v, k, c
+   n =: v
+   IF v < 0 THEN
+      putCh ( 45 )
+      0 - v =: v
+   ENDIF
+   0 =: k
+   DO
+      v MOD 10 =: dig ( k )
+      k + 1 =: k
+      v / 10 =: v
+      WHILE v > 0
+      WHILE k < 7
+   ENDDO
+   DO
+      WHILE k > 0
+      k - 1 =: k
+      digits ( dig ( k ) ) =: c
+      putCh ( c )
+   ENDDO
+ENDROUTINE
+
+% The user name of session s.
+ROUTINE VOID, VOID ( INTEGER ) : putSesNm ( s )
+   INTEGER : i, c
+   FOR i IN 0:sesNameLen ( s ) - 1 DO
+      sesName ( s * 16 + i ) =: c
+      putCh ( c )
+   ENDFOR
+ENDROUTINE
+
+% The queried user name.
+ROUTINE VOID, VOID : putQUser
+   INTEGER : i, c
+   FOR i IN 0:qUserLen - 1 DO
+      qUser ( i ) =: c
+      putCh ( c )
+   ENDFOR
+ENDROUTINE
+
+% TerminalStatus mode 1-4 in words.
+ROUTINE VOID, VOID ( INTEGER ) : putMode ( m )
+   IF m = 1 THEN
+      putText ( 'command' )
+   ELSIF m = 2 THEN
+      putText ( 'program running' )
+   ELSIF m = 3 THEN
+      putText ( 'waiting for restart' )
+   ELSIF m = 4 THEN
+      putText ( 'suspended' )
+   ELSE
+      putText ( 'mode ' )
+      putNum ( m )
+   ENDIF
+ENDROUTINE
+
+
+% The answer to an empty query or /W.
+ROUTINE VOID, VOID : textList
+   INTEGER : s, shown
+   IF NOT listPublic THEN
+      putText ( 'The list of users on this system is not public.' )
+      putNL
+      RETURN
+   ENDIF
+   scanSes
+   0 =: shown
+   FOR s IN 0:nSes - 1 DO
+      IF NOT sesHidden ( s ) THEN
+         IF shown = 0 THEN
+            putText ( 'Login' )
+            putCol ( 18 )
+            putText ( 'Terminal' )
+            putCol ( 28 )
+            putText ( 'Status' )
+            IF qWide THEN
+               putCol ( 40 )
+               putText ( 'Mode' )
+               putCol ( 62 )
+               putText ( 'CPU min' )
+               putCol ( 71 )
+               putText ( 'On min' )
+            ENDIF
+            putNL
+         ENDIF
+         putSesNm ( s )
+         putCol ( 18 )
+         putNum ( sesLdn ( s ) )
+         putCol ( 28 )
+         putText ( 'Logged in' )
+         IF qWide THEN
+            putCol ( 40 )
+            putMode ( sesMode ( s ) )
+            putCol ( 62 )
+            putNum ( sesCpu ( s ) )
+            putCol ( 71 )
+            putNum ( sesMin ( s ) )
+         ENDIF
+         putNL
+         shown + 1 =: shown
+      ENDIF
+   ENDFOR
+   IF shown = 0 THEN
+      putText ( 'No one is logged in.' )
+      putNL
+   ENDIF
+ENDROUTINE
+
+
+% The answer to USER or /W USER.
+ROUTINE VOID, VOID : textUser
+   INTEGER : ex, s, found
+   IF userHidden THEN
+      putText ( 'No public information for ' )
+      putQUser
+      putText ( '.' )
+      putNL
+      RETURN
+   ENDIF
+   userExists =: ex
+   IF ex = 0 THEN
+      putText ( 'No such user: ' )
+      putQUser
+      putNL
+      RETURN
+   ENDIF
+   IF ex < 0 THEN
+      putText ( 'The account of ' )
+      putQUser
+      putText ( ' cannot be read here (SINTRAN error ' )
+      putNum ( 0 - ex )
+      putText ( ').' )
+      putNL
+      RETURN
+   ENDIF
+   putText ( 'Login: ' )
+   putQUser
+   putNL
+   scanSes
+   0 =: found
+   FOR s IN 0:nSes - 1 DO
+      IF sesIsUser ( s ) THEN
+         putText ( 'On terminal ' )
+         putNum ( sesLdn ( s ) )
+         putText ( ', logged in ' )
+         putNum ( sesMin ( s ) )
+         putText ( ' min' )
+         IF qWide THEN
+            putText ( ', ' )
+            putMode ( sesMode ( s ) )
+            putText ( ', CPU ' )
+            putNum ( sesCpu ( s ) )
+            putText ( ' min' )
+         ENDIF
+         putNL
+         found + 1 =: found
+      ENDIF
+   ENDFOR
+   IF found = 0 THEN
+      putText ( 'Not logged in.' )
+      putNL
+   ENDIF
+ENDROUTINE
+
+
+% ============================================================================
+% THE QUERY
+% ============================================================================
+
+% Read one query line from csock into qline. Only bytes up to the first line
+% feed are taken; a CR just before it is the terminator and is dropped.
+% Returns 0 = a line, 1 = timeout, 2 = too long, 3 = connection closed.
+%
+% THE TIMEOUT IS SLIB'S NO-ACTIVITY TIMER (ND-860372 section 4.5.2), not a
+% polling loop. The first version set the socket non-blocking and slept with
+% SuspendProgram between reads. Measured 2026-09-27 with Windows finger.exe,
+% which sends the name and the CR LF as TWO segments: the first read got the
+% name, and the CR LF never arrived, although the card had acknowledged it.
+% SLIB takes in new data only inside its own calls, and a SINTRAN sleep is not
+% one of them. So the read is BLOCKING, and the no-activity timer, set to
+% idleSecs with bit B (signal the application), makes SLrecv return
+% SLEtimedout when nothing arrives for that long. Because it counts idle time,
+% a client that trickles bytes is bounded by maxQuery instead.
+ROUTINE VOID, INTEGER ( INTEGER ) : readQuery ( csock )
+   INTEGER : got, state, i, c
+   INTEGER4 : t4
+   % Value in bits 31-16 (seconds), bit 1 = B: signal the application.
+   idleSecs =: t4
+   t4 * 65536 + 2 =: ioArg.SliocNumber
+   SLioctl ( csock, SLiocSNOACT, ADDR ioArg, SIZE ( ioArg ) ) =: rstat
+   0 =: ioArg.SliocNumber                % blocking, as ND's TCCOM does
+   SLioctl ( csock, SLiocNBIO, ADDR ioArg, SIZE ( ioArg ) ) =: rstat
+   0 =: qlen
+   -1 =: state
+   DO
+      SLrecv ( csock, ADDR ( rbuf ( 0 ) ), 128, 0, got ) =: rstat
+      IF rstat = SLEtimedout THEN
+         1 =: state
+      ELSIF rstat >< SLEok THEN
+         3 =: state
+      ELSIF got <= 0 THEN
+         3 =: state
+      ELSE
+         FOR i IN 0:got - 1 DO
+            IF state < 0 THEN
+               rbuf ( i ) =: c
+               IF c = 10 THEN
+                  IF qlen > 0 THEN
+                     qline ( qlen - 1 ) =: c
+                     IF c = 13 THEN
+                        qlen - 1 =: qlen
+                     ENDIF
+                  ENDIF
+                  0 =: state
+               ELSIF qlen >= maxQuery THEN
+                  2 =: state
+               ELSE
+                  c =: qline ( qlen )
+                  qlen + 1 =: qlen
+               ENDIF
+            ENDIF
+         ENDFOR
+      ENDIF
+      WHILE state < 0
+   ENDDO
+   % Back to ND's default: 600 s, bit A (signal the remote peer).
+   600 =: t4
+   t4 * 65536 + 1 =: ioArg.SliocNumber
+   SLioctl ( csock, SLiocSNOACT, ADDR ioArg, SIZE ( ioArg ) ) =: rstat
+   state RETURN
+ENDROUTINE
+
+
+% Split qline into /W and a user name.
+% Returns 0 = list, 1 = one user, 2 = forwarding (refused), 3 = not valid.
+ROUTINE VOID, INTEGER : parseQuery
+   INTEGER : s, e, i, c, n
+   FALSE =: qWide
+   0 =: qUserLen
+   0 =: s
+   qlen - 1 =: e
+   % Surrounding spaces are allowed and dropped. Nothing else is stripped.
+   DO
+      WHILE s <= e
+      qline ( s ) =: c
+      WHILE c = 32
+      s + 1 =: s
+   ENDDO
+   DO
+      WHILE e >= s
+      qline ( e ) =: c
+      WHILE c = 32
+      e - 1 =: e
+   ENDDO
+   % /W, alone or followed by a space.
+   IF e - s >= 1 THEN
+      qline ( s ) =: c
+      IF c = 47 THEN
+         qline ( s + 1 ) =: c
+         IF upper ( c ) = 87 THEN
+            IF e - s = 1 THEN
+               TRUE =: qWide
+               s + 2 =: s
+            ELSE
+               qline ( s + 2 ) =: c
+               IF c = 32 THEN
+                  TRUE =: qWide
+                  s + 2 =: s
+                  DO
+                     WHILE s <= e
+                     qline ( s ) =: c
+                     WHILE c = 32
+                     s + 1 =: s
+                  ENDDO
+               ENDIF
+            ENDIF
+         ENDIF
+      ENDIF
+   ENDIF
+   IF s > e THEN
+      0 RETURN
+   ENDIF
+   FOR i IN s:e DO
+      qline ( i ) =: c
+      IF c = 64 THEN                    % '@': user@host, forwarding
+         2 RETURN
+      ENDIF
+   ENDFOR
+   e - s + 1 =: n
+   IF n > 16 THEN
+      3 RETURN
+   ENDIF
+   % A SINTRAN user name: letters, digits and '-'. Checked BEFORE any lookup.
+   FOR i IN s:e DO
+      qline ( i ) =: c
+      upper ( c ) =: c
+      IF c >= 65 THEN
+         IF c > 90 THEN
+            3 RETURN
+         ENDIF
+      ELSIF c >= 48 THEN
+         IF c > 57 THEN
+            3 RETURN
+         ENDIF
+      ELSIF c >< 45 THEN
+         3 RETURN
+      ENDIF
+      c =: qUser ( i - s )
+   ENDFOR
+   n =: qUserLen
+   1 RETURN
+ENDROUTINE
+
+
+% Send all of obuf, even when SLsend takes it in pieces.
+ROUTINE VOID, VOID ( INTEGER ) : sendAll ( csock )
+   INTEGER : off, sent
+   0 =: off
+   DO
+      WHILE off < olen
+      SLsend ( csock, ADDR ( obuf ( off ) ), olen - off, 0, sent ) =: rstat
+      WHILE rstat = SLEok
+      WHILE sent > 0
+      off + sent =: off
+   ENDDO
+ENDROUTINE
+
+
+% One client: read the query, answer it, close.
+ROUTINE VOID, VOID ( INTEGER ) : serve ( csock )
+   INTEGER : st, kind
+   0 =: olen
+   0 =: lineStart
+   readQuery ( csock ) =: st
+   IF st = 0 THEN
+      parseQuery =: kind
+      IF kind = 0 THEN
+         textList
+      ELSIF kind = 1 THEN
+         textUser
+      ELSIF kind = 2 THEN
+         putText ( 'This server does not forward queries to other hosts (user@host).' )
+         putNL
+      ELSE
+         putText ( 'Not a valid query. Send a user name, /W, or an empty line.' )
+         putNL
+      ENDIF
+      report ( 'answered, query kind', kind )
+   ELSIF st = 1 THEN
+      putText ( 'No query received in time.' )
+      putNL
+      report ( 'timeout, status', st )
+   ELSIF st = 2 THEN
+      putText ( 'Query too long. The limit is 64 characters.' )
+      putNL
+      report ( 'query too long, status', st )
+   ENDIF
+   IF olen > 0 THEN
+      sendAll ( csock )
+   ENDIF
+   SLclose ( csock )
+ENDROUTINE
+
+
+% Start SLIB, as ECHOPL:PLNC does.
+ROUTINE VOID, INTEGER : initSlib
+   SLMaxPorts =: maxval.max_nports
+   SLMaxSockets =: maxval.max_nsockets
+   FALSE =: maxval.max_debug
+   1 =: maxval.max_debfd
+   NIL =: maxval.max_AUserDataP
+   6 =: maxval.max_nsallocmsg
+   0 =: maxval.max_nballocmsg
+   0 =: maxval.max_nxballocmsg
+   SLDominoPioc =: maxval.max_tcpdev
+   SLinit ( ADDR SocketHeap, maxval, NIL, SLMainTaskStackSize, NIL ) =: rstat
+   rstat RETURN
+ENDROUTINE
+
+
+PROGRAM : fingerd
+   INTEGER : lsock, csock
+
+   INISTACK stack
+   readCfg
+
+   initSlib =: rstat
+   IF rstat >< SLEok THEN
+      report ( 'SLinit status', rstat )
+      MON0
+   ENDIF
+
+   SLsocket ( af_inet, sock_stream, 0, lsock ) =: rstat
+   IF rstat >< SLEok THEN
+      report ( 'SLsocket status', rstat )
+      MON0
+   ENDIF
+   af_inet =: myaddr.sa_family
+   fingerPort =: myaddr.sin_port
+   0 =: myaddr.sin_addr.in_l1
+   SLbind ( lsock, myaddr ) =: rstat
+   IF rstat >< SLEok THEN
+      report ( 'SLbind status', rstat )
+      MON0
+   ENDIF
+   SLlisten ( lsock, 1 ) =: rstat
+   IF rstat >< SLEok THEN
+      report ( 'SLlisten status', rstat )
+      MON0
+   ENDIF
+   OUTPUT ( 1, 'AL', 'FINGER: listening on TCP port 79$' )
+
+   DO WHILE 1 < 2
+      SLaccept ( lsock, csock, peer ) =: rstat
+      IF rstat = SLEok THEN
+         serve ( csock )
+      ELSE
+         report ( 'SLaccept status', rstat )
+         MN104 ( 50, 1 )
+      ENDIF
+   ENDDO
+ENDROUTINE
+
+ENDMODULE

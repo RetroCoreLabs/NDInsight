@@ -143,6 +143,13 @@ a word boundary (ND-860372 7.15). `ADDR ( buf ( 0 ) )` of a module-level `BYTES`
 An `SLaccept` on a listener that is not blocking returns 20253 `SLEwouldblock` when no
 client is waiting.
 
+**Do not poll with a SINTRAN sleep.** SLIB takes in new data only inside its own calls. A
+non-blocking `SLrecv` loop that sleeps with SuspendProgram (`MN104`) between tries got the
+first segment of a query and never the second, although the card had acknowledged it.
+Measured with Windows `finger.exe`, which sends a name and its CR LF separately. For a
+read with a timeout, use a blocking `SLrecv` and the no-activity timer (`SLiocSNOACT`,
+section 5); the [Finger server](../../Case-Studies/Finger-Server.md) does this.
+
 ---
 
 ## 4. Names, addresses and byte order
@@ -207,7 +214,7 @@ allows. `SOCK_raw` 3, `SOCK_rdm` 4 and `SOCK_seqpacket` 5 are defined but not su
 | Constant | Value | What it does | Record |
 |---|---|---|---|
 | `SLiocNBIO` | 1 | non-blocking on (1) or off (0). **Run.** | `SLiocINT` (`SLiocNumber`, INTEGER4) |
-| `SLiocSNOACT`, `SLiocGNOACT` | 2, 3 | set / get the no-activity timer | `SLiocINT` |
+| `SLiocSNOACT`, `SLiocGNOACT` | 2, 3 | set / get the no-activity timer. **SNOACT run**: seconds in bits 31-16, bit 1 = signal the application, bit 0 = signal the peer; with bit 1 a blocking `SLrecv` returns 20249 SLEtimedout after that many idle seconds. ND's default is 600 s with bit 0 | `SLiocINT` |
 | `SLiocSOEV` | 4 | set event bits for the socket (used with `SLsleep`) | `SLiocINT` |
 | `SLiocSSEV` | 5 | set a routine to call on an event | `SLiocRout` |
 | `SLiocGActConn` | 6 | active connections | `SLiocActConn` |

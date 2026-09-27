@@ -237,4 +237,5 @@ must start on a word boundary (ND-860372 7.15). Receiving into `buf ( 0 )` of a 
 | `FILE ALREADY EXISTS` | a quoted name means create | `@DELETE-FILE` the outputs first |
 | SLinit returns 20234 | reserved messages > `SLMaxSockets` | `SLMaxSockets = 10` with 6 messages |
 | linker "Redefinition" lines | `NK-100-1BANK` loaded; SLIB already has NK | do not load it |
+| a query sent in two TCP segments is never completed; the read times out | a non-blocking `SLrecv` loop that sleeps with `MN104`: SLIB takes in data only inside its own calls | blocking `SLrecv` plus the no-activity timer `SLiocSNOACT` (see the [Finger server](../../Case-Studies/Finger-Server.md)) |
 | port never answers after a restart | an old `CLOSED` socket from an ESC-stopped run can hide the new listener | `kill <cid>` in TCPIP-MONITOR |

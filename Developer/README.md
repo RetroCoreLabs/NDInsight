@@ -80,7 +80,9 @@ Developer/
 ├── Case-Studies/ (End-to-end worked examples)
 │   ├── HTTP-Server-over-HDLC.md
 │   ├── TCP-Echo-Server.md (TCP and UDP echo servers in PLANC and MAC)
-│   └── TCP-Echo-Server/ (their sources and MODE files)
+│   ├── TCP-Echo-Server/ (their sources and MODE files)
+│   ├── Finger-Server.md (RFC 1288 Finger server in PLANC)
+│   └── Finger-Server/ (its source, MODE and config file)
 │
 ├── Reverse-Engineering/ (Disassembly + binary RE)
 │   ├── Disassembling-a-PROG.md
@@ -158,6 +160,7 @@ Developer/
 | [PLANC-TCP-UDP-SOCKETS.md](Languages/Application/PLANC-TCP-UDP-SOCKETS.md) | Writing, building and testing a TCP or UDP program in PLANC |
 | [SLIB-API-REFERENCE.md](Languages/Application/SLIB-API-REFERENCE.md) | Every SLIB call, record, constant and status code, marked run / manual / declared |
 | [TCP-Echo-Server.md](Case-Studies/TCP-Echo-Server.md) | Working TCP and UDP echo servers in PLANC, and a TCP one in MAC |
+| [Finger-Server.md](Case-Studies/Finger-Server.md) | A Finger server in PLANC: SLIB plus the terminal and user monitor calls |
 
 **Screen programs (VTM)**
 
