@@ -212,7 +212,8 @@ console. That comes from the card firmware and is harmless. See
 An RT program would need no terminal and could start at boot. FINGER loads as one: the
 RT-LOADER names it `FINGERS`, from `PROGRAM : fingersrv` cut to seven characters.
 Queries that need no session data, such as a forwarding refusal or an unknown user, were
-answered.
+answered. The loader session is written out in
+[PLANC-TCP-UDP-SOCKETS.md section 10](../Languages/Application/PLANC-TCP-UDP-SOCKETS.md#10-a-server-with-no-terminal-rt-program-or-batch-job).
 
 **The first TerminalStatus call aborts it:**
 

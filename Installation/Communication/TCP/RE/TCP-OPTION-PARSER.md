@@ -72,3 +72,6 @@ TTL, window size and source port were varied as well, and none of them change th
 The error path leaves the routine early, and the MSS has already been taken. The connection
 is set up normally, so the only effect is the console line. The code is ND's firmware, run
 as written. This was not seen on real hardware, but the same image would do the same there.
+
+A fix to the firmware itself is planned in
+[PLAN-PATCH-TCP-OPTION-PARSER.md](PLAN-PATCH-TCP-OPTION-PARSER.md).

@@ -509,6 +509,9 @@ send anything other than `YES` and every later `STOP-TERMINAL` for that line ans
 
 ## See also
 
+ - [PLANC-TCP-UDP-SOCKETS.md section 10](PLANC-TCP-UDP-SOCKETS.md#10-a-server-with-no-terminal-rt-program-or-batch-job) -
+   a TCP server as an RT program: the RT-LOADER session with the SLIB libraries, and when
+   it must be a batch job instead.
  - [PLANC-XMSG-PROGRAMMING-GUIDE.md](PLANC-XMSG-PROGRAMMING-GUIDE.md) - the XMSG API these
    programs are built on, with the file-I/O monitor calls written out.
  - [PLANC-DEVELOPER-GUIDE.md](PLANC-DEVELOPER-GUIDE.md) - the language itself.

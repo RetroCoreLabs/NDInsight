@@ -11,6 +11,7 @@ TCP/IP D02, SLIB B01, PLANC-100-F00 and BRF-LINKER-C01. It was tested from a Win
 | the network running first | [RUNNING-TCPIP-ON-RETROCORE.md](../../../Installation/Communication/TCP/RUNNING-TCPIP-ON-RETROCORE.md) |
 | sockets from MAC | [MAC-COOKBOOK.md section 11](../System/MAC-COOKBOOK.md#11-tcp-and-udp-from-mac-through-a-planc-shim) |
 | PLANC itself | [PLANC-DEVELOPER-GUIDE.md](PLANC-DEVELOPER-GUIDE.md), [PLANC-LANGUAGE-RULES.md](PLANC-LANGUAGE-RULES.md) |
+| a server with no terminal: RT program or batch job | [section 10](#10-a-server-with-no-terminal-rt-program-or-batch-job) |
 
 ---
 
@@ -239,3 +240,149 @@ must start on a word boundary (ND-860372 7.15). Receiving into `buf ( 0 )` of a 
 | linker "Redefinition" lines | `NK-100-1BANK` loaded; SLIB already has NK | do not load it |
 | a query sent in two TCP segments is never completed; the read times out | a non-blocking `SLrecv` loop that sleeps with `MN104`: SLIB takes in data only inside its own calls | blocking `SLrecv` plus the no-activity timer `SLiocSNOACT` (see the [Finger server](../../Case-Studies/Finger-Server.md)) |
 | port never answers after a restart | an old `CLOSED` socket from an ESC-stopped run can hide the new listener | `kill <cid>` in TCPIP-MONITOR |
+
+---
+
+## 10. A server with no terminal: RT program or batch job
+
+A server should not need somebody logged in. SINTRAN gives two ways to run one with no
+terminal, and the monitor calls the program makes decide which one you can use.
+
+| | RT program | batch job |
+|---|---|---|
+| Started by | `@RT <name>` | `@APPEND-BATCH <n> <file>:BATC <log>` |
+| Runs as | an RT program, no user | a background program, logged in by the batch file |
+| SLIB | works | works |
+| Background-only monitor calls (TerminalStatus 330B, ExecuteCommand 317B, ...) | **the program is aborted** with `ERROR 15B` | work |
+| `OUTPUT(1, ...)` goes to | the operator console | the batch log file |
+| Holds | an RT description and a segment | a whole batch processor, for as long as it runs |
+| Measured with | the Finger server loaded as `FINGERS` | the Finger server, `FINGERB:BATC` |
+
+**Check every monitor call you use before you choose RT.** The page for each call in
+ND-860228 has a line "All users | Background programs". A call marked background-only does
+not return an error code to an RT program: SINTRAN aborts the program. See
+[PLANC-RT-AND-REENTRANT-PROGRAMS.md section 5](PLANC-RT-AND-REENTRANT-PROGRAMS.md#5-traps-collected).
+
+### 10.1 What was verified in RT
+
+The Finger server was loaded as an RT program on the VSX/500 M reference machine on
+2026-09-28. As RT it called SLinit, SLsocket, SLbind, SLlisten, SLaccept, SLrecv with the
+no-activity timer, SLsend and SLclose, and answered the queries that need no session data.
+Its lines came out on the console:
+
+```
+FINGER: listening on TCP port 79
+FINGER: answered, query kind 2
+FINGER: answered, query kind 1
+ERROR   * 15B.0B * 1998-09-27 23:41:40 * FINGERS.66025B
+```
+
+The error line is the first query that called TerminalStatus. So **SLIB itself works in an
+RT program**. A server that needs only SLIB and calls allowed for all users, such as the
+[echo servers](../../Case-Studies/TCP-Echo-Server.md), can be RT. The echo servers have not
+been run as RT programs; that is expected to work, not measured.
+
+### 10.2 Building and loading one
+
+Build it exactly as in section 7 first, and check the three things there. The `RT-LOADER`
+then loads the same BRF files the linker loaded, in the same order: the program first, then
+the libraries. This is the session that loaded FINGER, as the machine printed it:
+
+```
+@RT-LOADER
+*NEW-SEGMENT 2540
+RING: 2
+SEGMENT TYPE:
+PROTECTION BITS:
+WP/NP:
+*LOAD FINGER
+LOAD-SEGMENT: 2540
+LINKING-SEGMENT:
+
+NO PRIORITY IN:  FINGERS
+*LOAD (TCP-IP)SLIB-NRE-1B-B01
+LOAD-SEGMENT: 2540
+LINKING-SEGMENT:
+*LOAD (TCP-IP)SLIB-REE-1B-B01
+LOAD-SEGMENT: 2540
+LINKING-SEGMENT:
+*LOAD MON-CALL-1B-A00
+LOAD-SEGMENT: 2540
+LINKING-SEGMENT:
+*LOAD PLANC-1BANK-F00
+LOAD-SEGMENT: 2540
+LINKING-SEGMENT:
+*WRITE-REFERENCES
+OUTPUT FILE:
+
+*END-LOAD
+*CHANGE-RT-DESCRIPTION
+RT-PROGRAM: FINGERS
+PRIORITY: 75
+SEGMENT ONE: 2540
+SEGMENT TWO:
+START ADDRESS:
+RING: 2
+INITIAL PAGE TABLE:
+ALTERNATIVE PAGE TABLE:
+*EXIT-LOADER
+@RT FINGERS
+```
+
+Notes, all from this session:
+
+- **Pick a free segment on the day** with `LIST-FREE-SEGMENTS`. 2540 was free on this
+  machine; it is not a constant.
+- **The RT name is the `PROGRAM` unit cut to seven characters**: `PROGRAM : fingersrv`
+  became `FINGERS`. `NO PRIORITY IN: FINGERS` after the first `LOAD` is how you learn it.
+- **`MON-CALL-1B-A00` is only needed if the program uses `MONITOR_CALL`.** FINGER does. A
+  program that uses only SLIB and the PLANC runtime routines leaves it out, as its linker
+  MODE file would.
+- **Do not load `NK-100-1BANK`**, the same as with the linker: SLIB already holds NK.
+- **`WRITE-REFERENCES` must print nothing** before `END-LOAD`. Anything listed is
+  unresolved.
+- **`END-LOAD` comes before `CHANGE-RT-DESCRIPTION`**, and that command asks seven
+  questions. Answer each one on the screen before typing the next command. See
+  [PLANC-RT-AND-REENTRANT-PROGRAMS.md section 2.2](PLANC-RT-AND-REENTRANT-PROGRAMS.md#22-installing-it---verified-and-the-manuals-own-example-is-wrong).
+- **Priority 75** copies `FSART`, the file server, as the RT guide recommends. It worked;
+  no other value was tried.
+
+### 10.3 Stopping, reloading and removing
+
+```
+@ABORT FINGERS                  stop it
+```
+
+To load a new build, run the same session on the next free segment. The first `LOAD` then
+asks `FINGERS REPLACING?`; answer `YES`. Each of the three loads made this way printed
+`FINGER: listening on TCP port 79` again after `@RT FINGERS`.
+
+To take it out completely, as was done once RT proved impossible for FINGER:
+
+```
+@ABORT FINGERS
+@RT-LOADER
+*DELETE-PROGRAM FINGERS
+*CLEAR-SEGMENT 2540
+*CLEAR-SEGMENT 2541
+*CLEAR-SEGMENT 2542
+*EXIT-LOADER
+@LIST-RT-DESCRIPTION FINGERS
+ILLEGAL PARAMETER                (it is gone)
+```
+
+Clear every segment you loaded it onto, not just the last one.
+
+### 10.4 Two things any server started without a person needs
+
+- **Wait for TCP/IP.** Started early at boot, SLinit returns 20229 (`SLEconstart`, no contact
+  with the packet level) because the TCP start has not finished. Retry SLinit instead of
+  ending: FINGER tries every 10 seconds for up to 10 minutes with `MN104(10, 2)`.
+- **Somewhere to write.** An RT program's `OUTPUT(1, ...)` goes to the console. A batch job's
+  goes to its log file, and that file must be created with size 0 so it can grow:
+  `@CREATE-FILE NAME-LOG:SYMB,0`. Created with size 1 it fills after one 2048-byte page and
+  the batch job ends.
+
+Starting an RT server at boot (`@RT <name>` in `LOAD-MODE:BATC`) has not been tested here.
+Starting a batch-job server at boot has; see the
+[Finger server case study, section 7](../../Case-Studies/Finger-Server.md#7-why-it-is-not-an-rt-program-and-what-to-use-instead).
