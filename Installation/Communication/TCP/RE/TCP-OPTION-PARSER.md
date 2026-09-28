@@ -67,6 +67,69 @@ because of the off-by-one:
 
 TTL, window size and source port were varied as well, and none of them change the result.
 
+## What the options walk can and cannot affect
+
+This answers one question: if the walk stops early, or skips an option it does not know,
+what goes wrong? Everything below was read from `TCP_Input` (0xBD2A) and `TCP_ParseOptions`
+(0x16CBA) in `TCP-SER-B0-D02.BIN`, and the RFC lines are quoted from the RFC texts.
+
+### The data position does not come from the options walk
+
+`TCP_Input` finds the data from the header's **Data Offset** field, not from the option
+parser:
+
+| Address | What it does |
+|---|---|
+| `0xBDB8`-`0xBDCA` | reads the Data Offset byte, keeps the top 4 bits, multiplies by 4: the **header length** in bytes, kept at `$22(a6)` |
+| `0xBDCE`-`0xBDDA` | rejects the segment if the header length is larger than the segment |
+| `0xC0DA`-`0xC0F8` | calls `TCP_ParseOptions` only when the header is longer than 20 bytes, and passes the header length as a **copy** into the parser's own frame |
+| `0xC064`-`0xC070` | **data length** = segment length - header length |
+| `0xC210`-`0xC234` | **data start**: header length + 12 is added to the buffer offset and taken off the buffer length, which strips the headers |
+
+`TCP_ParseOptions` never writes the header length back. It only changes its own frame and
+the MSS in the connection record (the TCB, field `$B4`). When it reports the error it still
+returns normally: the normal return skips the error slot after the report call, clears the
+bytes-left count and leaves the loop. So `TCP_Input` carries on to the data code with the
+right length.
+
+That is the RFC 793 rule too: the Data Offset field gives *"where the data begins"*, and
+*"the list of options may be shorter than the data offset field might imply"*. The same
+shape - header length from Data Offset, options parsed on their own, then the header
+stripped by that length - is how 4.2BSD `tcp_input` works, which SLIB says it is based on.
+That match is our reading of the code, not something ND's manual states.
+
+### The ND uses one option: MSS
+
+The parser has branches for kinds 0, 1 and 2 and nothing else. Window scale, SACK
+permitted and timestamps are never acted on, so not reading them costs nothing. They also
+cannot be switched on from one side:
+
+- window scale: *"both sides MUST send Window Scale options in their <SYN> segments to
+  enable window scaling in either direction"* (RFC 7323 section 2.2);
+- timestamps: a TCP *"MAY send a TSopt in <SYN,ACK> only if it received a TSopt in the
+  initial <SYN> segment"* (RFC 7323 section 3.2);
+- SACK: *"If the data receiver has not received a SACK-Permitted option for a given
+  connection, it MUST NOT send SACK options on that connection"* (RFC 2018 section 4).
+
+The ND has no code for any of them, so it cannot offer them, and the client cannot use them.
+The ND's own SYN-ACK has not been captured to confirm it carries none of these options; that
+conclusion comes from the parser code and the RFC rules.
+
+### Worst case if the walk stops at an unknown option
+
+Only an **MSS that comes after the unknown option** is lost. Windows and Linux both send MSS
+first, so neither hits this. If a client did:
+
+- the ND would not learn the client's maximum segment size. RFC 1122 section 4.2.2.6:
+  *"If an MSS option is not received at connection setup, TCP MUST assume a default send MSS
+  of 536"*. What value the ND's TCB field `$B4` actually starts with has **not** been read;
+- the result is smaller segments and slower transfers, not wrong data;
+- the parser caps a received MSS at 1024 anyway (`cmpi.w #$400` at 0x16DB8), so the most
+  that can be lost is the step from 1024 down to the default.
+
+Skipping an unknown option by its length byte, as RFC 1122 section 4.2.2.5 requires, avoids
+even that case, because the walk then reaches an MSS wherever it is.
+
 ## Why ND never saw it: TCP options then and now
 
 Every statement in this section is checked against the RFC text, listed under
@@ -145,19 +208,21 @@ All from the RFC Editor, `https://www.rfc-editor.org/rfc/rfcNNNN.txt`:
 - RFC 1072, *TCP Extensions for Long-Delay Paths*, October 1988 - window scale (kind 3),
   SACK permitted (kind 4), echo (kinds 6 and 7).
 - RFC 1122, *Requirements for Internet Hosts -- Communication Layers*, October 1989 -
-  section 4.2.2.5, "TCP Options".
+  section 4.2.2.5, "TCP Options", and 4.2.2.6, "Maximum Segment Size Option" (the 536 default).
 - RFC 1323, *TCP Extensions for High Performance*, May 1992 - window scale (kind 3),
   timestamps (kind 8). Replaces RFC 1072.
 - RFC 2018, *TCP Selective Acknowledgment Options*, October 1996 - section 2, SACK permitted
-  (kind 4).
-- RFC 7323, *TCP Extensions for High Performance*, September 2014 - replaces RFC 1323.
+  (kind 4); section 4, no SACK without SACK permitted.
+- RFC 7323, *TCP Extensions for High Performance*, September 2014 - replaces RFC 1323;
+  section 2.2 (window scale needs both sides), section 3.2 (timestamps in SYN-ACK only if received).
 - RFC 9293, *Transmission Control Protocol (TCP)*, August 2022 - replaces RFC 793;
   MUST-6, MUST-7 and MUST-68 on options.
 
 ## Effect
 
-The error path leaves the routine early, and the MSS has already been taken. The connection
-is set up normally, so the only effect is the console line. The code is ND's firmware, run
+After the report the walk ends and the routine returns normally, and the MSS has already been
+taken. The connection is set up normally and the data is found from the Data Offset field, so
+the only effect is the console line (see "What the options walk can and cannot affect"). The code is ND's firmware, run
 as written. This was not seen on real hardware, but the same image would do the same there.
 
 A fix to the firmware itself is planned in
