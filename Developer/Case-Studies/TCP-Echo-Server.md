@@ -10,6 +10,12 @@ library, SLIB, from PLANC and from MAC.
 | `ECHOUD` | PLANC | UDP | [`ECHOUD.PLNC`](TCP-Echo-Server/ECHOUD.PLNC), [`ECHOUD.MODE`](TCP-Echo-Server/ECHOUD.MODE) |
 | `ECHOMA` | MAC, with a PLANC shim | TCP | [`ECHOMA.MAC`](TCP-Echo-Server/ECHOMA.MAC), [`ECHOSH.PLNC`](TCP-Echo-Server/ECHOSH.PLNC), [`ECHOMA.MODE`](TCP-Echo-Server/ECHOMA.MODE) |
 
+**`ECHOMA` is not a pure MAC program.** SLIB can only be called from PLANC (see
+[Which languages can use SLIB](../Languages/Application/SLIB-API-REFERENCE.md#which-languages-can-use-slib)),
+so the server loop is MAC and every socket call goes through the PLANC helper
+`ECHOSH.PLNC`. A pure MAC socket program has not been written: no ND document describes
+calling SLIB from MAC.
+
 All three include [`SLIBF00.DEFS`](TCP-Echo-Server/SLIBF00.DEFS), which is ND's `SLIB:DEFS`
 with one word removed for the PLANC-100-F00 compiler.
 

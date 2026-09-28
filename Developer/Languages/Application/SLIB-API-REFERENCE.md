@@ -13,9 +13,47 @@ Each call is marked with one of three labels:
 - **Manual** means it comes from ND-860372 and has not yet run here.
 - **Declared** means `SLIB:IMPT` declares it, but ND-860372 has no page for it.
 
+**Only PLANC can use SLIB directly.** See [Which languages can use SLIB](#which-languages-can-use-slib)
+before planning a program in any other language.
+
 How to write and build a program is in
 [PLANC-TCP-UDP-SOCKETS.md](PLANC-TCP-UDP-SOCKETS.md). How to run the stack itself is in
 [RUNNING-TCPIP-ON-RETROCORE.md](../../../Installation/Communication/TCP/RUNNING-TCPIP-ON-RETROCORE.md).
+
+---
+
+## Which languages can use SLIB
+
+**SLIB is a PLANC library. PLANC is the only language ND documents it for.** Read this before
+planning a TCP or UDP program in any other language.
+
+What ND's own material says:
+
+- The manual calls itself *"the PLANC interface of the SINTRAN Socket Library"*, and says
+  *"ND Socket Library is a programming interface (PLANC)"* (ND-860372, the preface and
+  section 1.3). Its required knowledge is *"programming experience in PLANC"*. It has no
+  chapter, example or file list for any other language.
+- The interface ND ships is two PLANC source files, `SLIB:IMPT` and `SLIB:DEFS`, which a
+  program includes when it is compiled (section 1.4). The D02 distribution has no interface
+  files for FORTRAN, C, Pascal, COBOL, MAC or any other language. Checked against the full
+  file list of the D02 `TCP-IP` user.
+- A program that uses SLIB is linked with the PLANC run-time libraries (section 1.4).
+- The D02 distribution has SLIB for the ND-100 only (`SLIB-NRE-1B/2B-B01`,
+  `SLIB-REE-1B/2B-B01`). The manual lists `SLIB-500-A00:BRF` for the ND-500 and ND-5000, but
+  that file is not in D02.
+
+What that means, language by language:
+
+| Language | Can it use SLIB? | Status |
+|---|---|---|
+| PLANC | yes, directly | documented by ND, and run here: every echo server and the Finger server |
+| MAC | only through a small PLANC helper whose routines are declared `STANDARD`; MAC calls the helper and the helper calls SLIB | run here: `ECHOMA`. **The result is not a pure MAC program.** See [MAC-COOKBOOK.md section 11](../System/MAC-COOKBOOK.md#11-tcp-and-udp-from-mac-through-a-planc-shim) |
+| MAC, calling SLIB directly | no ND document describes it. It would mean building PLANC's own call and stack layout by hand | not documented, not tried |
+| FORTRAN | a `STANDARD` PLANC routine uses the FORTRAN calling sequence (ND-60.145.7 appendix F.1), so the same kind of helper should be callable from FORTRAN | not tried |
+| C, Pascal, COBOL, BASIC | nothing in ND-860372 or the D02 distribution | not documented, not tried |
+
+**Without SLIB**, a program would have to talk to the TCP/IP software the way SLIB does
+underneath. That protocol is not documented in ND-860372 and has not been worked out here.
 
 ---
 

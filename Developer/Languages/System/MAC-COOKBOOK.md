@@ -466,6 +466,11 @@ When a MAC program assembles but misbehaves at runtime, in order of payoff:
 
 ## 11. TCP and UDP from MAC through a PLANC shim
 
+**A MAC program cannot use SLIB on its own.** SLIB is documented only for PLANC, so a MAC
+program that uses TCP or UDP needs a PLANC helper, and the result is MAC plus PLANC, not
+pure MAC. The sources and the language table are in
+[SLIB-API-REFERENCE.md, Which languages can use SLIB](../Application/SLIB-API-REFERENCE.md#which-languages-can-use-slib).
+
 ND's socket library SLIB is a PLANC library, and no ND document describes calling an
 ordinary PLANC routine from hand-written MAC on the ND-100. What IS documented is the
 FORTRAN calling sequence, and a PLANC routine declared `STANDARD` uses it (ND FORTRAN
