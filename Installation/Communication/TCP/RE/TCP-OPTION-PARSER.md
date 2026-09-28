@@ -67,6 +67,93 @@ because of the off-by-one:
 
 TTL, window size and source port were varied as well, and none of them change the result.
 
+## Why ND never saw it: TCP options then and now
+
+Every statement in this section is checked against the RFC text, listed under
+[References](#references). Quotes are exact.
+
+### What the rules say
+
+**RFC 793 (September 1981), section 3.1 "Header Format"**, the TCP standard of the time, defines three options:
+
+```
+  Kind     Length    Meaning
+  ----     ------    -------
+   0         -       End of option list.
+   1         -       No-Operation.
+   2         4       Maximum Segment Size.
+```
+
+Those are exactly the three kinds the ND parser knows. The same section says how far to
+move past an option: *"The option-length counts the two octets of option-kind and
+option-length as well as the option-data octets."* So the next option starts `length` bytes
+further on. The parser moves `length + 1`, which is the off-by-one. RFC 793 also says of
+NOP that *"receivers must be prepared to process options even if they do not begin on a
+word boundary"*, and that *"A TCP must implement all options."*
+
+**RFC 1122 (October 1989), section 4.2.2.5** added the rule for options a TCP does not know:
+*"A TCP MUST ignore without error any TCP option it does not implement, assuming that the
+option has a length field (all TCP options defined in the future will have length
+fields)."* RFC 9293 (August 2022), which replaces RFC 793, keeps it as MUST-6. The ND parser
+reports an error instead. Whether D02 was written before or after RFC 1122 is not known
+here: the build date of the firmware has not been found.
+
+### When the options that trip it arrived
+
+| Option | Kind | First in | Status of that RFC | Now defined in |
+|---|---|---|---|---|
+| window scale | 3 | RFC 1072, October 1988 | experimental: *"not proposed as an Internet standard at this time"* | RFC 1323 (May 1992), then RFC 7323 (September 2014) |
+| SACK permitted | 4 | RFC 1072, October 1988 | experimental, as above | RFC 2018 (October 1996, standards track) |
+| timestamps | 8 | RFC 1323, May 1992 (standards track) | - | RFC 7323 |
+
+RFC 1072 had "echo" options, kinds 6 and 7, not timestamps. Kind 8 first appears in
+RFC 1323. All three options in the table are sent in the SYN: RFC 1323 says window scale *"is
+sent only in a SYN segment"*, and RFC 2018 says SACK permitted *"may be sent in a SYN"* and
+*"MUST NOT be sent on non-SYN segments"*.
+
+So until October 1988 MSS was the only option with data that a SYN could carry, and until
+1992 the others were experimental. A SYN with only MSS leaves zero bytes after it, the walk
+ends, and the overshoot never reads anything. **What hosts actually sent in the late 1980s
+is not recorded here**; the RFCs only show what was defined. When Windows and Linux began to
+send these options on every connection is not known here either.
+
+### Why Windows prints the line and Linux does not
+
+A modern client sends several options after MSS, so the overshoot now reads a real byte.
+Which byte that is depends on the order each operating system uses (see the table under
+"Why Windows triggers it and Linux does not" above, taken from captured SYNs):
+
+- **Windows** has window scale (kind 3) at byte 5. The parser does not know kind 3 and
+  reports it, so every Windows connection prints the TCPP line.
+- **Linux**, WSL included, has the length byte of SACK permitted there. That byte is `02`,
+  which the parser takes as a second MSS with length `08`. It then lands in the timestamp
+  echo field. RFC 1323 says that field *"is only valid if the ACK bit is set"* and *"When
+  TSecr is not valid, its value must be zero"* (RFC 7323 makes it SHOULD), and a first SYN
+  has no ACK bit. The parser reads that zero as end of list and stops quietly. So Linux is
+  misread too, just without a message. WSL traffic leaves through Windows' address
+  translation, which does not change TCP options, so the ND sees the Linux order.
+
+**The lesson for TCP work on SINTRAN:** the D02 stack was written for the TCP of its time.
+When a modern client and the ND behave oddly together, first check whether the client sends
+something that the ND code predates. Options, window sizes and timers are the usual places.
+
+### References
+
+All from the RFC Editor, `https://www.rfc-editor.org/rfc/rfcNNNN.txt`:
+
+- RFC 793, *Transmission Control Protocol*, September 1981 - section 3.1, "Header Format", the Options field.
+- RFC 1072, *TCP Extensions for Long-Delay Paths*, October 1988 - window scale (kind 3),
+  SACK permitted (kind 4), echo (kinds 6 and 7).
+- RFC 1122, *Requirements for Internet Hosts -- Communication Layers*, October 1989 -
+  section 4.2.2.5, "TCP Options".
+- RFC 1323, *TCP Extensions for High Performance*, May 1992 - window scale (kind 3),
+  timestamps (kind 8). Replaces RFC 1072.
+- RFC 2018, *TCP Selective Acknowledgment Options*, October 1996 - section 2, SACK permitted
+  (kind 4).
+- RFC 7323, *TCP Extensions for High Performance*, September 2014 - replaces RFC 1323.
+- RFC 9293, *Transmission Control Protocol (TCP)*, August 2022 - replaces RFC 793;
+  MUST-6, MUST-7 and MUST-68 on options.
+
 ## Effect
 
 The error path leaves the routine early, and the MSS has already been taken. The connection

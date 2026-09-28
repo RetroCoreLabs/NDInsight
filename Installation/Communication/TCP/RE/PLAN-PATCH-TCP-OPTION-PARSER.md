@@ -32,8 +32,10 @@ The task is to fix the firmware itself and prove the fix, without losing the ori
    (the report to the host) and whether anything else depends on the error being raised.
 3. **State the root cause in code terms**, in [TCP-OPTION-PARSER.md](TCP-OPTION-PARSER.md):
    the `addq.w #1,d4` at 0x16DCE, NOP not moving the index, and unknown kinds not being
-   skipped by their length byte. RFC 793 and RFC 1122 say an unknown option must be skipped
-   using its length, not rejected.
+   skipped by their length byte. RFC 1122 section 4.2.2.5 (and RFC 9293, MUST-6) says an
+   unknown option with a length field must be ignored without error; RFC 793 section 3.1
+   says the length counts the kind and length bytes too. See the References in
+   TCP-OPTION-PARSER.md.
 4. **Design the fix** as a list of byte changes, each with the old bytes, the new bytes
    and the instruction before and after:
    - after MSS, move the index by the length only;
