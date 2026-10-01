@@ -37,8 +37,10 @@ To do:
 3. When the warning count is 0, change the build step in `.github/workflows/docs.yml` to `mkdocs build --strict`.
 4. Run the build once in a fresh clone before pushing.
 
-### TODO: site size
+### Site size
 
-The local build is 697 MB. GitHub Pages allows 1 GB. Most of it is non-Markdown files
-(`.TXT`, `.ASM`, `.cs`, `.c`) copied next to the pages. Excluding them in
-`docs-site/mkdocs.yml` (`exclude_docs`) would shrink it; links to them then go to GitHub.
+The local build is 648 MB (GitHub Pages allows 1 GB). `.txt` and `.asm` files are excluded
+from the site (`exclude_docs` in `docs-site/mkdocs.yml`); links to them point to the file on
+GitHub (`docs-site/hooks.py`). That saved about 50 MB. What remains is mostly the HTML pages
+(about 400 MB) and the search index (about 80 MB). If the site grows towards 1 GB, the next
+candidates are the copied `.cs` and `.c` sources and the PDFs.
