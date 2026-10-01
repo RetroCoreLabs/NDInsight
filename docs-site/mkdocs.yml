@@ -81,6 +81,8 @@ exclude_docs: |
   __pycache__/
   node_modules/
   # large or binary files that are not part of the readable site
+  # shadows the page of the same name + .md (nd-500-mon-j04.prog.md builds to a folder .../nd-500-mon-j04.prog/)
+  SINTRAN/ND500/nd-500-mon/nd-500-mon-j04.prog
   *.bin
   *.pcapng
   *.xat
