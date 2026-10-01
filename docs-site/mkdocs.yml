@@ -1,0 +1,101 @@
+# Layout A (see standards/DOCS-SITE.md): the repository IS the docs folder.
+# Every README and note already in the tree becomes a page, nothing is copied.
+# docs_dir is the repo root, so MkDocs needs the config in a subfolder and the
+# site must be built OUTSIDE the checkout:
+#   mkdocs build --strict -f docs-site/mkdocs.yml -d <folder outside the repo>
+site_name: NDInsight
+site_description: Norsk Data NORD / ND-100 / ND-500 and SINTRAN III documentation
+site_url: https://retrocorelabs.github.io/ndinsight/
+repo_url: https://github.com/RetroCoreLabs/NDInsight
+edit_uri: blob/main/
+docs_dir: ..
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle: {icon: material/brightness-auto, name: Switch to light mode}
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle: {icon: material/brightness-7, name: Switch to dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle: {icon: material/brightness-4, name: Switch to system preference}
+  features:
+    - navigation.indexes
+    - navigation.path
+    - navigation.top
+    - navigation.footer
+    - navigation.prune
+    - search.suggest
+    - search.highlight
+    - toc.follow
+    - content.code.copy
+
+plugins:
+  - search
+
+hooks:
+  - hooks.py
+
+markdown_extensions:
+  - toc:
+      permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}
+  - tables
+  - attr_list
+  - md_in_html
+  - admonition
+  - footnotes
+  - def_list
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight
+  - pymdownx.tabbed
+  - mdx_truly_sane_lists:
+      nested_indent: 2
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
+  - docs-site/mermaid-init.js
+
+validation:
+  links:
+    not_found: warn
+    absolute_links: warn
+    unrecognized_links: warn
+
+exclude_docs: |
+  .git/
+  .github/
+  .claude/
+  docs-site/*.yml
+  # a standalone viewer app: its index.html would shadow the README page
+  SINTRAN/File-Formats/viewer/index.html
+  docs-site/*.py
+  docs-site/*.txt
+  __pycache__/
+  node_modules/
+  # large or binary files that are not part of the readable site
+  *.bin
+  *.pcapng
+  *.xat
+  *.MODE
+  *.DATA
+  *.BPUN
+  *.SYMB
+  *.PROG
+  *.zip
+  *.7z
+  *.exe
+  *.dll
+  *.log
+  *.ps1
+  *.py
+  *.json
+  *.yaml
+  *.yml
