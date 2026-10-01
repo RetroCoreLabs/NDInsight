@@ -5,7 +5,7 @@
 #   mkdocs build --strict -f docs-site/mkdocs.yml -d <folder outside the repo>
 site_name: NDInsight
 site_description: Norsk Data NORD / ND-100 / ND-500 and SINTRAN III documentation
-site_url: https://retrocorelabs.github.io/ndinsight/
+site_url: https://retrocorelabs.github.io/NDInsight/
 repo_url: https://github.com/RetroCoreLabs/NDInsight
 edit_uri: blob/main/
 docs_dir: ..

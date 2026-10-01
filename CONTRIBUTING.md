@@ -2,7 +2,7 @@
 
 ## Docs site
 
-The site at <https://retrocorelabs.github.io/ndinsight/> is built with MkDocs Material from
+The site at <https://retrocorelabs.github.io/NDInsight/> is built with MkDocs Material from
 this repository (layout A: the repository is the docs folder). It is rebuilt and published by
 `.github/workflows/docs.yml` on every push to `main`.
 Settings, Pages, Source must be set to "GitHub Actions".
