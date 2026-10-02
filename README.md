@@ -2,6 +2,8 @@
 
 **Comprehensive technical analysis and documentation for Norsk Data computer systems**
 
+**Read it online: <https://retrocorelabs.github.io/NDInsight/>** - the full repository as a searchable documentation site (published with GitHub Pages).
+
 ---
 
 ## 📖 Overview
