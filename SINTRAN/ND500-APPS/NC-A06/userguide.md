@@ -51,14 +51,22 @@ Start the SINTRAN shell as described in [../README.md](../README.md), then type
 the bare name `NC-A06` at the `@` prompt (the `@` is the prompt, do NOT type
 it).
 
-Interaction model [verified]: NC prints its banner, then reads input one
-character at a time starting from device 0 (the SINTRAN command buffer, i.e.
-the initial argument line). The `NC:` prompt does not appear until the first
-carriage return; on that first CR NC switches its input to the terminal
-(device 1). So an interactive session needs a leading CR before the first
-typed command.
+Interaction model [measured 05-OCT-2026, real SINTRAN III VSX/500 L on nd100x]: NC prints its banner
+and then `NC:`. Started from the monitor (`ND-5000: NC-A06`) it shows the prompt by itself; typing
+`CHECK` or `COMPILE` at that prompt works without a leading carriage return. (The older description
+here - that NC reads its first line from the SINTRAN command buffer and needs a leading CR - was
+written against the earlier emulated lane and is not what the measured run shows.)
 
-The reliable, run-verified way to compile is a MODE file that runs CHECK then
+Two requirements from the measured run, which the older text did not mention:
+- `DEFINE-STANDARD-DOMAIN CAT-CAT5-B,CAT-CAT5-B06` and `DEFINE-STANDARD-DOMAIN NC-A,NC-A06` must be
+  typed at the `ND-5000:` prompt after every cold start. Without them code generation ends in
+  `AMBIGUOUS FILE NAME`.
+- After `EXIT` the terminal is back at the SINTRAN `@` prompt, not at the monitor.
+
+The one-step form works under real SINTRAN [measured 05-OCT-2026]:
+`COMPILE HELLO,"HELLO","HELLO"` printed `preprocessing : ok`, `syntax check : ok`,
+`semantic check : ok` and `code generation : ok`, and wrote `HELLO:NRF`. The two-step form below
+also works. The reliable, run-verified way to compile in batch is a MODE file that runs CHECK then
 GENERATE-CODE. Scripted example that produces a real `HELLO.NRF` [verified]:
 
 ```sh
@@ -183,10 +191,10 @@ against an NC manual - treat individual flag semantics as [UNVERIFIED].
   Always type the bare SINTRAN name (`B`), never `B.C` [measured/doc]. Default
   types NC appends: source `:C`, listing `:LIST`, object `:NRF`, preprocessed
   `:PP`, intermediate `:CAT`.
-- The run-verified compile path is **two-step**: `CHECK <src>,<list>,<cat>`
-  then `GENERATE-CODE <cat>,<object>` — NOT the single `compile` command,
-  which stops after preprocessing without invoking the code generator
-  ["Known issues" section above, and §4 of the analysis doc].
+- Both paths work under real SINTRAN [measured 05-OCT-2026]: the one-step `COMPILE <src>,<list>,<obj>`
+  ran all four phases, and so did the two-step `CHECK <src>,<list>,<cat>` then
+  `GENERATE-CODE <cat>,<object>`. The older statement that `compile` stops after preprocessing
+  describes the earlier emulated lane and is superseded.
 - The reliable way to drive a compile non-interactively is a MODE file
   (`CREATE-FILE` the three outputs, then `NC-A06`, then `CHECK ...`, then
   `GENERATE-CODE ...`) — see the worked example in "How to run" above.
@@ -331,8 +339,9 @@ against an NC manual - treat individual flag semantics as [UNVERIFIED].
 |---|---|---|
 | Only the banner ever prints, program appears hung | No text was queued in the SINTRAN command buffer (device 0) and no leading `\r` was sent | Either preload `CHECK ...`/`GENERATE-CODE ...` on the command line before start, or send a bare `\r` first to reach the interactive `NC:` prompt [measured/doc] |
 | `EXIT` (or any command) sent immediately after start does nothing | Consumed as the device-0 initial argument line before the `NC:` prompt existed | Send a leading `\r` first if the intent was an interactive command [measured, corpus701] |
+| `AMBIGUOUS FILE NAME` after `semantic check : ok`, no object written, `protection violation` at `EXIT` | The two standard domains `CAT-CAT5-B` and `NC-A` are not defined in this boot (they are not kept across a cold start) | `DEFINE-STANDARD-DOMAIN CAT-CAT5-B,CAT-CAT5-B06` and `DEFINE-STANDARD-DOMAIN NC-A,NC-A06` at `ND-5000:` [measured 05-OCT-2026] |
 | "Ambiguous file name" / file not found for a name with a dot in it | NC appended its own default type onto the dotted name (`B.C` -> `B.C.C`) | Use the bare SINTRAN name (`B`), let NC append `:C`/`:LIST`/`:NRF`/etc. itself [measured] |
-| `compile` prints `preprocessing` then `no rewrite` / ` terminated`, no object produced | Single-command `compile` stops after preprocessing (known limitation on this build) | Use the two-step `CHECK <src>,<list>,<cat>` then `GENERATE-CODE <cat>,<obj>` MODE-file flow [verified] |
+| `compile` prints `preprocessing` then `no rewrite` / ` terminated`, no object produced | seen on the earlier emulated lane (single-command `compile` stopped after preprocessing there); not seen on the real-SINTRAN run of 05-OCT-2026 | If it happens, use the two-step `CHECK` then `GENERATE-CODE` flow [verified on the earlier lane] |
 | `GENERATE-CODE` reports "terminated" cleanly but `:NRF` is 0 bytes | Historically, `MON 317B UECOM` was a stub that never ran the nested CAT-CAT5-B06 back end; fixed per commit `15ca5e9` [doc, `317B_ExecuteCommand.yaml`] | Confirm you are on a build after that fix (this userguide's "Verified behaviour" run of 2026-07-31 is); if it still happens, check `CAT-CAT5-B06` is installed in SYSTEM [inferred, not re-measured on this build] |
 | `SINTRAN ERROR 56B` opening `:CAT`/`:LIST`/`:NRF` | Output file not `CREATE-FILE`d first | `CREATE-FILE` all three output files before running `NC-A06` (see MODE-file example) [pattern from "How to run"] |
 | Typed input never echoes / NC reads the same character forever | Octobus-lane terminal-input delivery bug (B24, BUGS.md) writing to the wrong physical address | Confirm the servicer fix (corpus709) is in place; this is a transport bug, not a usage error [measured] |

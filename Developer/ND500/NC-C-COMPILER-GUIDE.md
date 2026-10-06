@@ -42,12 +42,14 @@ and the [ND-500 Loader Monitor manual](../../Reference-Manuals/ND-60.136.04A%20N
 
 ## 2. Source files
 
-- File type `:C`. Lines end in CR LF. Plain 7-bit ASCII is accepted [measured]. Whether LF alone works
-  is [unknown].
+- File type `:C`. Lines end in CR LF. Plain 7-bit ASCII is accepted [measured]. Lines ending in LF
+  alone also compile [measured 05-OCT-2026 under real SINTRAN: a source with LF-only line ends gave
+  `no errors detected` and an object containing the program's string].
 - Give NC the bare SINTRAN name: `HELLO`, not `HELLO.C`. NC adds the type itself: source `:C`, listing
   `:LIST`, object `:NRF`, intermediate `:CAT`, include `:H` [measured].
-- Every program in the measurements used the K&R function form. Whether NC accepts ANSI prototypes is
-  [unknown].
+- NC accepts only the K&R function form. An ANSI prototype definition (`int f(int a, int b) { ... }`)
+  gives `*ERROR* error in SUFFIXED_DECLARATOR` and `error in PARAMETER_LIST` in the listing, with
+  `2 errors detected` [measured 05-OCT-2026]. Write `f(a, b) int a, b; { ... }`.
 
 ```c
 main(argc, argv)
@@ -76,6 +78,10 @@ char *argv[];
 NC prints its banner and `NC:`. After `EXIT` the terminal is at the SINTRAN prompt `@`, not at
 `ND-5000:`, even when NC was started from the monitor [measured in three sessions]. Type `ND-500` again
 to continue there.
+
+`CROSS MAIN2,XREF2,60` and `FORMAT MAIN2,MAIN2F` were each tried with the output files created first
+[measured 05-OCT-2026]: both printed `""` and `AMBIGUOUS FILE NAME`. The cause was not found, so these two
+commands are not usable as written here.
 
 ## 4. The commands [NC help]
 
@@ -110,7 +116,7 @@ clear
 `define-cross`, `define-cat-copy`, `define-optimizer` and `define-user-interface`, each with the
 parameter `<program or domain: >...`. What they do is [unknown].
 
-Not run, so their behaviour is [unknown]: `link`, `cross`, `format`, `library`, `cc`, `undef`,
+Not run, so their behaviour is [unknown]: `link`, `library`, `cc`, `undef`,
 `page-length`, `initialize-compile-parameters`, `save-compile-parameters`.
 
 ## 5. Compiling [measured]
@@ -159,8 +165,20 @@ nc: messages for "INC3:c"
 ***   1 error  detected  ***
 ```
 
-A syntax error under `COMPILE` printed only `syntax check    : errors detected` on the terminal. Whether
-the details are in the `:LIST` file was not read back: [unknown].
+A syntax error under `COMPILE` prints only `syntax check    : errors detected` on the terminal. The
+details are in the `:LIST` file, which shows the source line, a caret under the error, the message and
+the total. Example for a line `x = ;` [measured 05-OCT-2026]:
+
+```
+    4.     x = ;
+               ^
+*ERROR*   at m.4    error in ASSIGN_EXPR
+*MESSAGE*           ;               deleted
+
+***   1 error  detected  ***
+```
+
+The terminal does not show this text; read the `:LIST` file on the pack or extract it with `ndtool`.
 
 ## 6. Options [NC help]
 
@@ -235,9 +253,9 @@ and `"name.h"` for headers beside the source.
 - **Do not answer the `DIRECTORY` prompt with an empty line.** After `DIRECTORY` and an empty answer the
   next `COMPILE` ended NC with `string index exceeds length of string` and `program terminated`
   [measured once; that the empty answer caused it is inferred, not isolated].
-- The compiler binary contains the text `#directory`, so a directive for the source file may exist:
-  [unknown].
-- The binary has the message `include nesting too deep`; the limit is [unknown].
+- The compiler binary contains the text `#directory`, so a directive for the source file may exist;
+  not tested [unknown]. Use the `DIRECTORY` command, which was measured.
+- The binary has the message `include nesting too deep`; the limit was not reached and is [unknown].
 
 ## 9. The C library without header files
 

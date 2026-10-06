@@ -27,11 +27,21 @@ All multi-byte fields are **big-endian** (ND-500 native byte order).
 ## 1. Overall file layout
 
 ```
-0x0000  Domain/Segment Header (4096 bytes = 2 pages of 2048; page 2 is reserved)
-0x1000  Debug info
-        Link info
-        Program/Data segments (slave segments, DOM only)
+0x0000  Domain header: 2 pages of 2048 bytes (0x0000-0x0FFF); the next 2 pages are reserved
+0x1000  (compressed files only) debug info directly after the header
+0x2000  Debug info of a freshly linked domain (default area reserved: 1024 pages = 2 MB)
+0x202000  Link info (symbol table), default 2 MB area
+0x402000  Program segment 1, default 2 MB area
+0x602000  Data segment 1, default 32 MB area
 ```
+
+Measured 05-OCT-2026 on a freshly linked `HELLO:DOM` (nd100x, real SINTRAN, ND LINKER B01): debug
+info at 0x2000, link info at 0x202000, program at 0x402000, data at 0x602000. The byte count of the
+file is the start of the data segment plus its size (0x602000 + 0x35DC = 6313436 bytes), while only
+23 pages are allocated on disk. `COMPRESS` in the linker's service program removes the holes (the
+same domain then has 47104 bytes and the next area directly after the header). Source: ND Linker
+manual ND-860289-2, SET-AREA-SIZE and appendix E. The offsets in the manual's appendix E table are
+printed one octal digit short; the measured values above are the ones to use.
 
 Only pages actually used are allocated on disk. A `:DOM` file with no external links can
 be copied with a plain `@COPY-FILE` (everything needed is inside it); a `:SEG` file holds

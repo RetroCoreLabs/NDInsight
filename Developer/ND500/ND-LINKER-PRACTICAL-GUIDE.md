@@ -267,13 +267,16 @@ Twelve of the thirteen vendor domain files in
 [../../SINTRAN/ND500-APPS/](../../SINTRAN/ND500-APPS/) have this layout without holes; that they were
 made with `COMPRESS` is inferred from the layout.
 
-Other controls the manual documents, not measured here:
+Other controls, measured 05-OCT-2026 on a copy of the pack (each domain linked with `CLOSE ,NO`):
 
-| Command | Where | What the manual says |
+| Command | Where | Measured result |
 |---|---|---|
-| `SET-AREA-SIZE <Debug area size (in pages)> <Link area size (in pages)>` | service program, with no domain open | changes the 2 MB reservations for domains opened afterwards |
-| `SET-SEGMENT-SIZE <Segment number> <Program size (in pages)> <Data size (in pages)>` | service program, before the segment is used; `ALL` when no domain is open | changes the reservation per segment |
-| `IGNORE-DEBUG-INFORMATION <Ignore (Yes,No)>` | advanced mode, before `LOAD` | leaves the debug information out |
+| `SET-AREA-SIZE 8 8` | `LINKER-SERVICE-PROGRAM` (`NDL(SRV):`), then `EXIT` | the next domain's layout moved: link area and program start at 0x6000 and 0xA000 (8 pages each); byte count 2151876 (was 6313412 with the defaults). The debug and link areas are reserved, not written. |
+| `SET-SEGMENT-SIZE ALL 64 64` | same service program | program segment 1 at 0xA000, data segment 1 at 0x2A000 (`LIST-STATUS`: `Program segment ... Address in file: 120000B`, `Data segment ... Address in file: 520000B`); byte count 185796 = 0x2A000 + the 13764 data bytes written. |
+| `IGNORE-DEBUG-INFORMATION YES` | advanced mode, before `LOAD` | the file loses one page (23 pages to 22); the byte count is unchanged; `LOAD` prints no `Debug:` field. **The setting stays on for the rest of the linker session**: domains opened later in that session also showed no debug information (`Size: 0B`). Set it back with `IGNORE-DEBUG-INFORMATION NO`. |
+
+Not tested: a `SET-AREA-SIZE` too small for the debug or link information (the manual's error text was
+not seen); the effect of these settings on a domain that is then run [unknown].
 
 ## 8. A fault that is the emulator's, not the linker's
 
