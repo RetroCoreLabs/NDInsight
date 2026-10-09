@@ -16,7 +16,7 @@ The fifth file, the ITT-1600 binder, is **not** NORD-1 documentation - see its r
 
 | Manuals | Total Lines |
 |---------|-------------|
-| **5** | ~16,800 |
+| **6** | ~18,200 |
 
 ---
 
@@ -35,6 +35,12 @@ The fifth file, the ITT-1600 binder, is **not** NORD-1 documentation - see its r
 | **Hardware Manual NORD-1 (Vol I)** | ND-01.004.01 | 4,366 | NORD-1 hardware manual, Volume I - logic and module descriptions |
 | **Hardware Manual Vol II - Flow Diagrams** | ND-01.004.01 | 1,463 | NORD-1 hardware manual, Volume II - flow diagrams |
 | **NORD-1 Connectors, I-O & Data Channel System, Device Connections, Power System (1972)** | ND-01.005.01 | 1,783 | Connector pin-outs, I-O and data-channel systems, device connections, and the NORD-1 power system |
+
+### Software
+
+| Manual | Document # | Lines | Description |
+|--------|-----------|-------|-------------|
+| **[Reference Manual for the NORD Timesharing System (16 February 1973)](ND-60.039.01_Reference_Manual_for_the_NORD_Timesharing_System_16_February_1973.md)** | ND-60.039.01 | 1,388 | NORD Timesharing System (TSS) reference manual by Bo Lewendal, A/S Norsk Data-Elektronikk. OCR'd from a scan. |
 
 ### Not NORD-1 - filed here because it came in the same binder
 
