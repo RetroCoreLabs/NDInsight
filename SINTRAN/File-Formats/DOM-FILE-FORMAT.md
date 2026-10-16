@@ -52,7 +52,7 @@ link key match (see section 5).
 
 | Offset | Field | Size | Meaning |
 |---|---|---|---|
-| 0x00 | LINKLOCK | 4 | Random lock value. A domain linked to a `:SEG` file records this value as its LINKKEY; they must match at load time or the segment is considered a different version. |
+| 0x00 | LINKLOCK | 4 | Lock value, different for every link: the upper 16 bits change, the lower 16 bits are 0. (The real ND Linker B01 on SINTRAN III, run 2026-10-12 on nd100x with the ND-5000 monitor, linked one object three times and wrote `09BA0000H`, `0A230000H`, `0ACF0000H`; the three files differ in no other byte. Under the standalone nd500x it writes 0. Vendor domains read from files also show `FFFF0000H` in 9 of 13.) A domain linked to a `:SEG` file records this value as its LINKKEY; they must match at load time or the segment is considered a different version. |
 | 0x04 | VERSION | 1 | ND Linker version that produced this file. |
 | 0x05 | REVISION | 1 | ND Linker revision. |
 | 0x06 | FLAGS | 1 | Bit 3: trap block valid. Bit 4: **is a `:DOM` file** (vs `:SEG`). Bit 5: root/multidomain. Bit 6: SINTRAN-III domain. Bit 7: is ND-500/5000. |
@@ -205,6 +205,10 @@ means "no name."
   `../ND500-APPS/CONVERT-DOM-A03/userguide.md`) wrote `0xF8` = bits 3/4/5/6/7 set =
   TRAPBLOCK_VALID + IS_DOMAIN_FILE + IS_ROOT_DOMAIN + IS_SINTRAN_III + IS_ND500, exactly
   matching this doc's bit table.
+  `0xF8` is not the only value of a good domain: the real ND Linker B01 (run under nd500x,
+  2026-10-12) writes `0xF0` (bit 3 clear, no valid trap block) for a domain closed without
+  SET-TRAP-CONDITION, and `0xF8` for the same input after `SET-TRAP-CONDITION OWN,DISABLE,ALL`
+  (the data segment then grows by 2000B bytes, the trap area).
 - The rest of the segment table, name pool, and common part have no field-by-field
   validation report against a real `.DOM` beyond what the working `nd500-dis`/
   `nd500-dump`/nd500x runtime already exercises implicitly (they run real DOMs
