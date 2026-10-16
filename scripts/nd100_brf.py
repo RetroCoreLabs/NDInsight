@@ -26,8 +26,19 @@ An S-group is a packed symbol — 4 bytes default, 6 bytes if LONGF flag set.
 Usage:
   python nd100_brf.py PROG.bin --brf PROG.brf       # cross-reference
   python nd100_brf.py PROG.brf                       # parse only
+  python nd100_brf.py LIB.brf --names                # every name the file DEFINES, sorted
+  python nd100_brf.py LIB.brf --names --refs         # every name it only REFERS to
+  python nd100_brf.py LIB.brf --find INBT            # which unit defines / refers to INBT
+  python nd100_brf.py LIB.brf --json                 # units and symbols as JSON
 
 Output: prints the relocation map and symbol table to stdout.
+
+Every unit's checksum is verified (ND-60.066.04 section 2.7: sum of control bytes, P-groups
+and S-group words from BEG up to and including END, stored word = two's complement). A unit
+whose checksum fails is reported; that is the sign of a damaged file or a group this parser
+reads wrongly. Checked against the BRF linker's own LIST-BRF-ENTRIES on FORT48-2BANK-F02:BRF
+(415 units, 462 names, all identical). Symbol names use the six-bit code described at
+decode_symbol_packed(). LONGF (6-byte S-groups) is per unit and is reset at every BEG.
 """
 from __future__ import annotations
 import argparse
@@ -62,6 +73,16 @@ CB_RT   = 0o25   # RT priority (1 word)
 CB_ASF  = 0o26   # COMMON block (S+P)
 CB_ADS  = 0o27   # add common (S only)
 CB_LONGF = 0o32  # set 6-byte S-group mode for the rest of the unit
+CB_DBG  = 0o47   # debug mode on/off (no args)
+CB_DIC  = 0o54   # dictionary table follows, ends with a 177777 word (made by MAKE-LIBRARY-FILE)
+
+# Groups with a fixed shape that this tool reads past but does not interpret:
+# control number -> (has S-group, number of P-groups).  INL DBL RLL CXL / INC DBC RLC CXC / BYL BYC / NWL
+EXTRA_GROUPS = {
+    0o34: (False, 2), 0o35: (False, 3), 0o36: (False, 4), 0o37: (False, 7),
+    0o40: (True, 2), 0o41: (True, 3), 0o42: (True, 4), 0o43: (True, 7),
+    0o44: (False, 2), 0o45: (True, 3), 0o46: (False, 1),
+}
 
 # --- CC-100 (ND-100 C compiler) BRF extensions ---
 # Reverse-engineered 2026-05-25 from CAT.C → CAT.BRF correlation, then extended
@@ -93,16 +114,27 @@ CONTROL_NAMES = {
 }
 
 
-# --- Symbol decoding (Radix-50 family, MAC manual §3.2.2 / §D.3) ---
-# 6-bit characters packed: 'A'-'Z'=1-26, '0'-'9'=27-36, etc.
-# 4-byte S-group = 4 chars; 6-byte = 6 chars (with LONGF).
+# --- Symbol decoding (six-bit characters, ND-60.066.04 section 2) ---
+# An S-group is 4 bytes (32 bits) or, after LONGF, 6 bytes (48 bits). The bits are packed
+# six to a character, MOST significant first, right-justified. The six-bit code is the LOW SIX
+# BITS OF ASCII: 1-32 octal = A-Z, 33-37 = [ \ ] ^ _, 40-77 = space ! " # $ ... 0-9 ... ?.
+# So a letter is code + 0100, anything from 040 up is the ASCII value itself, and 0 is a space
+# (padding). Checked against the BRF linker's own LIST-BRF-ENTRIES on FORT48-2BANK-F02:BRF:
+# 462 of 462 names identical.
 def decode_symbol_packed(buf: bytes) -> str:
-    """Decode an S-group as packed ASCII (often 4 right-padded bytes)."""
-    # Many ND BRFs use 4 chars of plain ASCII rather than radix-50.
-    # We attempt ASCII decoding; if non-printable, fall back to hex.
-    if all(32 <= b < 127 or b == 0 for b in buf):
-        return buf.decode("ascii", errors="replace").rstrip("\x00 ")
-    return "0x" + buf.hex()
+    """Decode an S-group into its symbol name (trailing and leading spaces removed)."""
+    v = int.from_bytes(buf, "big")
+    n = (len(buf) * 8) // 6
+    chars = []
+    for i in range(n - 1, -1, -1):
+        c = (v >> (6 * i)) & 0x3F
+        if c == 0:
+            chars.append(" ")
+        elif c < 0x20:
+            chars.append(chr(c + 0x40))
+        else:
+            chars.append(chr(c))
+    return "".join(chars).strip()
 
 
 # --- Data classes ---
@@ -128,9 +160,12 @@ class ProgramUnit:
     base: int                       # PB at BEG time
     end: int                        # CLC at END time
     checksum: int = 0
+    checksum_ok: bool | None = None  # None until the unit's END group has been read
+    offset: int = 0                  # byte offset of the unit's BEG in the file
     symbols: list[Symbol] = field(default_factory=list)
     rt_priority: int | None = None
     longf: bool = False
+    comment: str = ""                # identification text of a control-30 group, if any
 
 
 # --- Strip parity helper (some BRF streams have even-parity bit 7 set) ---
@@ -154,7 +189,9 @@ class BRFParser:
         self.unit_idx = 0
         self.units: list[ProgramUnit] = []
         self.relocs: list[Reloc] = []
-        self.longf: bool = False     # 6-byte S-groups when set
+        self.longf: bool = False     # 6-byte S-groups when set (reset at every BEG)
+        self.csum: int = 0           # running unit checksum: control bytes + P-groups + S-group words
+        self.problems: list[str] = []
 
     def _read_byte(self) -> int | None:
         if self.pos >= len(self.data):
@@ -166,12 +203,16 @@ class BRFParser:
     def _read_word(self) -> int:
         hi = self._read_byte() or 0
         lo = self._read_byte() or 0
-        return (hi << 8) | lo
+        w = (hi << 8) | lo
+        self.csum += w
+        return w
 
     def _read_sgroup(self) -> bytes:
         n = 6 if self.longf else 4
         out = self.data[self.pos:self.pos + n]
         self.pos += n
+        for k in range(0, len(out) - 1, 2):
+            self.csum += (out[k] << 8) | out[k + 1]
         return out
 
     def parse(self) -> list[ProgramUnit]:
@@ -185,22 +226,61 @@ class BRFParser:
                 continue
 
             if cb == CB_BEG:
-                # Start a new unit
-                cur_unit = ProgramUnit(base=self.clc, end=self.clc)
+                # Start a new unit. LONGF applies to ONE unit only: every BEG goes back to
+                # 4-byte S-groups (BRF-FILE-FORMAT.md section 2; a file can mix both forms).
+                cur_unit = ProgramUnit(base=self.clc, end=self.clc, offset=self.pos - 1)
                 self.pb = self.clc
                 self.units.append(cur_unit)
                 self.unit_idx += 1
+                self.longf = False
+                self.csum = CB_BEG
                 continue
 
+            if cur_unit is not None:
+                self.csum += cb        # the control byte itself is part of the checksum
+
             if cb == CB_END:
-                cur_unit.end = self.clc - 1
-                cur_unit.checksum = self._read_word()
+                if cur_unit is not None:
+                    cur_unit.end = self.clc - 1
+                    # the stored word is NOT part of the sum; sum + stored = 0 (mod 65536)
+                    stored = ((self.data[self.pos] << 8) | self.data[self.pos + 1]
+                              if self.pos + 1 < len(self.data) else 0)
+                    self.pos += 2
+                    cur_unit.checksum = stored
+                    cur_unit.checksum_ok = ((self.csum + stored) & 0xFFFF) == 0
+                    cur_unit = None
                 continue
 
             if cb == CB_LONGF:
                 self.longf = True
                 if cur_unit:
                     cur_unit.longf = True
+                continue
+
+            # Groups the manual lists (ND-60.066.04 2.9) that carry data but no code address,
+            # plus the control-30 identification text seen in PLANC and FORTRAN output.
+            if cb == 0o30:                       # count word, then count words of ASCII text
+                cnt = self._read_word()
+                text = bytearray()
+                for _ in range(cnt):
+                    w = self._read_word()
+                    text += bytes((w >> 8, w & 0xFF))
+                if cur_unit:
+                    cur_unit.comment = text.decode("latin-1").strip()
+                continue
+            if cb in EXTRA_GROUPS:               # INL DBL RLL CXL INC DBC RLC CXC BYL BYC NWL
+                has_s, nwords = EXTRA_GROUPS[cb]
+                if has_s:
+                    self._read_sgroup()
+                for _ in range(nwords):
+                    self._read_word()
+                continue
+            if cb == CB_DBG:
+                continue
+            if cb == CB_DIC:                     # dictionary: 5-word elements, ends with 177777
+                while self.pos + 1 < len(self.data):
+                    if self._read_word() == 0xFFFF:
+                        break
                 continue
 
             if cb == CB_INHB or cb == CB_EOF:
@@ -414,20 +494,58 @@ def main():
                    help="print every relocation entry")
     p.add_argument("--out", type=Path, default=None,
                    help="write reloc map to file (one line per address)")
+    p.add_argument("--names", action="store_true",
+                   help="list every symbol the file DEFINES (MAIN and ENTR), sorted, one per "
+                        "line, and nothing else")
+    p.add_argument("--refs", action="store_true",
+                   help="with --names: list the symbols the file only REFERS to (REF) instead")
+    p.add_argument("--find", metavar="NAME", default=None,
+                   help="show which unit defines (ENTR/MAIN/LIBR) or refers to (REF) NAME")
+    p.add_argument("--json", action="store_true",
+                   help="print the units and symbols as JSON and nothing else")
     args = p.parse_args()
 
     data = args.brf.read_bytes()
     parser = parse_brf(data, args.base)
     units = parser.units
 
+    if args.names:
+        want = ("REF",) if args.refs else ("MAIN", "ENTR")
+        for name in sorted({s.name for u in units for s in u.symbols if s.kind in want}):
+            print(name)
+        return
+
+    if args.find:
+        for i, u in enumerate(units, 1):
+            for s in u.symbols:
+                if s.name == args.find:
+                    defs = " ".join(t.name for t in u.symbols if t.kind in ("MAIN", "ENTR"))
+                    print(f"unit {i}: {s.kind} {s.name}   (unit defines: {defs})")
+        return
+
+    if args.json:
+        import json
+        print(json.dumps({"file": args.brf.name, "units": [
+            {"unit": i, "offset": u.offset, "checksum_ok": u.checksum_ok, "longf": u.longf,
+             "comment": u.comment,
+             "symbols": [{"kind": s.kind, "name": s.name} for s in u.symbols
+                         if s.kind in ("MAIN", "ENTR", "LIBR", "REF")]}
+            for i, u in enumerate(units, 1)]}, indent=1))
+        return
+
+    bad = [i for i, u in enumerate(units, 1) if u.checksum_ok is not True]
     print(f"# BRF parse of {args.brf.name} ({len(data)} bytes)")
     print(f"# {len(units)} program unit(s), {len(parser.relocs)} reloc entries")
     print(f"# LONGF: {parser.longf}")
+    print(f"# checksums: {len(units) - len(bad)} of {len(units)} units ok"
+          + (f"; NOT ok: units {bad[:10]}" if bad else ""))
     print()
 
     for i, u in enumerate(units):
         print(f"## Unit {i}: base=0o{u.base:o}, end=0o{u.end:o}, "
-              f"checksum=0o{u.checksum:o}")
+              f"checksum=0o{u.checksum:o}" + ("" if u.checksum_ok else "  CHECKSUM WRONG"))
+        if u.comment:
+            print(f"   comment: {u.comment}")
         if u.rt_priority is not None:
             print(f"   RT priority: {u.rt_priority}")
         for s in u.symbols:

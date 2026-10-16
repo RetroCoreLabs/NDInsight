@@ -63,9 +63,11 @@ P-groups:
 
 **Key structural rules (each cost real debugging - honor them):**
 1. Big-endian P-groups.
-2. Checksum after every END (21 octal) = one's complement of the 16-bit sum of
+2. Checksum after every END (21 octal) = two's complement of the 16-bit sum of
    everything from the BEG control byte through the END control byte (control
-   bytes as 8-bit, P-groups as 16-bit, S-groups as 2/3 16-bit words).
+   bytes as 8-bit, P-groups as 16-bit, S-groups as 2/3 16-bit words), so that
+   sum + checksum = 0. (The real BRF-LINKER C01 rejects the one's complement with
+   "Checksum error"; see BRF-FILE-FORMAT.md section 5.)
 3. `LONGF` (32 octal) = 6-byte S-groups. It is **per-unit**: every `BEG` (17 octal)
    resets S-group size back to 4 bytes; a unit must repeat LONGF for 6-byte symbols.
 4. Sixbit = ASCII-40 octal, space padded, MSB-first packing.
@@ -97,7 +99,7 @@ addresses):
 | 14  | MAIN | S-group symbol = main entry, value = CLC |
 | 15  | LIBR | library entry point (conditional load; linker loads everything) |
 | 16  | ENTR | S-group symbol = entry point, value = CLC |
-| 17  | BEG  | PB = CLC; first byte of a unit; resets LONGF |
+| 17  | BEG  | PB = CLC - 1 (relative addresses count the first word of the unit as 1; checked with the real BRF-LINKER C01, see BRF-FILE-FORMAT.md section 3); first byte of a unit; resets LONGF |
 | 20  | REF  | external reference; emits a link-chain placeholder word at CLC (see REF semantics) |
 | 21  | END  | 1 P-group = checksum |
 | 23  | EOF  | end of file |
@@ -224,7 +226,7 @@ class Linker:
             for k in range(NW[name]):
                 ws.append((data[i]<<8)|data[i+1]); i += 2
             if name == "FEED": pass
-            elif name == "BEG": self.pb = self.clc; longf = False   # LONGF is per-unit
+            elif name == "BEG": self.pb = self.clc - 1; longf = False   # LONGF is per-unit; relative words count from 1
             elif name == "LONGF": longf = True
             elif name == "LF": self.store(self.clc, ws[0]); self.clc += 1
             elif name == "LR": self.store(self.clc, ws[0] + self.pb); self.clc += 1
@@ -266,8 +268,11 @@ class Linker:
 ### 4b. Checksum validator (for the sniffer / integrity check)
 
 Sum control bytes (8-bit) + P-groups (16-bit) + S-group words from BEG through
-END; stored checksum = one's complement of that 16-bit sum. Verified against 348
-units across the two sample files.
+END; stored checksum = two's complement of that 16-bit sum (sum + checksum = 0).
+Verified with the real BRF-LINKER C01, which loads HELLO.BRF with the two's
+complement and answers "Checksum error" to the one's complement (an earlier
+version of this note said one's complement, "verified against 348 units"; that
+count is not reproduced).
 
 ### 4c. Minimal ND-100 disassembler (optional - Ghidra's SLEIGH does this properly)
 
