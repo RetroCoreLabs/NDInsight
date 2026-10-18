@@ -12,6 +12,10 @@ docs_dir: ..
 
 theme:
   name: material
+  # Adds the RetroCore Labs logo to the header (overrides/main.html), relative to this file.
+  custom_dir: overrides
+  icon:
+    repo: fontawesome/brands/github
   palette:
     - media: "(prefers-color-scheme)"
       toggle: {icon: material/brightness-auto, name: Switch to light mode}
