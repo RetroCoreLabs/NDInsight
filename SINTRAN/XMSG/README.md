@@ -10,6 +10,13 @@ implementation, and the superseded notes it was distilled from.
 > notably that **an adjacent system must NOT be given a route**, and that SINTRAN runs its link on
 > exactly one HDLC controller. Machine-readable form: [`lab-topology.json`](lab-topology.json).
 
+> **The C# library has moved to [RetroIO](https://github.com/RetroCoreLabs/RetroIO)**
+> (`RetroIO.Protocols.Xmsg.*`), where it is built, tested and documented
+> (<https://retrocorelabs.github.io/RetroIO/>). The copy in [SRC/](SRC/) is the older one and is no
+> longer developed. The recordings that the notes in [DOC/](DOC/README.md) cite by file name were
+> renamed on 2026-10-18 to say what they show (date, medium, what, from and to); the
+> `pcap/MANIFEST.md` in the X25Emulator repository maps every old name to its new one.
+
 ## Folder layout
 
 | Path | Contents |
