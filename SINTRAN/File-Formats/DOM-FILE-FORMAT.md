@@ -27,11 +27,21 @@ All multi-byte fields are **big-endian** (ND-500 native byte order).
 ## 1. Overall file layout
 
 ```
-0x0000  Domain/Segment Header (4096 bytes = 2 pages of 2048; page 2 is reserved)
-0x1000  Debug info
-        Link info
-        Program/Data segments (slave segments, DOM only)
+0x0000  Domain header: 2 pages of 2048 bytes (0x0000-0x0FFF); the next 2 pages are reserved
+0x1000  (compressed files only) debug info directly after the header
+0x2000  Debug info of a freshly linked domain (default area reserved: 1024 pages = 2 MB)
+0x202000  Link info (symbol table), default 2 MB area
+0x402000  Program segment 1, default 2 MB area
+0x602000  Data segment 1, default 32 MB area
 ```
+
+Measured 05-OCT-2026 on a freshly linked `HELLO:DOM` (nd100x, real SINTRAN, ND LINKER B01): debug
+info at 0x2000, link info at 0x202000, program at 0x402000, data at 0x602000. The byte count of the
+file is the start of the data segment plus its size (0x602000 + 0x35DC = 6313436 bytes), while only
+23 pages are allocated on disk. `COMPRESS` in the linker's service program removes the holes (the
+same domain then has 47104 bytes and the next area directly after the header). Source: ND Linker
+manual ND-860289-2, SET-AREA-SIZE and appendix E. The offsets in the manual's appendix E table are
+printed one octal digit short; the measured values above are the ones to use.
 
 Only pages actually used are allocated on disk. A `:DOM` file with no external links can
 be copied with a plain `@COPY-FILE` (everything needed is inside it); a `:SEG` file holds
@@ -42,7 +52,7 @@ link key match (see section 5).
 
 | Offset | Field | Size | Meaning |
 |---|---|---|---|
-| 0x00 | LINKLOCK | 4 | Random lock value. A domain linked to a `:SEG` file records this value as its LINKKEY; they must match at load time or the segment is considered a different version. |
+| 0x00 | LINKLOCK | 4 | Lock value, different for every link: the upper 16 bits change, the lower 16 bits are 0. (The real ND Linker B01 on SINTRAN III, run 2026-10-12 on nd100x with the ND-5000 monitor, linked one object three times and wrote `09BA0000H`, `0A230000H`, `0ACF0000H`; the three files differ in no other byte. Under the standalone nd500x it writes 0. Vendor domains read from files also show `FFFF0000H` in 9 of 13.) A domain linked to a `:SEG` file records this value as its LINKKEY; they must match at load time or the segment is considered a different version. |
 | 0x04 | VERSION | 1 | ND Linker version that produced this file. |
 | 0x05 | REVISION | 1 | ND Linker revision. |
 | 0x06 | FLAGS | 1 | Bit 3: trap block valid. Bit 4: **is a `:DOM` file** (vs `:SEG`). Bit 5: root/multidomain. Bit 6: SINTRAN-III domain. Bit 7: is ND-500/5000. |
@@ -195,6 +205,10 @@ means "no name."
   `../ND500-APPS/CONVERT-DOM-A03/userguide.md`) wrote `0xF8` = bits 3/4/5/6/7 set =
   TRAPBLOCK_VALID + IS_DOMAIN_FILE + IS_ROOT_DOMAIN + IS_SINTRAN_III + IS_ND500, exactly
   matching this doc's bit table.
+  `0xF8` is not the only value of a good domain: the real ND Linker B01 (run under nd500x,
+  2026-10-12) writes `0xF0` (bit 3 clear, no valid trap block) for a domain closed without
+  SET-TRAP-CONDITION, and `0xF8` for the same input after `SET-TRAP-CONDITION OWN,DISABLE,ALL`
+  (the data segment then grows by 2000B bytes, the trap area).
 - The rest of the segment table, name pool, and common part have no field-by-field
   validation report against a real `.DOM` beyond what the working `nd500-dis`/
   `nd500-dump`/nd500x runtime already exercises implicitly (they run real DOMs

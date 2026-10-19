@@ -27,10 +27,10 @@ Three regions can appear in the file, at fixed file offsets:
 
 | Region              | File offset (bytes) | File offset (octal words) | Present when                                    |
 |---------------------|---------------------|---------------------------|-------------------------------------------------|
-| Header              | `0x00000`           | block 0, words 0..6       | Always                                          |
+| Header              | `0x00000`           | block 0, words 0..7       | Always                                          |
 | Bank 1 image (code) | `0x00200`           | block 1, word 0           | Always                                          |
 | Bank 2 image (data) | `0x20000`           | block 0o400, word 0       | Two-bank programs only (header word 4 != 0177777) |
-| Data-bank-copy area | `0x40000`           | block 0o1000, word 0      | `*DATA-BANK-COPY` was used (header word 6 != 0)  |
+| Debug area (earlier called data-bank-copy) | `0x40000` | block 0o1000, word 0 | header word 7 != 0 (a debug part was saved)  |
 
 Each region is padded with zero words up to the next region's start. The
 file is then truncated/padded to a SINTRAN page boundary at the end of the
@@ -38,14 +38,16 @@ last region present.
 
 > **VERIFIED** for header, bank 1 and bank 2 from all test files.
 > **INFERRED** for the data-bank-copy region from a single sample
-> (`xmsg-fido-l03.prog`).
+> (`xmsg-fido-l03.prog`). The real BRF-LINKER C01 calls this region the **debug** part, see
+> section 2.3 (checked 2026-10-12).
 
 ---
 
 ## 2. Header Layout
 
-The header is **7 16-bit words, big-endian**, at file offset 0. The 7-word
-length is verified directly from NPL source:
+The header is **8 16-bit words, big-endian**, at file offset 0 (section 2.3: the real
+BRF-LINKER C01 reads eight). The monitor's `RECOVER` reads only the first 7 of them, which is
+verified directly from NPL source:
 
 ```
 RP-P2-MONCALLS.NPL:1903   INTEGER ARRAY RWPAR(5)   % PARAMETER LISTE FOR MON RFILE
@@ -68,7 +70,8 @@ the actual page-table population and bank loading.
 | 3    | `0x06`      | Bank 1 last address  (upper bound, inclusive) |                                                             |
 | 4    | `0x08`      | Bank 2 first address                          | `0177777` if no real bank 2                                 |
 | 5    | `0x0A`      | Bank 2 last address                           | `0` if no real bank 2                                       |
-| 6    | `0x0C`      | Data-bank-copy last address (inclusive)       | `0` if `*DATA-BANK-COPY` was not used. **INFERRED**         |
+| 6    | `0x0C`      | Debug first address                           | `0` in every file looked at but one. Printed by BRF-LINKER as `Debug` first |
+| 7    | `0x0E`      | Debug last address (inclusive)                | `0` if there is no debug part. Printed by BRF-LINKER as `Debug` last. Earlier (wrongly placed at word 6) called "data-bank-copy last address" |
 
 All multi-byte fields are big-endian.
 
@@ -80,6 +83,8 @@ early in its initialisation to make the alternate page table addressable).
 
 ### 2.1 The 7th word and `2BDBRECOVER`
 
+(Corrected 2026-10-12, see 2.3: the word described here, `0x346c` in `xmsg-fido-l03.prog`, is the
+**eighth** header word, byte offset `0x0E`; the word at `0x0C` is the debug first address.)
 The 7th header word (byte offset `0x0C`) is the most interesting. The
 loader routine that consumes the header is named `2BDBRECOVER` in source
 ("two-bank / data-bank recover"). Its body is **not present** in the NPL
@@ -112,6 +117,29 @@ last address) is **INFERRED** from a single test file:
 
 A second known data-bank-copy file would let us promote this from
 INFERRED to VERIFIED.
+
+### 2.3 Header words 6 and 7 as the real BRF-LINKER reads them (checked 2026-10-12)
+
+SINTRAN III on nd100x, BRF-LINKER C01, command `PROGRAM-INFORMATION name`. It prints
+`Start, Restart` (words 0, 1), `Program` (words 2, 3), `Data` (words 4, 5, `177777B - 000000B` when
+there is no bank 2) and **`Debug` (words 6, 7)**, each as first - last in octal.
+
+- `xmsg-fido-l03.prog` (words `0000 346C` at `0x0C`): `Debug : 000000B - 032154B`. The same file
+  with `346C` moved to `0x0C` and `0000` put at `0x0E`: `Debug : 032154B - 000000B`. So the last
+  address is the word at byte `0x0E`, not `0x0C`.
+- `COPY-PROGFILE FROM,TO,<include debug>,<include link>`: with debug `YES` the copy of
+  `xmsg-fido-l03.prog` is the same file byte for byte (290816 bytes, header words kept); with debug `NO`
+  it is 79872 bytes, the header words 6 and 7 are `0000 0000` and the part at `0x40000` is gone. The
+  tool therefore sees that part as the debug part. Nothing in this run shows it is a copy of
+  the data bank; `*DATA-BANK-COPY` (ND-60.066.04) may or may not write the same slot, which was not
+  checked (NRL is not on the pack).
+- A program made by BRF-LINKER itself: `DEBUG-MODE EXTENDED` while loading `HELLO.BRF` gives
+  header words 6, 7 = `0000 0002`, a file of 264192 bytes (`0x40800`: one page at `0x40000`), and
+  the first bytes at `0x40000` are `0000 013B 0000 0441 FFFF 0000 0000 0000`. `DEBUG-MODE ON` and
+  `OFF` give `0000 0000` and a file of 4096 bytes.
+- The monitor does not need the part, or the two words, to start a one-bank program: four copies
+  of the `EXTENDED` program (words 6, 7 set to 0; the part at `0x40000` zeroed; the file cut off at
+  `0x40000`; word 7 = `077777`) all started and printed `HELLO, WORLD`.
 
 ### 2.2 Why no second header at 0x20000
 
@@ -172,12 +200,14 @@ ASCII mode will mangle it).
 
 > **VERIFIED** from `xmsg-in-l03.prog`.
 
-### 3.3 Data-bank-copy area
+### 3.3 Data-bank-copy area (the debug part, see 2.3)
 
-- Present iff `header[6] != 0`.
+- Present iff `header[7] != 0` (word 7, byte `0x0E`; corrected 2026-10-12).
 - File offset: `0x40000` (= 512 SINTRAN blocks = 256 KiB = two full
   bank slots into the file).
-- Length: `(header[6] + 1)` words. **INFERRED**, see section 2.1.
+- Length: `(header[7] + 1)` words (words 6 and 7 are the debug first and last address, so
+  the length is `header[7] - header[6] + 1` when word 6 is not 0). The part is written in whole
+  pages: bytes behind the stated length, up to the end of the last page, are **not** zero padding (section 4.4).
 - Produced by the Nord Relocating Loader command `*DATA-BANK-COPY`,
   which is documented in
   `Reference-Manuals/ND-60.066.04 ND Relocating Loader.md`
@@ -187,7 +217,7 @@ ASCII mode will mangle it).
   rather than re-reading a separate data-bank file.
 - The header still marks the file as one-bank
   (`header[4] = 0177777`, `header[5] = 0`); the presence of the
-  data-bank-copy region is signalled exclusively by `header[6]`.
+  data-bank-copy region is signalled exclusively by `header[7]`.
 - Like the bank-2 region, this region is sector-aligned, so a one-bank
   file with `*DATA-BANK-COPY` will have a large zero hole between the
   end of the bank-1 image and `0x40000`.
@@ -227,7 +257,7 @@ Header words:
 | 3    | `0xaabd` | 0125275    | Bank 1 last              |
 | 4    | `0xffff` | 0177777    | Bank 2 first (none)      |
 | 5    | `0x0000` | 0          | Bank 2 last  (none)      |
-| 6    | `0x0000` | 0          | No data-bank-copy        |
+| 6, 7 | `0x0000` | 0          | No debug / data-bank-copy part |
 
 Bank 1: `(0125275 - 0 + 1) = 0125276` words = 43710 words
 = `0x1557c` bytes. Loaded at address 0 from file offset `0x200`.
@@ -244,7 +274,7 @@ File size: 13312 bytes (`0x3400`).
 | 3    | `0x18ae` | 014256   | Bank 1 last          |
 | 4    | `0xffff` | 0177777  | Bank 2 first (none)  |
 | 5    | `0x0000` | 0        | Bank 2 last  (none)  |
-| 6    | `0x0000` | 0        | No data-bank-copy    |
+| 6, 7 | `0x0000` | 0        | No debug / data-bank-copy part |
 
 Bank 1: `014257` words = 6319 words = `0x315e` bytes from file
 offset `0x200` into address 0.
@@ -261,7 +291,7 @@ File size: 180372 bytes (`0x2c094`).
 | 3    | `0x7f62` | 0177542  | Bank 1 last       |
 | 4    | `0x0000` | 0        | Bank 2 first      |
 | 5    | `0x5f49` | 057511   | Bank 2 last       |
-| 6    | `0x0000` | 0        | No data-bank-copy |
+| 6, 7 | `0x0000` | 0        | No debug / data-bank-copy part |
 
 Bank 1: `0177543` words = 32611 words from file offset `0x200`
 into normal-page-table address 0.
@@ -284,17 +314,20 @@ File size: 290816 bytes (`0x47000`).
 | 3    | `0x9a52` | 0115122  | Bank 1 last                               |
 | 4    | `0xffff` | 0177777  | Bank 2 first (none - one-bank header)     |
 | 5    | `0x0000` | 0        | Bank 2 last  (none)                       |
-| 6    | `0x346c` | 032154   | Data-bank-copy last address               |
+| 6    | `0x0000` | 0        | Debug first address (earlier left out)    |
+| 7    | `0x346c` | 032154   | Debug last address (earlier called data-bank-copy last address, at word 6) |
 
 Bank 1: `0115123` words = 39507 words = `0x134a6` bytes from file
 offset `0x200` into address 0. Execution begins at address `0106415`.
 
 Data-bank-copy region: `(032154 + 1) = 032155` words = 13421 words
 = `0x68da` bytes from file offset `0x40000`. The remainder of the
-`0x7000`-byte tail region is zero sector padding.
+`0x7000`-byte tail region is **not** zero: in this file every 512-byte block of it holds non-zero bytes
+(e.g. at `0x46c00`), and COPY-PROGFILE of BRF-LINKER C01 keeps all of it (section 2.3). The tool writes the
+part in whole pages; what the bytes behind the stated length are, is not known.
 
 The header still says one-bank (word 4 = `0177777`); the presence of
-the data-bank-copy region is signalled only by the non-zero word 6.
+the data-bank-copy region is signalled only by the non-zero word 7.
 
 ---
 
@@ -303,7 +336,7 @@ the data-bank-copy region is signalled only by the non-zero word 6.
 Pseudocode for a correct reader:
 
 ```
-read 7 big-endian 16-bit words from file offset 0 -> header[0..6]
+read 8 big-endian 16-bit words from file offset 0 -> header[0..7]
 
 start    = header[0]
 restart  = header[1]
@@ -311,7 +344,8 @@ b1_first = header[2]
 b1_last  = header[3]
 b2_first = header[4]
 b2_last  = header[5]
-dbc_last = header[6]
+dbc_first = header[6]
+dbc_last = header[7]
 
 # Bank 1 - always present
 b1_words = (b1_last - b1_first) + 1
@@ -350,8 +384,9 @@ Items that this document does **not** establish from primary sources:
    Two plausible candidates are: immediately after `b1_last`, or at
    address 0 in the alternate page table. Distinguishing them requires
    either the body of `2BDBRECOVER` or a known-good runtime trace.
-2. Confirmation that header word 6 is exactly the data-bank-copy last
-   address. This is currently inferred from one sample.
+2. Whether the part at `0x40000` is a copy of the data bank at all: the real
+   BRF-LINKER C01 names header words 6 and 7 `Debug` (section 2.3). That the last address is
+   word 7, not word 6, is verified.
 3. Whether two-bank PROG files can also carry the data-bank file name
    that the loader manual mentions for the (historical) "RECOVER reads
    the data bank from a separate file" mode. None of the test files

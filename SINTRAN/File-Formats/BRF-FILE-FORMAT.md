@@ -19,6 +19,20 @@ produces from BRF input.
 
 ---
 
+## Tools
+
+- **[nd100_brf.py](../../scripts/nd100_brf.py)**: parser. Lists every unit and symbol, checks every
+  unit's checksum, builds the relocation map for the disassembler. `--names` prints every name a
+  file defines, `--find NAME` shows where a name is defined or used, `--json` for other tools.
+- **[brf_library_catalog.py](../../scripts/brf_library_catalog.py)**: runs the parser over every
+  `:BRF` on the archive floppies and writes
+  [LINK-LIBRARY-ENTRY-POINTS.md](../../Developer/Workflow/LINK-LIBRARY-ENTRY-POINTS.md) (every
+  library and every name it defines) and
+  [LINK-LIBRARY-NAME-INDEX.md](../../Developer/Workflow/LINK-LIBRARY-NAME-INDEX.md) (which library
+  defines a name).
+
+---
+
 ## 1. Overall Structure
 
 BRF is a **byte stream** of 8-bit bytes, not bound to any particular medium
@@ -85,7 +99,16 @@ checksums pass) when the flag is reset at every BEG.
 Terminology (from ND-60.066.04 section 2.9):
 
 - **CLC** - current location counter: address where the next word is placed
-- **PB** - program base of the current unit (CLC value when BEG was read)
+- **PB** - program base of the current unit. Relative addresses count the first word of the unit
+  as 1, so the value the loader adds is the CLC value when BEG was read **minus 1**: `LR W1`
+  stores `L + W1 - 1`, `AFR W1,W2` patches the word at `L + W2 - 1`, `ARF W1,W2` adds `W1 + L - 1`,
+  `SRL W1` sets CLC to `L + W1 - 1` (L = address of the unit's first word). The table below writes
+  `W1+PB` with this PB. Checked with the real BRF-LINKER C01 (nd100x, 2026-10-12) on hand-made
+  units loaded behind another unit (L = 8): `LR 1` gave 0008, `LR 0` gave 0007, `AFR 100,2`
+  changed the second word, `ARF 3,8` added 3 + 7, `SRL 6` placed the next word at 13. The same
+  with and without a LONGF group in the unit. Not run through the tool: ARR, INL, LC, LRP, LRD
+  and the other groups of the table (they are written with the same PB; whether the loader
+  uses PB - 1 for them too is not checked).
 - **CDB** - COMMON data base (COMMON block address)
 - **W1..Wn** - contents of the 1st..n'th P-group of the group
 - **ADR** - value of the COMMON block symbol named by the S-group (control numbers 40-43, 45)
@@ -172,8 +195,12 @@ padded on the left with 0 (space):
   are used (FORTRAN, COBOL, PLANC, etc.)
 
 Six-bit character code (VERIFIED by decoding real symbols): value 0 = space,
-1-32 octal = `A`-`Z`, 60-71 octal = `0`-`9`, i.e. ASCII value minus 40 octal
-(the classic trimmed-ASCII six-bit code). Bytes are consumed MSB-first.
+1-32 octal = `A`-`Z`, 33-37 = `[ \ ] ^ _`, 40-77 = ` ! " # $ % & ' ( ) * + , - . / 0-9 : ; < = > ?`.
+That is **the low six bits of the ASCII value**: a letter is the code plus 100 octal, anything
+from 40 octal up is the ASCII value itself (so the digits are 60-71 octal and `#` is 43 octal).
+Bytes are consumed MSB-first. Earlier text here said "ASCII minus 40 octal"; that is only right
+for the upper half of the table and gives garbage for letters. Checked against the BRF linker's
+own `LIST-BRF-ENTRIES` on `FORT48-2BANK-F02:BRF`: 462 of 462 names identical (2026-10-15).
 
 Examples decoded from the sample files (VERIFIED): `ENNS0` (MAIN), `POSUERR`,
 `READPIO`, `SEGLOAD`, `UNLOAD`, `UEIEDIN` (LIBR+ENTR pairs).
@@ -198,13 +225,18 @@ The loader's symbol table entry is 3 words for the symbol + 1 word ADR:
 ## 5. Checksum
 
 A checksum P-group follows every END (21) control byte. Algorithm
-(ND-60.066.04 section 2.7, VERIFIED against 348 units - see below):
+(ND-60.066.04 section 2.7, the 348 units named here were not re-counted; see the real-tool check below):
 
 - Sum everything from the BEG control byte up to and including the END control byte:
   control bytes as 8-bit values, P-groups as 16-bit values, S-groups as two
   (three with LONGF) 16-bit values.
-- Sum is taken modulo 2^16; the stored checksum is the complement, so that
-  `(sum + checksum) AND 177777 = 177777` (one's complement of the 16-bit sum).
+- Sum is taken modulo 2^16; the stored checksum is the two's complement of the sum, so that
+  `(sum + checksum) AND 177777 = 0` (not the one's complement: the sum plus the stored word is 0,
+  not 177777).
+- Checked with the real BRF-LINKER C01 (SINTRAN III on nd100x, 2026-10-12): the object
+  `HELLO.BRF` with the stored word `134775` (sum `043003`) is loaded without a message; the same
+  object with the one's complement `134774`, or with `134777`, gives
+  `Brl message: Chechsum error  MAIN.......473` (sic) at LOAD.
 
 ---
 
@@ -280,8 +312,9 @@ on the manual only.
 Facts established by the validation:
 
 1. P-group byte order is big-endian (MSB first) - checksums fail otherwise.
-2. Checksum = one's complement of the 16-bit sum from BEG through the END byte.
+2. Checksum = two's complement of the 16-bit sum from BEG through the END byte (sum + checksum = 0;
+   BRF-LINKER C01 rejects the one's complement with "Checksum error", see section 5).
 3. LONGF is per-unit; BEG resets S-group size to 4 bytes.
-4. Six-bit symbol code is ASCII-40 (octal), space-padded, MSB-first packing.
+4. Six-bit symbol code is the low six bits of ASCII (see section 4), space-padded, MSB-first packing.
 5. Zero bytes (FEED) pad between units; a single EOF (23) byte terminates the file.
 6. Compiler output is dominated by LNF blocks with LR-relocated words interleaved.

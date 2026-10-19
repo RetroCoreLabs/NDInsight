@@ -105,6 +105,8 @@ HELLO FROM MAC!
 
 ## 3. C - CC-100/CC-500
 
+> For the ND-500 C compiler used today (NC), see section 4b below. The material here is for the older CC-100/CC-500 compiler.
+
 ### 3.1 Hello World (C)
 
 **File:** `HELLO-C:C`
@@ -235,6 +237,74 @@ HELLO FROM PLANC!
 ```
 
 ---
+
+## 4b. ND-500 / ND-5000: NC (C) and PLANC-500 [measured 05-OCT-2026]
+
+Under real SINTRAN III VSX/500 L on the nd100x emulator with an ND-5000. Section 3 is the older
+CC-100/CC-500 compiler; the ND-500 C compiler today is NC (Norsk Data C, version A06). Full
+chapters: [ND500/README.md](ND500/README.md), [ND500/NC-C-COMPILER-GUIDE.md](ND500/NC-C-COMPILER-GUIDE.md),
+[ND500/PLANC-500-COMPILER-GUIDE.md](ND500/PLANC-500-COMPILER-GUIDE.md),
+[ND500/ND-LINKER-PRACTICAL-GUIDE.md](ND500/ND-LINKER-PRACTICAL-GUIDE.md).
+
+Source files (CR LF line ends), `HELLO:C`:
+
+```c
+main()
+{
+    printf("HELLO FROM C!\n");
+}
+```
+
+`PHELLO:PLNC`:
+
+```planc
+MODULE hello
+    INTEGER ARRAY : stack(0:100)
+    BYTES : msg := 'HELLO FROM PLANC!'
+
+    PROGRAM : main
+        INISTACK stack
+        OUTPUT (1,'AL17',msg)
+        OUTPUT (1,'AL1','$')
+    ENDROUTINE
+ENDMODULE
+```
+
+Session (type each line at its prompt):
+
+```
+@SET-TERMINAL-TYPE,,93
+@CREATE-FILE PHELLO:LIST,0
+@CREATE-FILE PHELLO:NRF,0
+@ND-500
+ND-5000: DEFINE-STANDARD-DOMAIN CAT-CAT5-B,CAT-CAT5-B06     (after every cold start)
+ND-5000: DEFINE-STANDARD-DOMAIN NC-A,NC-A06                 (after every cold start)
+ND-5000: PLANC-500-G00
+*COMPILE PHELLO:PLNC,PHELLO:LIST,PHELLO:NRF
+     11 LINES COMPILED.       0 DIAGNOSTICS.
+*EXIT
+ND-5000: NC-A06
+NC: COMPILE HELLO,"HELLO","HELLO"
+NC: EXIT
+@ND-500
+ND-5000: LINKER-B01
+NDL: SET-ADVANCED-MODE
+NDL(ADV): OPEN-DOMAIN "HELLO"
+NDL(ADV): LOAD HELLO
+NDL(ADV): CLOSE
+NDL(ADV): OPEN-DOMAIN "PHELLO"
+NDL(ADV): LOAD PHELLO
+NDL(ADV): CLOSE
+NDL(ADV): EXIT
+ND-5000: HELLO:DOM
+HELLO FROM C!
+ND-5000: PHELLO:DOM
+HELLO FROM PLANC!
+```
+
+`CLOSE` runs the runtime auto job by itself (for the C object it is `LINKER-AUTO-FORT:JOB`, which
+loads `NC-LIB` and `CAT-LIB`). The file `HELLO:DOM` is about 6.3 MB but has 23 pages on disk; see the
+linker chapter for why and for `COMPRESS`.
 
 ## 5. FORTRAN
 

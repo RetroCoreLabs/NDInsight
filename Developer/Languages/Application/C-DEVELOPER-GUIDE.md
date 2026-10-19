@@ -8,6 +8,13 @@
 
 ---
 
+> **Looking for C on the ND-500/5000 with the NC compiler (Norsk Data C, version A06)?** That is a
+> different, later compiler than CC-500. See
+> [../../ND500/NC-C-COMPILER-GUIDE.md](../../ND500/NC-C-COMPILER-GUIDE.md) and
+> [../../ND500/ND-LINKER-PRACTICAL-GUIDE.md](../../ND500/ND-LINKER-PRACTICAL-GUIDE.md).
+
+---
+
 ## Installing the C Compiler
 
 CC-100 (ND-100) and CC-500 (ND-500) are **separate products** with separate floppy sets — CC-500

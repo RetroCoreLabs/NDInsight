@@ -181,6 +181,17 @@ Developer/
 | **MAC** | [MAC-DEVELOPER-GUIDE.md](Languages/System/MAC-DEVELOPER-GUIDE.md) (21KB), then the [MAC-COOKBOOK.md](Languages/System/MAC-COOKBOOK.md) for what runs on a real system (section 11: TCP/UDP from MAC) | *Future* | Assembly, optimization |
 | **NORD-500 ASM** | [NORD-500-ASSEMBLER-DEVELOPER-GUIDE.md](Languages/System/NORD-500-ASSEMBLER-DEVELOPER-GUIDE.md) | [NORD-500-ASSEMBLER-EXPERT-GUIDE.md](Languages/System/NORD-500-ASSEMBLER-EXPERT-GUIDE.md) | ND-500 CPU programming |
 
+### ND-500 / ND-5000 development
+
+Compiling and linking on the ND-500/5000 itself, measured under real SINTRAN III VSX/500.
+
+| Guide | Purpose |
+|-------|---------|
+| **[ND500/README.md](ND500/README.md)** | Start here: what must be on the pack, hello world in C and PLANC, the manuals, troubleshooting |
+| **[ND500/NC-C-COMPILER-GUIDE.md](ND500/NC-C-COMPILER-GUIDE.md)** | The NC C compiler (version A06): commands, options, include files, the C library |
+| **[ND500/PLANC-500-COMPILER-GUIDE.md](ND500/PLANC-500-COMPILER-GUIDE.md)** | PLANC-500 version G: compile and link a PLANC module |
+| **[ND500/ND-LINKER-PRACTICAL-GUIDE.md](ND500/ND-LINKER-PRACTICAL-GUIDE.md)** | The ND Linker in practice: auto jobs, several objects, domain file size, COMPRESS |
+
 ### Workflow & Tools
 
 | Guide | Purpose | Size |

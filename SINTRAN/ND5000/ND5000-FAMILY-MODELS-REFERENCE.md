@@ -81,6 +81,16 @@ ACTIVATION-WORKFLAG.md` [NPL-V]) and the "up to 4 CPUs" multi-CPU threading requ
 - CONNECTION: independent official-doc confirmation that (a) the max is 4 CPUs and (b) the
   station range is exactly 70B–73B. Our GIVEINT-needs-5OMDNO>=8-to-reach-station-1 finding
   and the fabric station addressing are consistent with this range.
+- ORIGINAL MANUAL CITATIONS (added; read directly from the manual text):
+  - `../../Reference-Manuals/ND-830083-1-EN Performance Monitoring, Tuning and Capacity Planning.md`,
+    section "Multi-CPU", line 1297: "Norsk Data also delivers computer systems with up to four
+    ND-500(0) CPUs. These systems always have a single ND-100 CPU controlling the ND-500(0) CPUs."
+  - `../../Reference-Manuals/500/ND-05.017.01 EN ND-5000 HARDWARE MAINTENANCE.md`, section 2.1.5
+    "Upgrading from ND-5800 to ND-5900/2/3/4 System", line 2170: insert 1, 2 or 3 extra ND-5000
+    CPUs (type 3); CPU 1 to 4 are octobus stations 70B, 71B, 72B, 73B. The system table at line 2049
+    lists ND-5900 Model 2, 3 and 4.
+  - Neither manual states in so many words that a fifth CPU is impossible; four is the most they
+    say Norsk Data delivers.
 
 ### 1.3 CPU MODEL (2/4/5/7/8) is DISTINCT from the SINTRAN 5CPUTYPE  [DOC-wiki + our carve]
 Two different identifiers — do not conflate:

@@ -2,9 +2,31 @@
 
 **Comprehensive guide to ND-500 program linking, NRF format, and domain creation**
 
-**Version:** 1.0
-**Date:** October 20, 2025
-**Status:** Complete
+**Version:** 1.1
+**Date:** October 20, 2025 (checked and corrected 5 October 2026)
+**Status:** Complete; checked against measurements
+
+---
+
+> **Checked 5 October 2026 against a real system.** This guide was written in October 2025 from the
+> [ND Linker User Guide and Reference Manual (ND-860289-2)](../../Reference-Manuals/ND-860289-2-EN%20ND%20Linker%20User%20Guide%20and%20Reference%20Manual.md)
+> before anything had been run. On 5 October 2026 the linker (`ND LINKER, Version B01`), the NC C compiler
+> (A06) and PLANC-500 (G) were run under real SINTRAN III VSX/500 L with the ND-500/5000 MONITOR J04, and
+> this guide was corrected against those measurements and against the manual. The measured sessions, with
+> evidence tags, are in the practical chapters:
+>
+> - [../ND500/ND-LINKER-PRACTICAL-GUIDE.md](../ND500/ND-LINKER-PRACTICAL-GUIDE.md) - the session that works, the auto jobs, `LIST-ENTRIES UNDEFINED`, `LIST-STATUS`, the domain file layout and sizes, `COMPRESS`
+> - [../ND500/NC-C-COMPILER-GUIDE.md](../ND500/NC-C-COMPILER-GUIDE.md) - C with the NC compiler (this is the C compiler that runs today; the older CC-500 is a different product)
+> - [../ND500/PLANC-500-COMPILER-GUIDE.md](../ND500/PLANC-500-COMPILER-GUIDE.md) - PLANC with PLANC-500
+> - [../ND500/README.md](../ND500/README.md) - what must be on the pack, and the meaning of the tags
+>
+> How to read the markers in this guide: **[measured]** = seen on the real system on 5 October 2026;
+> **[manual]** = taken from the Linker manual, not run; **[not verified]** = in neither source, kept only as
+> an illustration. Where the text below gives a section or appendix number without naming a document, it
+> means the Linker manual. The older Linkage-Loader is described in
+> [ND-60.136.04A ND-500 Loader Monitor](../../Reference-Manuals/ND-60.136.04A%20ND-500%20Loader%20Monitor.md).
+> The local description [../../SINTRAN/File-Formats/DOM-FILE-FORMAT.md](../../SINTRAN/File-Formats/DOM-FILE-FORMAT.md)
+> is partly unverified and is being corrected separately; it is not used as a source here.
 
 ---
 
@@ -55,7 +77,12 @@ This guide provides a comprehensive deep-dive into **ND-500 program linking** an
 | **Architecture** | 16-bit, 64KB address space | 32-bit, 4GB address space |
 | **Segments** | RT segments, max 128KB | ND-500 segments, max 128MB each |
 | **CPU** | ND-100 | ND-500 coprocessor |
-| **Execution** | `@PROGRAM` | `@ND DOMAIN` or `@ND-500-MONITOR` |
+| **Execution** | `@PROGRAM` | `@ND DOMAIN` [manual, measured] or the domain name typed at the ND-500 monitor prompt [measured] |
+
+The ND-500/ND-5000 compilers that were run on 5 October 2026 and produce NRF are the NC C compiler and
+PLANC-500; see [../ND500/NC-C-COMPILER-GUIDE.md](../ND500/NC-C-COMPILER-GUIDE.md) and
+[../ND500/PLANC-500-COMPILER-GUIDE.md](../ND500/PLANC-500-COMPILER-GUIDE.md). The manual's own examples use
+FORTRAN-500 and COBOL-500. (The ND-100/ND-500 segment sizes in the table are from manual section 3.1.3.)
 
 **Why separate linking systems?**
 
@@ -87,8 +114,8 @@ The ND-500 is a **32-bit coprocessor** with fundamentally different architecture
 |------|-------------|------|--------|
 | **Executable ND-500 program** | DOM | ND Linker | `PROGRAM:DOM` |
 | **Shared library segment** | SEG | ND Linker (advanced mode) | `LIBRARY:SEG` |
-| **Object code for linking** | NRF | NORD-500 Assembler | `MODULE:NRF` |
-| **Legacy domain (old format)** | PSEG/DSEG/LINK + DESC | Old Linkage-Loader | Multiple files |
+| **Object code for linking** | NRF | NC, PLANC-500 [measured]; FORTRAN-500, COBOL-500 [manual]; the ND-500 assembler | `MODULE:NRF` |
+| **Legacy domain (old format)** | PSEG/DSEG/LINK + DESC | Old Linkage-Loader (NLL) | Multiple files |
 | **Convert old to new** | DOM | CONVERT-DOMAIN | `PROGRAM:DOM` |
 
 **"I have a file and don't know what it is..."**
@@ -96,7 +123,7 @@ The ND-500 is a **32-bit coprocessor** with fundamentally different architecture
 | Extension | Type | Use |
 |-----------|------|-----|
 | `:NRF` | Object code | Load with ND Linker LOAD command |
-| `:DOM` | Domain (executable) | Run with `@ND DOMAIN-NAME` |
+| `:DOM` | Domain (executable) | Run with `@ND DOMAIN-NAME`, or type `DOMAIN-NAME` (or `DOMAIN-NAME:DOM`) at the ND-500 monitor prompt [measured] |
 | `:SEG` | Free segment | Link to domain with LINK command |
 | `:PSEG` | Old format program | Legacy, use CONVERT-DOMAIN |
 | `:DSEG` | Old format data | Legacy, use CONVERT-DOMAIN |
@@ -162,12 +189,26 @@ ENDMODULE
 
 **Tool:** Text editor (QED, PED, LED, NOTIS-WP)
 
-#### Step 2: Assemble to NRF
+#### Step 2: Assemble or compile to NRF
 
-**Command:**
+**Command** (assembler form as given in the assembler guide; not run in the 5 October 2026 measurements):
 ```bash
 @NORD-500-ASSEMBLER PROGRAM:SYMB
 ```
+
+The measured compilers [measured]:
+
+```
+ND-5000: NC-A06
+NC: COMPILE HELLO,"HELLO","HELLO"            (C: HELLO:C -> HELLO:LIST, HELLO:NRF)
+
+ND-5000: PLANC-500-G00
+*COMPILE PHELLO:PLNC,PHELLO:LIST,PHELLO:NRF  (PLANC; the output files must exist or be given in quotes)
+```
+
+NC needs `DEFINE-STANDARD-DOMAIN CAT-CAT5-B,CAT-CAT5-B06` and `DEFINE-STANDARD-DOMAIN NC-A,NC-A06` once per
+cold start, and NC's `EXIT` returns to the SINTRAN prompt, not to the monitor [measured]. Details in the two
+compiler chapters linked at the top.
 
 **Output:** `PROGRAM:NRF` (NORD Relocatable Format)
 
@@ -180,13 +221,38 @@ ENDMODULE
 
 #### Step 3: Link to Domain
 
-**Command:**
+**Command** [manual, section 3.2]:
 ```bash
 @LINKER
 NDL: OPEN-DOMAIN "PROGRAM"
 NDL: LOAD PROGRAM:NRF
 NDL: EXIT
 ```
+
+The same session as it was run on 5 October 2026 [measured] (`@SET-TERMINAL-TYPE,,93` must be given before
+`@ND-500`, or the linker prints its table of terminal types and waits; the pack must hold a `DDBTABLES-G`
+terminal table):
+
+```
+@SET-TERMINAL-TYPE,,93
+@ND-500
+ND-5000: LINKER-B01
+- ND LINKER, Version B01            10. January   1989  Time:  0:00 -
+NDL: SET-ADVANCED-MODE
+NDL(ADV): OPEN-DOMAIN "HELLO"
+NDL(ADV): LOAD HELLO
+Program:........155B P01   Data:...........214B D01   Debug:.........262B Bytes
+NDL(ADV): CLOSE
+NDL(ADV): LINKER-AUTO-FORT:JOB
+C Auto Job  -  Link/load part.
+NDL(ADV): LOAD              (SYSTEM)NC-LIB
+...
+NDL(ADV): LINKER-AUTO:JOB
+NDL(ADV): EXIT
+```
+
+`SET-ADVANCED-MODE` is not required for a plain link; it was typed in the measured sessions. Everything
+between `CLOSE` and `EXIT` is printed by the linker while it runs the auto jobs (section 4.5).
 
 **Output:** `PROGRAM:DOM` (executable domain)
 
@@ -200,7 +266,7 @@ NDL: EXIT
 
 #### Step 4: Execute
 
-**Command:**
+**Command** [manual, section 3.3; measured]:
 ```bash
 @ND PROGRAM
 ```
@@ -209,6 +275,13 @@ or
 @ND-500-MONITOR
 N5000: PROGRAM
 ```
+
+The manual prints the monitor prompt as `N5000:`; the measured system (MONITOR J04) printed `ND-5000:`,
+and `@ND-500` was used to enter it [measured]. Other measured ways to start a domain: `PROGRAM:DOM` at
+the monitor prompt (needed when the name is one letter, because `A` alone is an ambiguous monitor
+command), `RECOVER-DOMAIN PROGRAM`, and `PLACE-DOMAIN PROGRAM` followed by `RUN`. After `PLACE-DOMAIN` +
+`RUN` a C program prints nothing until one carriage return is typed, because its runtime reads an argument
+line first [measured]. A C program ends with `program PROGRAM terminated` and two time lines [measured].
 
 **What happens:**
 - ND-500 Monitor loads domain
@@ -350,46 +423,45 @@ Source → NORD-500-ASM → NRF → ND Linker → DOM → @ND DOM
 
 **Control groups** are the fundamental building blocks of NRF files. Each control group is a **binary data structure** that directs the linker during loading.
 
-**Control group structure:**
+**Control group structure** [manual, appendix D]:
 
 ```
-┌─────────────┬──────────────┬──────────────────┐
-│ Control Byte│ Control Field│ Trailing Fields  │
-│  (1 byte)   │  (1-3 bytes) │  (variable)      │
-└─────────────┴──────────────┴──────────────────┘
+┌─────────────────┬──────────────────────┬────────────────────────────┐
+│ Control Field   │ Numeric Field        │ Symbolic Field             │
+│ (1 byte,        │ (NL bytes, 0 to 7,   │ (SL byte + up to 255 ASCII │
+│  mandatory)     │  two's complement)   │  characters; only for the  │
+│                 │                      │  groups marked (S))        │
+└─────────────────┴──────────────────────┴────────────────────────────┘
 ```
 
-**Control byte format:**
+**Control field format** [manual, appendix D]: a 5-bit NRF control number and a 3-bit numeric length
+(NL). The manual lists the control numbers in octal (0-37B).
 
-```
-Bits:  7 6 5 4 3 2 1 0
-       └─┬─┘ └────┬────┘
-         │        └─ Control Group Type (0-127)
-         └─ Numeric Length (NL) indicator
-```
+**Example control groups** (control numbers in octal, as the manual prints them):
 
-**Example control groups:**
-
-| Code | Mnemonic | Purpose |
+| Code (octal) | Mnemonic | Purpose |
 |------|----------|---------|
-| 0 | BEG | Start of module |
-| 1 | END | End of module (with checksum) |
+| 0 | NUL | Group ignored |
+| 1 | BEG | Begin module (priority, language code, target machine, OS id) |
+| 2 | END | End of module (with checksum) |
 | 3 | MSA | Main start address |
-| 5 | DEF | Program symbol definition |
-| 6 | DDF | Data symbol definition |
-| 7 | LIB | Library symbol |
-| 8 | REF | Symbol reference (program) |
-| 9 | LRF | Symbol reference (literal pool) |
-| 10 | DRF | Symbol reference (data) |
-| 11 | PMO | Enter program mode |
-| 12 | DMO | Enter data mode |
-| 13 | FMO | Enter free mode |
+| 4 | LIB | Library symbol (S) |
+| 5 | DEF | Program symbol definition (S) |
+| 6 | REF | Program symbol reference (S) |
+| 7 | LRF | Library reference (S) |
+| 10 | DDF | Data symbol definition (S) |
+| 11 | DRF | Data symbol reference (S) |
+| 15 | PMO | Set program mode |
+| 16 | DMO | Set data mode |
+| 17 | FMO | Set free mode (S) |
 
-(Full control group reference in Section 8.1)
+(Full control group reference in Section 8.1. The numbering used in the October 2025 version of this
+guide - BEG=0, END=1, LIB=7, REF=8, PMO=11, and so on - did not match the manual and has been replaced.)
 
 #### 3.1.4 Load Pointers
 
-The linker maintains **three load pointers** during NRF processing:
+The linker maintains **three load pointers** during NRF processing [manual, appendix D; the four names
+PP, DP, XP and BP and the pseudo-symbols #PCLC, #DCLC and #CCLC are the manual's]:
 
 **PP - Program Byte Pointer:**
 - Points to current load address in **program memory**
@@ -462,7 +534,11 @@ stateDiagram-v2
    - Auto-jobs run if needed (library loading)
    - Domain closed
 
-**Example:**
+The symbol-table terms (defined entry, undefined entry, resolving, program symbol, data symbol) are the
+manual's, section 6.1. The manual adds: "If there are two conflicting definitions of one symbol, a
+warning is given and the first definition the Linker encounters is the one which applies."
+
+**Example** (assembler source in the notation of the assembler guide; not run here):
 
 ```asm
 % Module 1: MAIN.SYMB
@@ -505,24 +581,33 @@ NDL: LOAD MATH        % DEF for SQRT resolves the reference
 - Only loaded if symbol is in undefined entry list
 - Used for library routines
 
-**Example library NRF:**
+The manual, appendix D (LIB 4): "All LIBs in a module must appear immediately after the BEG. ... If one
+or more of these symbols are referenced but not defined in the symbol table, the entire module is loaded.
+Otherwise it is skipped." So the unit of conditional loading is the module, not the single symbol.
+
+**Example library NRF** (sketch; one module per routine, as the manual's examples are built):
 
 ```
-Module: MATHLIB
-  BEG
-  LIB SQRT      % Only load if SQRT is undefined
-  % ... SQRT implementation ...
-  LIB SIN       % Only load if SIN is undefined
-  % ... SIN implementation ...
-  END
+Module: SQRT          Module: SIN
+  BEG                   BEG
+  LIB SQRT              LIB SIN       % module loaded only if SIN is undefined
+  DEF SQRT              DEF SIN
+  ... code ...          ... code ...
+  END                   END
 ```
 
 **When loading:**
 ```bash
-NDL: LIBRARY MATHLIB
+NDL: LOAD MATHLIB
 ```
 
-The linker scans the library and only loads modules containing symbols that are currently undefined.
+There is no `LIBRARY` command in the ND Linker (the October 2025 version of this guide used one; it is not
+in the manual's command list, appendix A). A library file is loaded with the ordinary `LOAD` command, and
+"the Linker automatically selects the modules that define symbols referred to in the other modules you have
+loaded" [manual, section 4.2]. A file that was not compiled in library mode can be loaded the same way with
+`SPECIAL-LOAD <file> LIBRARY` (advanced mode) [manual, section 4.2 and command SPECIAL-LOAD]. The measured
+C auto job uses plain `LOAD (SYSTEM)NC-LIB`; the PLANC auto job uses
+`SPECIAL-LOAD (SYSTEM)PLANC-LIB LIBRARY` [measured].
 
 #### 3.1.7 Fast vs Slow Library Format
 
@@ -553,11 +638,17 @@ Must scan from beginning to find symbol.
 │ Module 3 at 0xABCD           │
 └──────────────────────────────┘
 ```
-Direct access via symbol name lookup.
+Direct access via symbol name lookup. (The offsets above are only an illustration. The manual, appendix
+D, LBB 30: the fast load vector is a run of LBB groups at the start of the file; each holds the byte
+position in the NRF file of the module that defines the symbol; `N=0` with a null symbol starts the
+vector and `N=-1` with a null symbol ends it; the vector is processed in passes until all referenced
+symbols in it are satisfied.)
 
 **Creating fast libraries:**
 
-Use the **NRF Library Handler (NLH)** (covered in Section 6.2).
+Use the **NRF Library Handler (NLH)** (covered in Section 6.2): `PREPARE-LIBRARY` (default YES) makes
+`SAVE-LIBRARY` write a fast load vector; `FORCE-LIBRARY` lets modules not compiled in library mode put
+their DEF/DDF symbols into the vector [manual, commands PREPARE-LIBRARY and FORCE-LIBRARY].
 
 ---
 
@@ -572,9 +663,9 @@ Use the **NRF Library Handler (NLH)** (covered in Section 6.2).
 - **Maximum size:** 128 MB per file
 - **Contains:** Domain header + debug info + link info + slave segments
 - **Segments:** Up to 32 program/data segment pairs (0-31)
-- **Execution:** `@ND DOMAIN-NAME`
+- **Execution:** `@ND DOMAIN-NAME`, or `DOMAIN-NAME` at the monitor prompt [measured]
 
-**Advantages over old format (PSEG/DSEG/LINK + DESC):**
+**Advantages over old format (PSEG/DSEG/LINK + DESC)** [manual, appendix E]:
 - Self-contained (single file)
 - Portable (no DESC dependency)
 - Easier to copy and manage
@@ -611,29 +702,57 @@ Use the **NRF Library Handler (NLH)** (covered in Section 6.2).
 ║   └─ Data segment 3                   ║
 ╠═══════════════════════════════════════╣
 ║ ... (more segments as configured)     ║
-╠═══════════════════════════════════════╣
-║ References to Free Segments (if any)  ║
-║   - Segment numbers to link           ║
-║   - File names of SEG files           ║
 ╚═══════════════════════════════════════╝
 
 Total space: 4 pages + 2MB + 2MB + (3 × 34MB) = ~106 MB (3 default segments)
 ```
 
+(Sizes from manual section 3.1.1. References to free segments are kept inside the domain header, not at
+the end of the file - manual, appendix E, "64 segment defs - slave or linked segments" and "32 indirect
+segment defs".)
+
+**Where the parts actually start** [measured on `HELLO:DOM`, a freshly linked C program; the same positions
+are printed by `LIST-STATUS`]:
+
+| Part | Byte position in the file | In `HELLO:DOM` |
+|---|---|---|
+| domain header | 0 | 692 bytes |
+| debug information | 0x002000 (`20000B`) | 179 bytes |
+| link information | 0x202000 (`10020000B`) | 2547 bytes, 96 entries |
+| program segment 1 | 0x402000 (`20020000B`) | 21067 bytes |
+| data segment 1 | 0x602000 (`30020000B`) | 13788 bytes |
+
+The file is an indexed file with holes: `@FILE-STATISTICS HELLO:DOM,,` reported `23 PAGES , 6313436 BYTES
+IN FILE` [measured]. The byte count is the start of the data segment plus its size (0x602000 + 0x35DC =
+6313436), and only the 23 written pages are on disk. The manual's appendix E prints these positions as
+`00002000`, `01002000`, `02002000`, `03002000`; those match the measured values only as octal numbers with
+the last digit missing (`010020000B` = 0x202000), so the printed table is probably mis-transcribed. A
+compressed domain has its debug information at 0x1000 and each following area on the next page boundary
+[measured on the preserved vendor domains, twelve of thirteen of which have this layout; that they were
+made with `COMPRESS` is inferred from the layout].
+
 #### 3.2.3 Domain Header
 
-**Location:** First 2 pages of domain file (pages 2-3 reserved)
+**Location:** First 2 pages of domain file (pages 2-3 reserved, not allocated on disk) [manual, section 3.1.1]
 
-**Contents:**
-- Domain metadata (name, version, creation date)
-- Entry point address
-- Segment descriptor table (which segments are used)
-- Segment sizes and locations in file
-- Debug and link info sizes and offsets
-- Trap block definitions
-- Working set size
-- Memory allocation attributes
-- Free segment references
+**Contents** [manual, appendix E, "Summary of Domain and Segment Headers"]:
+- Identification (link lock, linker version/revision, flags, machine, OS id)
+- Privileges
+- Mother domain and 16 child domains (name pool indexes and link keys)
+- Free byte pointer in name pool
+- Debug info boundaries; link info boundaries
+- Start address (restart address)
+- Trap block - THA, MTE, OTE, CTE, TEMM
+- (Process priority - reserved)
+- 32 indirect segment definitions
+- Source code language mask and MSA language
+- Id message
+- 64 segment definitions - slave or linked segments
+- Name pool, fills the page (SINTRAN file names of linked segment files and other strings)
+
+There is no "working set size" field and no "creation date" field in the manual's list (both were in the
+October 2025 version of this guide). Working-set limits are per segment (`MINP`/`MAXP` in each segment
+definition, set with `SET-SEGMENT-LIMITS`).
 
 **Important:** Binary format details in Section 8.2
 
@@ -648,17 +767,19 @@ Program Segments:        Data Segments:
 Segment pair notation: S01 means P01 + D01
 ```
 
-**Conventions:**
+**Conventions** [manual, sections 3.1.1 and 5.5]:
 
 | Segment Range | Use |
 |---------------|-----|
-| **0-19** | User programs and data |
-| **20-30** | System libraries (reserved by convention) |
+| **0** | Avoid: can cause ADDRESS-ZERO-ACCESS traps, and pointer errors into an unused segment 0 are caught as PROTECT-VIOLATION |
+| **1-19** | User programs and data |
+| **20-30** | "by convention segments 20 to 30 are usually used for ND libraries" - the per-number table is in section 10.3 |
 | **31** | Monitor calls (reserved, always) |
 
 **Default loading:**
 
-When you don't specify a segment number, the linker uses the first unused segment, starting from 1:
+When you don't specify a segment number, the linker uses the first unused segment, starting from 1
+[manual, section 3.1.1]:
 
 ```bash
 NDL: OPEN-DOMAIN "TEST"
@@ -682,16 +803,25 @@ NDL: LOAD PROG3         % Loads to segment 2
 
 **Customizing segment sizes:**
 
-Use `SET-SEGMENT-SIZE` in LINKER-SERVICE-PROGRAM:
+Use `SET-SEGMENT-SIZE` in LINKER-SERVICE-PROGRAM. Its parameters are `<Segment number>` (or `ALL`),
+`<Program size (in pages)>` and `<Data size (in pages)>`; the defaults for a domain are 1024 and 16384
+pages, a page being 2 KB (1024 pages = `10 000 000B` bytes = 2 MB) [manual, command SET-SEGMENT-SIZE].
+The command must come before the segment is first used (before `SET-SEGMENT-NUMBER`/`LOAD` for it); with
+no domain open only `ALL` is accepted and the setting then applies to every file opened later in the
+session. The service program's prompt is `NDL(SRV):` [manual; measured].
 
 ```bash
 NDL: SET-ADVANCED-MODE
-NDL(ADV): LINKER-SERVICE-PROGRAM
-LSP: SET-SEGMENT-SIZE 1, PD, 8, 16    % Segment 1: 8MB program, 16MB data
-LSP: EXIT
 NDL(ADV): OPEN-DOMAIN "CUSTOM"
+NDL(ADV): LINKER-SERVICE-PROGRAM
+- ND LINKER's  SERVICE-PROGRAM -
+NDL(SRV): SET-SEGMENT-SIZE 1,4096,8192   % Segment 1: 8 MB program, 16 MB data (pages of 2 KB)
+NDL(SRV): EXIT
 NDL(ADV): LOAD MYPROGRAM
 ```
+
+(The October 2025 version gave the sizes in MB with a `PD` parameter and a prompt `LSP:`; none of that
+is in the manual.)
 
 **Fitting more segments:**
 
@@ -752,12 +882,20 @@ NDL(ADV): EXIT
 At execution time, ND-500 Monitor loads both files and maps segment 20.
 ```
 
-**Important considerations:**
+**Important considerations** [manual, command LINK and section 3.7]:
 
-1. **Segment number must be unused** in domain
-2. **SEG file must exist** at execution time (same directory)
+1. **Segment number must be unused** in the domain - separately for program and data: "if the specified
+   segment file contains program segment number 7, then program segment number 7 must be free in the
+   current domain or segment, while data segment number 7 need not be free"
+2. **SEG file must exist** at execution time under the file name (with user area) stored in the domain
+   header; `LIST-STATUS` shows the stored references and the service-program command
+   `CHANGE-FILE-REFERENCES` changes them
 3. **Symbol resolution** happens during LINK command
-4. **Included segments** (SEG linking to SEG) are also loaded
+4. **Included segments** (SEG linking to SEG) are referenced from the domain too, but their link
+   information is not read; to resolve symbols defined in an included segment, `LINK` that segment as
+   well
+5. **Link lock:** reopening the SEG with `OPEN-SEGMENT` gives it a new link lock and the domain can no
+   longer be placed until the lock is restored with `CHANGE-LINK-LOCK` or the domain is relinked
 
 ---
 
@@ -812,16 +950,23 @@ At execution time, ND-500 Monitor loads both files and maps segment 20.
 
 #### 3.3.3 Segment Header
 
-**Location:** First 2 pages of segment file
+**Location:** First 2 pages of segment file (2 more reserved) [manual, section 3.1.2]
 
-**Contents:**
-- Segment metadata (name, number, attributes)
-- Entry point (if segment is executable)
-- Segment size information
-- Debug and link info sizes
-- Included segment references
-- Symbol export table
-- Trap definitions (if any)
+**Contents** [manual, appendix E, "Segment Header"]:
+- Identification (link lock, linker version, flags, machine, OS id)
+- Program and data segment definitions, and their logical segment numbers
+- Number of matched ND-100 segments and 10 shared ND-100 segment definitions
+- Free byte pointer in name pool
+- Debug info boundaries; link info boundaries
+- Start address (restart address)
+- Trap block - THA, MTE, OTE, CTE, TEMM
+- 32 indirect segment definitions
+- Source code language mask
+- Id message
+- 64 linked segments
+- Name pool
+
+The symbol table itself is in the link information area, not in the header.
 
 #### 3.3.4 Creating Free Segments
 
@@ -837,10 +982,12 @@ NDL(ADV): OPEN-SEGMENT "<Segment-name>", <Segment-number>, <Segment-type>, <Attr
 
 | Parameter | Description | Example |
 |-----------|-------------|---------|
-| **Segment-name** | File name (quotes if new) | `"MYLIB"` or `MYLIB` |
-| **Segment-number** | 0-31 (segment number) | `20` |
-| **Segment-type** | P, D, or PD | `PD` (both) |
-| **Attributes** | Optional attributes | (usually omit) |
+| **Segment-name** | File name (quotes if new); default type `:SEG` | `"MYLIB"` or `MYLIB` |
+| **Segment-number** | 0-31; default is the lowest available number starting with 1 | `20` |
+| **Segment-type** | P, D, or PD; default PD | `PD` (both) |
+| **Attributes** | Optional; the manual lists WRITE-PERMIT/READ-ONLY, SHARED-DATA-SEGMENT, SWAP-ON-ORIGINAL-FILE, EMPTY-DATA-SEGMENT, FILE-AS-SEGMENT, CACHE/NOT-CACHE, COPY-CAPABILITY-ALLOWED, CLEAR-CAPABILITY-ALLOWED, FORTRAN-COMMON-SEGMENT and their NOT- forms | (usually omit) |
+
+(Parameters and defaults from the manual's OPEN-SEGMENT page and appendix A.)
 
 **Example:**
 
@@ -888,20 +1035,26 @@ APP:DOM → EXTENDED:SEG → BASE:SEG
 
 #### 3.3.6 Modifying Existing Segments
 
-**APPEND-SEGMENT** opens existing segment without erasing:
+**APPEND-SEGMENT** opens an existing segment without erasing it [manual, command APPEND-SEGMENT]:
 
 ```bash
-NDL(ADV): APPEND-SEGMENT MATHLIB, 20
+NDL(ADV): APPEND-SEGMENT MATHLIB
 NDL(ADV): LOAD NEWFUNCTION:NRF    % Add new function
 NDL(ADV): CLOSE
 ```
+
+Its parameters are `<Segment name>` and an optional `<Segment attribute>` list; there is no segment-number
+parameter (the October 2025 version of this guide gave one). Only the attributes named are changed; the
+FORTRAN-COMMON-SEGMENT attribute cannot be changed.
 
 **Use cases:**
 - Adding functions to library
 - Updating implementations
 - Incremental development
 
-**Note:** Cannot change segment number or type with APPEND.
+**Notes from the manual:** `APPEND-DOMAIN` is the matching command for domains and "the link lock of the
+domain is not altered by this command". A free segment reopened with `OPEN-SEGMENT` (not APPEND) gets a new
+link lock, which invalidates every domain linked to it.
 
 ---
 
@@ -944,11 +1097,16 @@ User Directory:
 - Entry points
 
 **DESC (Description File):**
-- Shared by all domains in directory
-- Contains metadata for each PSEG/DSEG/LINK set
-- Managed by ND-500 Monitor
+- One per user: "Every user of NLL has his own description file, which is created and initialized the
+  first time the user starts NLL" ([ND-60.136.04A ND-500 Loader Monitor](../../Reference-Manuals/ND-60.136.04A%20ND-500%20Loader%20Monitor.md), section 1.5)
+- Holds the names of all segments and domains of that user and which :PSEG/:DSEG/:LINK files make up
+  each segment
+- Written by the old Linkage-Loader (NLL), not by the ND-500 Monitor
 
 #### 3.4.3 When to Use Old Format
+
+[not verified - the list below is the October 2025 author's reasoning; neither manual says when the old
+format should still be used]
 
 **Use old format only if:**
 - Working with legacy RT programs that don't recognize DOM files
@@ -959,32 +1117,41 @@ User Directory:
 
 #### 3.4.4 Migration to DOM Format
 
-**CONVERT-DOMAIN program** converts old to new:
+**CONVERT-DOMAIN program** converts old to new [manual, appendix F]:
 
 ```bash
-@ND CONVERT-DOMAIN <new-domain> <old-domain>
+@ND CONVERT-DOMAIN <Destination domain> <Source domain> <Include linked segment(s) (Y,N)>
+                   <Display progress information (Yes,No)> <Force free segment number(s)>
 ```
 
-**Example:**
+The first parameter is the new domain, the second the old one (same order as in the October 2025 version);
+the destination defaults to the source name, and `$` in the destination stands for the source name
+(`new-$` gives `NEW-ACCOUNTS-DOMAIN` from `ACCOUNTS-DOMAIN`). Do not give a file type for the source
+domain. Started without parameters, the program enters its own command mode with the prompt `CONV:`.
+
+**Example** [manual, appendix F; the domain name is as printed in the scan, which has OCR damage]:
 
 ```bash
-% Convert OLD-PROG (PSEG/DSEG/LINK + DESC) to NEW-PROG:DOM
-@ND CONVERT-DOMAIN NEW-PROG OLD-PROG
+@ND CONVERT-DOMAIN "(\)WP-500-N08" (DOMAINS)WP-500-N08 Y Y 1:3
+>> Converting free segment number 3 <<
+>> Converting free segment number 1 <<
+>> Finished <<
 ```
 
-**What happens:**
-1. Reads OLD-PROG:PSEG, :DSEG, :LINK
-2. Reads DESC entry for OLD-PROG
-3. Creates NEW-PROG:DOM with all content
-4. Copies debug and link information
-5. Preserves all segments and symbols
+**What happens** [manual, appendix F, "Segment handling"]:
+1. Segments that belong to the source domain become slave segments of the destination domain
+2. Segments the source domain was linked to become free segments (`SEGFILE:PSEG/:DSEG/:LINK` ->
+   `SEGFILE:SEG`); an existing `:SEG` of that name on the destination user is reused without checking
+   its contents
+3. Segment numbers listed in parameter 5 are written to separate segment files even if they were slave
+   segments
 
 **After conversion:**
 - NEW-PROG:DOM is fully functional
 - Can delete old PSEG/DSEG/LINK files
 - No DESC dependency
 
-**Note:** Conversion is one-way (cannot convert DOM back to old format).
+**Note:** Conversion is one-way (no DOM-to-old converter is described in either manual).
 
 **See also:** [CONVERT-DOMAIN-PSEG-DSEG-TO-DOM.md](CONVERT-DOMAIN-PSEG-DSEG-TO-DOM.md) - detailed step-by-step conversion procedure with full parameter reference.
 
@@ -994,7 +1161,7 @@ User Directory:
 
 ### 4.1 Starting the Linker
 
-**Command:**
+**Command** [manual; both forms appear in its examples]:
 ```bash
 @LINKER
 ```
@@ -1003,33 +1170,60 @@ or
 @ND LINKER
 ```
 
-**Output:**
+On the measured system the linker is the domain file `LINKER-B01:DOM` under user SYSTEM and was started
+from the ND-500 monitor [measured]:
+
 ```
-- ND LINKER, version B0C
-- NDL entered: Date: 20. October 2025 Time: 14:30 -
+@SET-TERMINAL-TYPE,,93
+@ND-500
+ND-5000: LINKER-B01
+```
+
+Without `@SET-TERMINAL-TYPE` the linker prints its table of terminal types and waits for an answer; it
+also needs the `DDBTABLES-G` terminal table on the pack [measured]. Whether `@LINKER` works on that pack
+depends on how the domain is named there; it was not tried.
+
+**Output** - the manual's example banner (version B0C of August 1988):
+```
+- ND LINKER, version B0C Alfa test, 23. August 1988 Time: 13:31 -
+- NDL entered:                 Date: 28. August 1988 Time: 17:21 -
 NDL:
 ```
 
-**Prompt** `NDL:` indicates standard mode
-**Prompt** `NDL(ADV):` indicates advanced mode
-**Prompt** `NDL(NLH):` indicates NRF Library Handler mode
-**Prompt** `LSP:` indicates Linker Service Program mode
+and the measured banner (version B01 of January 1989) [measured]:
+```
+- ND LINKER, Version B01            10. January   1989  Time:  0:00 -
+NDL:
+```
+
+At start-up the measured linker also printed `LINKER:INIT` followed by a "No such file name" warning: it
+looks for the optional start-up job of that name (section 4.5), and the warning is harmless [measured].
+
+**Prompt** `NDL:` indicates standard mode [manual, measured]
+**Prompt** `NDL(ADV):` indicates advanced mode [manual, measured]
+**Prompt** `NDL(NLH):` indicates NRF Library Handler mode [manual]
+**Prompt** `NDL(SRV):` indicates Linker Service Program mode [manual, measured] (the October 2025 version
+of this guide wrote `LSP:`; that prompt does not exist)
+
+A script that waits for the prompt should wait for the text `NDL`, because `NDL(ADV):` does not contain
+`NDL:` [measured].
 
 ### 4.2 ND-SHELL User Interface
 
-The ND Linker uses **ND-SHELL**, providing advanced editing features:
+The ND Linker uses **ND-SHELL**, providing advanced editing features [manual, "Standard Notation" and
+chapter 2]:
 
 **Key Features:**
 - **NOTIS-WP line editing** (full editing on command line)
 - **Command history** (scroll up/down through previous commands)
-- **Context-sensitive HELP** (HELP key shows detailed information)
+- **Context-sensitive HELP** (HELP key shows detailed information; the text comes from a `:HELP` file, `LINKER-B01:HELP` on the measured pack)
 - **Command completion** (SHIFT+HELP lists matching commands)
 - **File browsing** (F3 lists matching files)
 - **Parameter prompts** (DOWN ARROW prompts for next parameter)
 - **JOB file support** (batch command execution)
-- **Variables and control flow** (FOR, WHILE, IF statements in JOBs)
+- **Variables and control flow** (`DO...WHILE...ENDDO`, `FOR...ENDFOR`, `IF...ELSIF...ELSE...ENDIF` in JOBs)
 
-**Essential keys:**
+**Essential keys** [manual, "Standard Notation"]:
 
 | Key | Function |
 |-----|----------|
@@ -1059,17 +1253,20 @@ The ND Linker uses **ND-SHELL**, providing advanced editing features:
 - Advanced control over loading
 - Required for free segments
 
-**NRF Library Handler Mode** (NRF-LIBRARY-HANDLER):
+**NRF Library Handler Mode** (NRF-LIBRARY-HANDLER, entered from advanced mode; prompt `NDL(NLH):`):
 - Library file manipulation
-- GET-MODULES, SAVE-LIBRARY
-- LIST-MODULES, LIST-NRF
+- GET-MODULES, REPLACE-MODULES, DELETE-MODULES, SAVE-LIBRARY
+- LIST-MODULES, LIST-NRF, LIST-STATUS
+- PREPARE-LIBRARY, FORCE-LIBRARY (fast load vector)
 - Module transfer between libraries
 
-**Linker Service Program Mode** (LINKER-SERVICE-PROGRAM):
+**Linker Service Program Mode** (LINKER-SERVICE-PROGRAM, entered from advanced mode; prompt `NDL(SRV):`):
 - Advanced configuration
-- SET-AREA-SIZE, SET-SEGMENT-SIZE
-- COMPRESS, CHANGE-FILE-REFERENCES
+- SET-AREA-SIZE, SET-SEGMENT-SIZE, SET-HEAP-SIZE
+- COMPRESS, CHANGE-FILE-REFERENCES, CHANGE-LINK-LOCK, INSERT-MESSAGE
 - SET-FORMAT (number system)
+
+(Command lists from manual chapter 7 and appendix A.)
 
 ### 4.4 Essential Commands
 
@@ -1083,21 +1280,26 @@ NDL: OPEN-DOMAIN "<Domain-name>"     % Create new (quotes required)
 NDL: OPEN-DOMAIN <Domain-name>       % Open existing (no quotes)
 ```
 
-**Parameters:**
-- **Domain-name**: File name (default type :DOM)
-- Optional: User area, directory
+**Parameters** [manual, appendix A]:
+- **Domain name**: File name (default type :DOM); user area and directory go inside the name,
+  `(Directory:User)Name`
+- **Domain privileges**: optional, `ENABLE-ESCAPE` (default) or `DISABLE-ESCAPE`
 
 **Example:**
 ```bash
 NDL: OPEN-DOMAIN "MYAPP"             % Creates MYAPP:DOM
-NDL: OPEN-DOMAIN MYAPP               % Opens existing MYAPP:DOM
+NDL: OPEN-DOMAIN MYAPP               % Opens existing MYAPP:DOM; its contents are overwritten
 ```
 
 **What happens:**
-- Closes any previously open domain
-- Creates new domain file (with quotes) or opens existing
+- Closes any previously open domain (and runs the auto jobs for it, section 4.5)
+- Creates new domain file (with quotes) or opens existing; "If no double quotation marks are used, the
+  domain ... must already exist, and its contents will be overwritten" [manual, section 3.2]
 - Sets current segment to 1 (default)
 - Ready to LOAD modules
+
+Every measured relink deleted the old file first (`@DELETE-FILE HELLO:DOM`) and used the quoted form
+[measured]. To open a domain without erasing it, use `APPEND-DOMAIN` (advanced mode).
 
 #### LOAD
 
@@ -1129,27 +1331,29 @@ NDL: LOAD UTILS:NRF, MATHLIB         % Explicit + default type
 ```
 Program:.......150B P01    Data:...........224B D01
 ```
-Shows current program/data sizes in segment 1.
+[manual]. The measured linker (B01) adds a third field:
+```
+Program:........155B P01   Data:...........214B D01   Debug:.........262B Bytes
+```
+[measured]. The numbers are octal (suffix `B`) load addresses in the current program and data segment;
+`P01`/`D01` is segment 1. The segment number in that field is printed in octal too: the manual's examples
+show segment 10 as `P12`/`D12` and segment 31 as `P37`.
 
-#### LIBRARY
+#### Loading a library
 
-**Purpose:** Load library file (only needed modules)
+There is no separate `LIBRARY` command (the October 2025 version of this guide had one). A library is
+loaded with `LOAD`:
 
-**Syntax:**
 ```bash
-NDL: LIBRARY <library-file>
+NDL: LOAD FORTRAN-LIB                % Load FORTRAN runtime library
+NDL: LOAD MATHLIB                    % Load math library
 ```
 
-**Example:**
-```bash
-NDL: LIBRARY FORTRAN-LIB             % Load FORTRAN runtime library
-NDL: LIBRARY MATHLIB                 % Load math library
-```
-
-**Difference from LOAD:**
-- Only modules with undefined symbols are loaded
-- Faster for large libraries
-- Uses fast load vector if available
+"When you give the LOAD command for a library file, the Linker checks in the symbol table of the current
+domain which symbols are undefined, and whether any of these become defined if the library file is
+loaded" [manual, section 5.3.2]. Only those modules are loaded. A file that is not marked as a library can
+be loaded the same way with the advanced-mode command `SPECIAL-LOAD <file> LIBRARY`; `SPECIAL-LOAD` also
+has the load types `TOTAL` (everything), `SELECT` and `OMIT` [manual, command SPECIAL-LOAD].
 
 #### LINK
 
@@ -1181,26 +1385,40 @@ NDL(ADV): LINK MATHLIB:SEG           % Link to MATHLIB at its segment number
 **Syntax:**
 ```bash
 NDL: CLOSE
-NDL: CLOSE N, N                      % No auto-actions, no prompt
+NDL: CLOSE N,N                       % No load map, no auto job
+NDL: CLOSE ,NO                       % Auto job off, load map default
 ```
 
-**Parameters:**
-- **Automatic actions** (Yes/No): Execute auto-jobs? (default Yes)
-- **Final-message** (Yes/No): Show completion message? (default Yes)
+**Parameters** [manual, command CLOSE and appendix A]:
+- **Load map** (No/Yes): list all references and entries with their values (default No)
+- **Perform Auto Job/Linker Job** (Yes/No): run the auto jobs (default Yes); Yes also lists undefined
+  entries if any exist
+- **Output file** (default terminal)
+
+(The October 2025 version of this guide named the parameters "Automatic actions" and "Final-message";
+those are not the manual's.)
 
 **What happens:**
-1. Check for undefined symbols
+1. Check for undefined symbols and for a missing trap block
 2. If undefined or no trap handler: Execute auto-jobs (e.g., LINKER-AUTO-FORT:JOB)
 3. All symbols must be defined
-4. Trap block must be set
+4. Trap block must be set (if no SET-TRAP-CONDITION was given, CLOSE copies the first valid trap block
+   found on any linked segment; the same strategy applies to the main start address)
 5. Domain/segment written to disk
 6. Symbol table committed to link info area
 7. File closed
 
-**Auto-jobs:**
+"In interactive mode, the domain or segment will not be closed the first time if undefined references
+exist. This, however, does not apply if parameter 2 is NO." [manual]
+
+**Auto-jobs** [manual, chapter 4; measured]:
 - `LINKER-AUTO-FORT:JOB` for FORTRAN
 - `LINKER-AUTO-PLNC:JOB` for PLANC
-- `LINKER-AUTO:JOB` generic fallback
+- `LINKER-AUTO:JOB` generic fallback, run after the language job if entries are still undefined or no
+  language job was found
+- For an NC (C) object the linker ran `LINKER-AUTO-FORT:JOB`, not a C job, and `LIST-STATUS` shows
+  `Source code language: Fortran*, Planc` [measured]; so the file named `LINKER-AUTO-FORT:JOB` on the
+  measured pack holds the C job (section 4.5)
 
 #### EXIT
 
@@ -1213,9 +1431,13 @@ NDL: EXIT
 
 **What happens:**
 - If domain/segment open: CLOSE command executed
-- Returns to SINTRAN
+- "returns you to SINTRAN, the ND-5000 Monitor, or User Environment, depending on which of these you
+  entered the Linker from" [manual]; started from the monitor it returned to `ND-5000:` [measured]
 
-**Note:** EXIT = CLOSE + exit. If CLOSE fails (undefined symbols), EXIT aborted. Press EXIT twice to force.
+**Note:** EXIT = CLOSE + exit. "If your load operation failed to define all the symbols used in your
+program, you will receive the error message "The file is not closed", and the EXIT command is not
+executed. If you want to close the file and/or exit from the linker, you must give the command two times
+in succession." [manual, section 3.2]
 
 #### SET-SEGMENT-NUMBER
 
@@ -1227,9 +1449,11 @@ NDL(ADV): SET-SEGMENT-NUMBER <segment-number>
 NDL(ADV): SET-SEGMENT-NUMBER <segment-number>, <segment-type>
 ```
 
-**Parameters:**
-- **segment-number**: 0-31
-- **segment-type**: PD (both), P (program only), D (data only)
+**Parameters** [manual]:
+- **segment-number**: 0-31; default is the lowest unused number, starting with 1
+- **segment-type**: PD (both), P (program only), D (data only); default PD
+- **segment attributes**: optional, as for OPEN-SEGMENT (FORTRAN-COMMON-SEGMENT is not valid for slave
+  segments)
 
 **Example:**
 ```bash
@@ -1237,10 +1461,17 @@ NDL(ADV): SET-SEGMENT-NUMBER 5       % Switch to segment 5 (PD)
 NDL(ADV): SET-SEGMENT-NUMBER 10, P   % Switch to segment 10 (program only)
 ```
 
-**Output:**
+**Output** [manual example for segment 10]:
 ```
-Program:.........4B P05    Data:............4B D05
+Program:.........4B P12    Data:............4B D12
 ```
+
+The segment number after `P`/`D` is octal: segment 10 is shown as `P12`. Loading starts at address 4B,
+not 0: "The Linker normally avoids loading to the first word of each segment, to prevent
+ADDRESS-ZERO-ACCESS traps" [manual, section 5.5].
+
+Setting a segment number reserves file space of the current segment size (default 34 MB) in the domain
+file, so a fourth default-sized segment gives an error unless `SET-SEGMENT-SIZE` was used first [manual].
 
 **Use case:** Load different modules to different segments.
 
@@ -1253,22 +1484,41 @@ Program:.........4B P05    Data:............4B D05
 NDL: LIST-ENTRIES <selection>
 ```
 
-**Parameters:**
-- **UNDEFINED**: Show undefined symbols only
-- **DEFINED**: Show defined symbols only
-- **ALL**: Show all symbols
+**Parameters** [manual, appendix A]:
+- **Entry selection**: UNDEFINED (default), DEFINED or ALL
+- **Order**: NUMERICAL (default) or ALPHABETICAL
+- **Entry type**: ALL (default), USER or ENTRY
+- **Entry name**
+- **Output file** (default terminal)
 
-**Example:**
+**Example** (format as in the manual's section 3.5 example):
 ```bash
 NDL: LIST-ENTRIES UNDEFINED
 Undefined entries:
-  SQRT............../FTN........12B P01
+  PRTIME............./FTN........76B P01
 
 NDL: LIST-ENTRIES DEFINED
 Defined entries:
   MAIN.............../FTN........4B P01
-  BUFFER............./FTN.......100B D01
+Current load addresses:
+  Program:......150B P01 Data:............224B D01
 ```
+
+Each line is the entry name, the language of the module that referenced or defined it (`/FTN`; a C object
+from NC shows `/ffff`), the octal address and the segment. A measured example, a C main program before its
+runtime library was loaded [measured]:
+
+```
+NDL(ADV): LIST-ENTRIES UNDEFINED
+Undefined entries: 10
+NUN!GEHT!S!LOS!..../ffff........5B P01  C!INIT............./ffff.......37B P01
+C!EXIT............./ffff......100B P01  RERAISE!EXC!......./ffff......106B P01
+C!EXIT............./ffff......114B P01  DAS!WAR!S!........./ffff......122B P01
+ADD2.............../ffff......142B P01  PRINTF............./ffff......162B P01
+V!ARGV............./ffff.......63B P01  V!ENV............../ffff.......70B P01
+```
+
+Entries whose name begins with `#` are hidden from the listing [manual, appendix D].
 
 **Use case:** Debug linking issues, verify symbol resolution.
 
@@ -1281,47 +1531,66 @@ Defined entries:
 NDL: LIST-STATUS <domain-or-segment>
 ```
 
-**Example:**
+**Example** [measured, shortened; the full output also lists privileges and segment attributes]:
 ```bash
-NDL: LIST-STATUS MYAPP
-
-Domain name: MYAPP:DOM
-  Program segment: 1    Address in file: 20020000B    Size: 7140B
-  Data segment: 1       Address in file: 30020000B    Size: 7354B
-
-  Linked to: MATHLIB:SEG    Segment: 20    Link key: 34244
+NDL(ADV): LIST-STATUS HELLO
+Domain: (PACK-ONE:SYSTEM)HELLO:DOM;1
+Main Start Address:   4B           Segment no:   1B
+Start of debug info:  20000B       Size:         263B
+Start of link info:   10020000B    Size:        4763B
+Linker version used:  B01
+Trap handler vector:  30734B       Segment no:   1B
+Source code language: Fortran*, Planc
+Program segment:   1  Address in file:    20020000B      Size:           51113B
+Data segment:      1  Address in file:    30020000B      Size:           32734B
 ```
+
+For a domain linked to a free segment the manual's `LIST-DOMAINS` example prints the linked segment as
+`Program segment: 10  Linked to: PRTIME:SEG  Link key: 34244` [manual, section 3.6].
 
 **Shows:**
 - Segment numbers used
 - Segment sizes
 - File offsets
-- Linked segments
-- Trap definitions
-- Entry point
+- Linked segments and their link keys
+- Trap handler vector address
+- Main start address and the languages of the loaded modules
 
 #### DEFINE-ENTRY
 
 **Purpose:** Manually define symbol (advanced mode)
 
-**Syntax:**
+**Syntax** [manual, command DEFINE-ENTRY]:
 ```bash
-NDL(ADV): DEFINE-ENTRY <symbol-name>, <value>, <type>, <segment>
+NDL(ADV): DEFINE-ENTRY <Entry name>, <Value>, <Entry type (P,D)>
 ```
 
 **Parameters:**
-- **symbol-name**: Symbol to define
-- **value**: Numeric value
-- **type**: P (program) or D (data)
-- **segment**: Segment number
+- **Entry name**: Symbol to define
+- **Value**: a number, or an already defined symbol, or one of the pseudo-symbols `#PCLC`, `#DCLC`,
+  `#CCLC` (current program, data and common load addresses) and `#THA` (trap handler vector address);
+  default 0
+- **Entry type**: P (program, default) or D (data)
 
-**Example:**
+There is no fourth "segment" parameter (the October 2025 version of this guide had one). The segment is
+part of the value: the manual defines monitor calls on segment 31 as
+`DEFINE-ENTRY GETCLOCK 370000000113B P` (segment 37B = 31, address 113B), and warns "Be sure to use the
+correct number of zeros. The Linker does not accept the abbreviation 37'113B."
+
+**Example** [measured, from the C auto job]:
 ```bash
-NDL(ADV): DEFINE-ENTRY STACK_SIZE, 400000, D, D
-NDL(ADV): DEFINE-ENTRY ENTRY_POINT, 1000H, P, 1
+NDL(ADV): DEFINE-ENTRY       stack-space,400000,d
+NDL(ADV): DEFINE-ENTRY       heap-space,400000,d
+NDL(ADV): REFER              stack-space,rts_stack_size,d,d
+NDL(ADV): REFER              heap-space,rts_heap_size,d,d
 ```
 
-**Use case:** Define constants, override addresses, set sizes.
+`400000` is octal (131072). The two `REFER` lines are the command `REFER-ENTRY`, abbreviated; its
+parameters are `<Referred entry name>`, `<Address of reference>`, `<Entry type of referred entry (P,D)>`
+and `<Reference in program or data segment (P,D)>` [manual, appendix A]. Together the four lines store the
+value of `stack-space` into the data word `rts_stack_size` that the C runtime reads.
+
+**Use case:** Define constants, override addresses, set sizes, name monitor calls.
 
 ### 4.5 JOB Files and Automation
 
@@ -1342,47 +1611,96 @@ EXIT
 NDL: LINKTEST                        % Runs LINKTEST:JOB
 ```
 
-**JOB Control Language:**
+A JOB is started by typing its name; "If ambiguity arises between commands and JOBs, the commands take
+precedence. This can be avoided by specifying the file type JOB." Output of a JOB is not shown unless the
+job contains `LIST` (and `ENDLIST` turns it off again) [manual, section 2.6].
+
+**JOB Control Language** [manual, section 2.6.1 - the statements are the manual's; this short job was not
+run]:
 
 ```bash
-% Variables
+% Variables: created with quotes, used without
 "PROGNAME:VAR" = 'MYAPP'
 "DEBUG:VAR" = TRUE
 
 % Conditional
-IF DEBUG:VAR
+IF DEBUG:VAR = TRUE
   MESSAGE 'Debug mode enabled'
 ENDIF
 
-% Loop
-FOR "I:VAR" 1 5
-  MESSAGE 'Loading module ', I:VAR
-  LOAD MODULE I:VAR
+% Loop: FOR <var> <from> <to> ... ENDFOR
+FOR I:VAR 1 5
+  SHOW 'Loading module', I:VAR
 ENDFOR
 
-% Error handling
+% Error handling: ERROR-CODE:VAR holds the code of the last error
 IF ERROR-CODE:VAR > 0
   ERROR 'Link failed', ERROR-CODE:VAR
 ENDIF
 ```
 
-**Auto-execution JOBs:**
+The manual's full list of statements: `ASK`, `DESTINATION`, `DO...WHILE...ENDDO`, `LIST...ENDLIST`,
+`ERROR`, `FIELD`, `FOR...WHILE...ENDFOR`, `IF...ELSIF...ELSE...ENDIF`, `MESSAGE`, `PARAMETER`, `RETURN`,
+`SHOW`, `TERMINATION`. Operators: `+ - / * ** MOD SHIFT ( ) SQRT`, the relational operators, `AND OR XOR
+NOT`, `TRUE FALSE`. "No abbreviation is possible. The JOB control statements are only available in JOBs."
 
-- **LINKER:INIT** - Executed when linker starts (if exists)
+**Auto-execution JOBs** [manual, sections 2.6.3 and chapter 4]:
+
+- **LINKER:INIT** - Executed when linker starts (if exists); the measured linker printed `LINKER:INIT`
+  and a "No such file name" warning when it was absent [measured]
 - **LINKER:EXIT** - Executed when linker exits (if exists)
-- **LINKER-AUTO-FORT:JOB** - Auto-executed for FORTRAN programs on CLOSE
+- **LINKER-AUTO-<lang>:JOB** - run by CLOSE when entries are undefined or the trap block is missing;
+  `<lang>` is an abbreviation of the language of the Main Start Address (`FORT`, `PLNC`, ...); searched
+  first under the current user, then under SYSTEM
+- **LINKER-AUTO:JOB** - run after that if entries are still undefined or no language job was found
 
-**Example LINKER-AUTO-FORT:JOB:**
+**Example LINKER-AUTO-FORT:JOB** [manual, section 4.3, shortened]:
 ```bash
-% Trap setup for FORTRAN
 SET-ADVANCED-MODE
-SET-TRAP-CONDITION OWN, ENAB, #FLOFLW    % Floating overflow
-SET-TRAP-CONDITION OWN, ENAB, #INVALDI   % Divide by zero
-...
-
-% Link runtime library
-SPECIAL-LOAD (SYSTEM)FORTRAN-LIB LIBRARY
+MESSAGE 'FORTRAN Auto Job - Trap definition part.'
+SET-TRAP-CONDITION OWN, ENAB, #INVALOP, INVALID-OPERATION
+SET-TRAP-CONDITION OWN, ENAB, #INVALDI, DIVIDE-BY-ZERO
+SET-TRAP-CONDITION OWN, ENAB, #FLOFLW, FLOATING-OVERFLOW
+...                                         % 15 traps in all
+REFER-ENTRY #MAINGRA, #THA, D, D
+MESSAGE 'FORTRAN Auto Job - Link/load part.'
+LIST
+SPECIAL-LOAD (SYSTEM)FORTRAN-LIB-K LIBRARY
+SPECIAL-LOAD (SYSTEM)EXCEPT-LIB LIBRARY
+SET-IO-BUFFERS
 ```
+
+**The two auto jobs that were run on 5 October 2026** [measured]. The C job (on the measured pack it is
+the file named `LINKER-AUTO-FORT:JOB`: the linker chose the FORT job for the NC object and `LIST-STATUS`
+reports its language as `Fortran*`, so by the manual's rule the MSA language in the NC object is
+FORTRAN's - inferred, the NRF bytes were not inspected):
+
+```bash
+MESSAGE 'C Auto Job  -  Link/load part.'
+LIST
+SET-ADVANCED-MODE
+LOAD              (SYSTEM)NC-LIB
+LOAD              (SYSTEM)CAT-LIB
+DEFINE-ENTRY       stack-space,400000,d
+DEFINE-ENTRY       heap-space,400000,d
+REFER              stack-space,rts_stack_size,d,d
+REFER              heap-space,rts_heap_size,d,d
+```
+
+and `LINKER-AUTO-PLNC:JOB`:
+
+```bash
+MESSAGE 'PLANC Auto Job  -  Link/load part.'
+SET-ADVANCED-MODE
+LIST
+SPECIAL-LOAD            (SYSTEM)PLANC-LIB    LIBRARY
+```
+
+Neither of the measured jobs has a trap definition part; the linker allocates a trap handler vector and
+trap stack itself when a domain is closed without any `SET-TRAP-CONDITION` [manual, command
+SET-TRAP-CONDITION], and `LIST-STATUS` on the C domain shows `Trap handler vector: 30734B` [measured].
+A copy of the job files is in
+[../../SINTRAN/ND500-APPS/_shared/files/](../../SINTRAN/ND500-APPS/_shared/files/).
 
 ---
 
@@ -1407,7 +1725,8 @@ ENDROUTINE
 ENDMODULE
 ```
 
-**Build steps:**
+**Build steps** [the assembler step is from the assembler guide and the link step from the manual; this
+assembler example was not run]:
 
 ```bash
 % 1. Assemble
@@ -1428,9 +1747,43 @@ NDL: EXIT
 Hello, ND-500!
 ```
 
-**Files created:**
-- `HELLO:NRF` - Object code (32 KB typ.)
-- `HELLO:DOM` - Executable domain (can be MB+)
+**The same thing, measured, with a C source** [measured; full transcript in
+[../ND500/ND-LINKER-PRACTICAL-GUIDE.md](../ND500/ND-LINKER-PRACTICAL-GUIDE.md)]:
+
+```
+ND-5000: NC-A06
+NC: COMPILE HELLO,"HELLO","HELLO"
+NC: EXIT
+@ND-500
+ND-5000: LINKER-B01
+NDL: SET-ADVANCED-MODE
+NDL(ADV): OPEN-DOMAIN "HELLO"
+NDL(ADV): LOAD HELLO
+Program:........155B P01   Data:...........214B D01   Debug:.........262B Bytes
+NDL(ADV): CLOSE
+NDL(ADV): LINKER-AUTO-FORT:JOB
+C Auto Job  -  Link/load part.
+NDL(ADV): LOAD              (SYSTEM)NC-LIB
+Program:......36716B P01   Data:.........23634B D01   Debug:.........262B Bytes
+NDL(ADV): LOAD              (SYSTEM)CAT-LIB
+Program:......51113B P01   Data:.........30734B D01   Debug:.........262B Bytes
+NDL(ADV): DEFINE-ENTRY       stack-space,400000,d
+NDL(ADV): DEFINE-ENTRY       heap-space,400000,d
+NDL(ADV): REFER              stack-space,rts_stack_size,d,d
+NDL(ADV): REFER              heap-space,rts_heap_size,d,d
+NDL(ADV): LINKER-AUTO:JOB
+NDL(ADV): EXIT
+ND-5000: HELLO
+HELLO FROM C!
+program HELLO terminated
+```
+
+**Files created** [measured]:
+- `HELLO:NRF` - Object code; the C hello program loaded as 155B bytes of program and 214B of data, and a
+  PLANC hello program's `:NRF` was 270 bytes
+- `HELLO:DOM` - Executable domain; SINTRAN reports 6313436 bytes because the data segment starts at
+  byte 0x602000 of the file, but only 23 pages (47104 bytes) are on disk (section 3.2.2); `COMPRESS`
+  in the service program packed it to 47104 bytes and the program still ran
 
 **Simple!** For basic programs, this is all you need.
 
@@ -1478,13 +1831,18 @@ ENDMODULE
 @LINKER
 NDL: OPEN-DOMAIN "MYAPP"
 NDL: LOAD MAIN, UTILS           % Load main modules
-NDL: LIBRARY MATHLIB            % Load math library (only SQRT needed)
+NDL: LOAD MATHLIB               % Load math library (only the module defining SQRT is loaded)
 NDL: LIST-ENTRIES DEFINED       % Verify symbols
 NDL: EXIT
 
 % Execute
 @ND MYAPP
 ```
+
+(Sketch, not run. `LOAD` of a library file loads only the modules that define undefined entries [manual,
+section 5.3.2]; if MATHLIB was not compiled in library mode, use `SPECIAL-LOAD MATHLIB LIBRARY` in
+advanced mode. The measured two-file C program, `MAIN2` calling `add2()` in `ADD2`, was linked with
+`LOAD MAIN2`, `LOAD ADD2`, `CLOSE` and printed `2 + 3 = 5` [measured].)
 
 **Symbol resolution:**
 1. MAIN loaded → INIT_UTILS, SQRT undefined
@@ -1619,33 +1977,34 @@ Segment 31: Monitor calls (system reserved)
 ```bash
 @LINKER
 NDL: SET-ADVANCED-MODE
-NDL(ADV): LINKER-SERVICE-PROGRAM
-
-% Customize segment 1 size
-LSP: SET-SEGMENT-SIZE 1, PD, 1, 100
-%                      |  |   |  └─ 100 MB data
-%                      |  |   └─ 1 MB program
-%                      |  └─ PD = program + data
-%                      └─ Segment number 1
-
-LSP: EXIT
-
-% Now open domain with custom segment
 NDL(ADV): OPEN-DOMAIN "DATAAPP"
+NDL(ADV): LINKER-SERVICE-PROGRAM
+- ND LINKER's  SERVICE-PROGRAM -
+
+% Customize segment 1 size: sizes are in pages of 2 KB
+NDL(SRV): SET-SEGMENT-SIZE 1, 512, 51200
+%                          |   |    └─ 51200 pages = 100 MB data
+%                          |   └─ 512 pages = 1 MB program
+%                          └─ Segment number 1
+
+NDL(SRV): EXIT
+
+% The segment is now reserved at the new size; load as usual
 NDL(ADV): LOAD DATAAPP:NRF
 NDL(ADV): EXIT
 ```
 
-**Verification:**
-```bash
-NDL(ADV): LIST-STATUS DATAAPP
+[manual, command SET-SEGMENT-SIZE: parameters `<Segment number>`, `<Program size (in pages)>`, `<Data
+size (in pages)>`; the command must precede the first use of that segment; with no domain open only `ALL`
+is accepted. The manual's own example doubles the program segment with `SET-SEGMENT-SIZE 1 2048`. The
+October 2025 version gave MB values and a `PD` parameter, which the command does not have.]
 
-Domain: DATAAPP:DOM
-  Program segment 1: 1 MB allocated
-  Data segment 1: 100 MB allocated
-```
+**Verification:** `LIST-STATUS DATAAPP` lists each segment with its address in the file and its loaded
+size (section 4.4); the reserved size shows as the distance between the start addresses of consecutive
+areas. [The verification output printed in the October 2025 version of this guide was invented and has
+been removed.]
 
-**Limitations:**
+**Limitations** [manual, section 3.1.1]:
 - Total all segments ≤ 124 MB
 - 1 MB program + 100 MB data = 101 MB → OK
 - Could add one more ~20 MB segment
@@ -1708,16 +2067,16 @@ Check symbol table:
   → SUCCESS: Domain closed
 ```
 
-**If undefined at CLOSE:**
+**If undefined at CLOSE** [manual, chapter 4 and command CLOSE]:
 ```
-Error: Undefined symbols:
-  UNKNOWN_FUNC
+CLOSE finds undefined entries (or no trap block)
+  → runs LINKER-AUTO-<lang>:JOB (own user first, then SYSTEM)
+  → still undefined, or no such file? runs LINKER-AUTO:JOB
+  → still undefined? the undefined entries are listed and the message is
+    "The file is not closed"; a second CLOSE (or EXIT) closes anyway
+```
 
-Auto-job LINKER-AUTO-FORT:JOB executed...
-  Tries to load FORTRAN-LIB
-  Still undefined?
-    → CLOSE fails
-```
+Use `LIST-ENTRIES UNDEFINED` to see exactly what is missing and where it is referenced [measured].
 
 ### 6.2 Creating NRF Libraries
 
@@ -1728,58 +2087,58 @@ Auto-job LINKER-AUTO-FORT:JOB executed...
 2. LIB control groups (not DEF) for exported symbols
 3. Fast load vector (optional, for performance)
 
-**Step 1: Compile in library mode**
+**Step 1: Compile in library mode** [manual, section 5.3.1; the manual compiles from files, one
+`LIBRARY-MODE` before each `COMPILE`; FORTRAN and PLANC can put many routines in one NRF file, the 1985
+COBOL and PASCAL compilers only one]
 
-**FORTRAN example:**
+**FORTRAN example** (sketch in the manual's form, not run):
 ```bash
 @ND FORTRAN-500
-FTN: LIBRARY-MODE
-FTN: COMPILE SQRT,TERMINAL,SQRT
-  SUBROUTINE SQRT(X, RESULT)
-    REAL X, RESULT
-    % ... implementation ...
-  END
-
-FTN: LIBRARY-MODE
-FTN: COMPILE SIN,TERMINAL,SIN
-  SUBROUTINE SIN(X, RESULT)
-    % ... implementation ...
-  END
-
-FTN: EXIT
+LIBRARY-MODE
+COMPILE SQRT,TERMINAL,SQRT
+LIBRARY-MODE
+COMPILE SIN,TERMINAL,SIN
+EXIT
 ```
 
 **Result:** `SQRT:NRF` and `SIN:NRF` with LIB control groups.
 
-**Step 2: Combine into library file using NRF Library Handler**
+**Step 2: Combine into library file using NRF Library Handler** [manual, section 5.3.3 and the
+commands PREPARE-LIBRARY and SAVE-LIBRARY; the manual creates the library file with `@CREATE-FILE`
+first]
 
 ```bash
+@CREATE-FILE MATHLIB:NRF
 @LINKER
 NDL: SET-ADVANCED-MODE
-NDL(ADV): NRF-LIBRARY-HANDLER "MATHLIB"
+NDL(ADV): NRF-LIBRARY-HANDLER MATHLIB
 
 % Add modules
-NLH: GET-MODULES SQRT               % Copy SQRT:NRF → MATHLIB:NRF
-NLH: GET-MODULES SIN                % Copy SIN:NRF → MATHLIB:NRF
-NLH: GET-MODULES COS
-NLH: GET-MODULES TAN
+NDL(NLH): GET-MODULES SQRT          % Copy SQRT:NRF → MATHLIB:NRF
+NDL(NLH): GET-MODULES SIN           % Copy SIN:NRF → MATHLIB:NRF
+NDL(NLH): GET-MODULES COS
+NDL(NLH): GET-MODULES TAN
 
-% Verify contents
-NLH: LIST-MODULES
+% Verify contents (column headings as the manual prints them; sizes illustrative)
+NDL(NLH): LIST-MODULES
 
-Module           Nrf-entry  Language  Program_size  Data_size
-1. SQRT          P.         Fortran   150B          50B
-2. SIN           P.         Fortran   180B          50B
-3. COS           P.         Fortran   170B          50B
-4. TAN           P.         Fortran   160B          50B
+Module       Nrf-entry  P/D  Language  Program_size  Data_size  Debug_size
+1. SQRT      P.X        Fortran   150B          50B        0B
+2. SIN       P.X        Fortran   180B          50B        0B
+...
 
-% Create fast load vector
-NLH: FAST-VECTOR YES, LIB
+% A fast load vector is written by SAVE-LIBRARY when PREPARE-LIBRARY is YES (the initial value)
+NDL(NLH): PREPARE-LIBRARY
+SAVE will generate a FAST library file
 
 % Save library
-NLH: SAVE-LIBRARY
-NLH: EXIT
+NDL(NLH): SAVE-LIBRARY
+NDL(NLH): EXIT
 ```
+
+The `X` in the `P/D` column marks a LIB-marked entry; only those go into the fast load vector unless
+`FORCE-LIBRARY` is used [manual, command PREPARE-LIBRARY]. There is no `FAST-VECTOR` command (the
+October 2025 version of this guide used one).
 
 **Result:** `MATHLIB:NRF` with fast load vector.
 
@@ -1788,11 +2147,11 @@ NLH: EXIT
 ```bash
 NDL: OPEN-DOMAIN "MYAPP"
 NDL: LOAD MYAPP:NRF               % Calls SQRT and COS
-NDL: LIBRARY MATHLIB              % Loads only SQRT and COS modules
+NDL: LOAD MATHLIB                 % Loads only the SQRT and COS modules
 NDL: EXIT
 ```
 
-**Efficiency:**
+**Efficiency** [not verified - illustrative numbers]:
 - **Without library:** Load all 4 modules (660B program, 200B data)
 - **With library:** Load only 2 modules (320B program, 100B data)
 
@@ -1803,20 +2162,27 @@ NDL: EXIT
 NDL(ADV): NRF-LIBRARY-HANDLER <library-file>
 ```
 
-**Essential commands:**
+**The commands** [manual, appendix A, "Commands Available in the NRF-Library-Handler Mode"]:
 
 | Command | Purpose |
 |---------|---------|
-| **GET-MODULES** | Copy modules from NRF file to library |
-| **LIST-MODULES** | Show all modules in library |
-| **LIST-NRF** | Show NRF control groups (hex dump) |
-| **SAVE-LIBRARY** | Write library to disk (required!) |
-| **FAST-VECTOR** | Create fast load vector |
-| **DELETE-MODULES** | Remove modules from library |
+| **GET-MODULES** | Copy modules from an NRF file into the current library (source file, first/last module, after module, entry type) |
+| **REPLACE-MODULES** | Replace modules in the library with the modules of the same name in a source file |
+| **DELETE-MODULES** | Remove modules from library (first/last module) |
+| **DELETE-DEBUG-INFORMATION** | Strip debug information from modules |
+| **LIST-MODULES** | Show the modules in a library with program, data and debug sizes |
+| **LIST-NRF** | List the NRF control groups of modules (symbolic, group by group) |
+| **LIST-STATUS** | Files referred to in the session, module and entry counts, heap usage |
+| **INSERT-MESSAGE** | Put a message (no blanks) in the file; it is printed each time the library is loaded |
+| **PREPARE-LIBRARY** | YES (initial value): SAVE-LIBRARY writes a fast load vector |
+| **FORCE-LIBRARY** | Also put DEF/DDF symbols of modules not compiled in library mode into the fast load vector |
 | **SET-LIBRARY** | Change current library file |
+| **SET-CASE-SIGNIFICANCE** | Whether upper and lower case are distinct in entry names |
+| **SAVE-LIBRARY** | Write library to disk (required!) |
 | **EXIT** | Exit NLH (does not auto-save!) |
 
-**Important:** NLH does not auto-save. Always use SAVE-LIBRARY before EXIT.
+**Important:** NLH does not auto-save: "Writes the new contents of the current NRF file to disk. EXIT does
+not save the file automatically." [manual, section 5.3.3]. Always use SAVE-LIBRARY before EXIT.
 
 ### 6.4 System Libraries
 
@@ -1827,24 +2193,46 @@ NDL(ADV): NRF-LIBRARY-HANDLER <library-file>
 | **20-30** | System libraries (convention) |
 | **31** | Monitor calls (reserved, always) |
 
-**Common system libraries:**
+**Segment numbers used by ND products** [manual, section 5.5]:
 
-| Library | Segment | Purpose |
-|---------|---------|---------|
-| **FORTRAN-LIB** | 30 | FORTRAN runtime |
-| **COBOL-LIB** | 25 | COBOL runtime |
-| **PLANC-LIB** | 26 | PLANC runtime |
-| **EXCEPT-LIB** | 27 | Exception handling |
+| Segment | Used by | OK to use? |
+|---------|---------|-----------|
+| 0 | - (ADDRESS-ZERO-ACCESS traps; debugging implications) | avoid |
+| 20 | SIBAS message segment | maybe |
+| 21 | COBOL multiuser file access | maybe |
+| 22 | the Linker | maybe |
+| 23 | FOCUS and VTM | maybe |
+| 24 | the SIBAS library | maybe |
+| 25 | a SIBAS message segment | maybe |
+| 26 | the Symbolic Debugger | maybe |
+| 27 | the PASCAL library | maybe |
+| 28 | the COBOL library | maybe |
+| 29 | the PLANC library | maybe |
+| 30 | the FORTRAN library and other language libraries | maybe |
+| 31 | monitor calls | no |
 
-**Auto-linking:**
+(The October 2025 version placed COBOL-LIB on 25, PLANC-LIB on 26 and EXCEPT-LIB on 27; that did not
+match the manual.) "Maybe" means the number is free as long as that product is not used.
 
-Auto-job files (LINKER-AUTO-FORT:JOB) typically link system libraries:
+**Runtime libraries as loaded on 5 October 2026** [measured]: the C runtime `NC-LIB:NRF` and
+`CAT-LIB:NRF` and the PLANC runtime `PLANC-LIB:NRF` (which names itself `PLANC-LIB-F00`) are NRF files
+under user SYSTEM and are *loaded* into the program's own segment 1 by the auto jobs, not linked as free
+segments. PLANC runtime entries begin with `#` (`#UTBY`, `#INBY`, `#OPFI`, ...).
+
+**Auto-linking** [manual]:
+
+The manual's sample `LINKER-AUTO-FORT:JOB` (section 4.3) *loads* the runtime from NRF files:
 
 ```bash
-SPECIAL-LINK (SYSTEM)FORTRAN-LIB LIBRARY
+SPECIAL-LOAD (SYSTEM)FORTRAN-LIB-K LIBRARY
+SPECIAL-LOAD (SYSTEM)EXCEPT-LIB LIBRARY
 ```
 
-This links the entire FORTRAN-LIB:SEG at segment 30.
+A FORTRAN library kept as a free segment is linked to segment 30 only "if it has been defined as an
+autolink file by your system supervisor" [manual, section 3.5]; `SPECIAL-LINK <segment> LIBRARY` links a
+free segment only if it resolves some undefined entry [manual, section 4.2]. (The October 2025 version's
+statement that the auto job runs `SPECIAL-LINK (SYSTEM)FORTRAN-LIB LIBRARY` is not what the manual's sample
+job contains.)
 
 ---
 
@@ -1855,6 +2243,16 @@ This links the entire FORTRAN-LIB:SEG at segment 30.
 **Critical question:** How does loading a DOM file set up the ND-500 MMU and domain?
 
 **Answer:** The ND-500 Monitor handles all setup during domain placement.
+
+> **Source note.** What the Linker manual says about placement is limited to this: the domain header
+> holds "various information that the monitor needs when it places the domain" (section 3.1.1); the trap
+> registers THA, MTE, OTE, CTE and TEMM are initialised from the trap block in the header (section 4.1);
+> the address space is 4 GB split into 32 segments of 128 MB by the top five address bits, with separate
+> program and data spaces (section 3.1); a page is 2 KB (1024 pages = 2 MB, command SET-AREA-SIZE);
+> and fixed pages (FIX-SEGMENT) are brought in before the program starts (section 6.4). The step-by-step
+> placement procedure below is a description from general principles and was **not verified** against
+> the monitor's code or the Loader Monitor manual; the measured fact is only that `PLACE-DOMAIN` followed
+> by `RUN`, `RECOVER-DOMAIN`, and typing the domain name all start a linked program [measured].
 
 **Domain placement process:**
 
@@ -1901,7 +2299,8 @@ The monitor reads the domain header (first 2 pages of DOM file) containing:
 
 For each segment in the domain:
 - Allocate page table (maps virtual → physical pages)
-- ND-500 uses **paging** with page size (typically 2KB or 4KB)
+- ND-500 uses **paging**; the page size the linker counts in is 2 KB [manual, SET-AREA-SIZE: 1024 pages
+  = `10 000 000B` bytes]
 - Each segment gets separate program and data page tables
 
 **3. Segment mapping:**
@@ -1986,45 +2385,82 @@ To load a DOM file in an emulator:
 
 **Traps** are hardware exceptions that interrupt program execution.
 
-**ND-500 trap types:**
+**ND-500 trap names as the linker knows them** [manual, command SET-TRAP-CONDITION; bit number =
+position in the status/OTE/MTE/TEMM registers; the EXCEPT-LIB entry names are from section 6.7]:
 
-| Trap | Trigger |
-|------|---------|
-| **INVALID-OPERATION** | Invalid instruction |
-| **DIVIDE-BY-ZERO** | Division by zero |
-| **FLOATING-OVERFLOW** | Float result too large |
-| **ILLEGAL-OPERAND-VALUE** | Operand out of range |
-| **ILLEGAL-INDEX** | Array index violation |
-| **STACK-OVERFLOW** | Stack exceeded bounds |
-| **STACK-UNDERFLOW** | Stack underflow |
-| **PROGRAMMED-TRAP** | Explicit trap instruction |
-| **PROTECT-VIOLATION** | Memory protection fault |
-| **PAGE-FAULT** | Virtual memory page not present |
+| Bit | Trap name | EXCEPT-LIB entry | Kind |
+|-----|-----------|------------------|------|
+| 9 | OVERFLOW | #OVERFLW | ignorable |
+| 11 | INVALID-OPERATION | #INVALOP | ignorable, enabled by default |
+| 12 | DIVIDE-BY-ZERO | #INVALDI | ignorable, enabled by default |
+| 13 | FLOATING-UNDERFLOW | #FLTUFLOW | ignorable |
+| 14 | FLOATING-OVERFLOW | #FLTOFLW | ignorable, enabled by default |
+| 15 | BCD-OVERFLOW | #BCDOFLW | ignorable |
+| 16 | ILLEGAL-OPERAND-VALUE | #ILLOPER | ignorable, enabled by default |
+| 17-20 | SINGLE-INSTRUCTION-TRAP, BRANCH-TRAP, CALL-TRAP, BREAKPOINT-INSTRUCTION-TRAP | #SINGINS, #BRANCTR, #CALLTRA, #BRKPNTR | ignorable |
+| 21-23 | ADDRESS-TRAP-FETCH / -READ / -WRITE | #ADDRFTC, #ADDREAD, #ADDWRTE | ignorable |
+| 24 | ADDRESS-ZERO-ACCESS | #ADDZERO | ignorable |
+| 25 | DESCRIPTOR-RANGE | #DESCRIR | ignorable |
+| 26 | ILLEGAL-INDEX | #ILLINDX | ignorable, enabled by default |
+| 27 | STACK-OVERFLOW | #STKOFLW | ignorable, enabled by default |
+| 28 | STACK-UNDERFLOW | #STKUFLOW | ignorable, enabled by default |
+| 29 | PROGRAMMED-TRAP | #PROGTRA | ignorable, enabled by default |
+| 30 | DISABLE-PROCESS-SWITCH-TIMEOUT | #DISPSWT | non-ignorable, enabled by default |
+| 31 | DISABLE-PROCESS-SWITCH-ERROR | #DISPSWE | non-ignorable, enabled by default |
+| 32 | INDEX-SCALING-ERROR | #INXSCAL | non-ignorable, enabled by default |
+| 33 | ILLEGAL-INSTRUCTION-CODE | #ILINCOD | non-ignorable, enabled by default |
+| 34 | ILLEGAL-OPERAND-SPECIFIER | #ILOPSPE | non-ignorable, enabled by default |
+| 35 | INSTRUCTION-SEQUENCE-ERROR | #INSEQUE | non-ignorable, enabled by default |
+| 36 | PROTECT-VIOLATION | #PVIOLAT | non-ignorable, enabled by default |
+| 37-41 | TRAP-HANDLER-MISSING, PAGE-FAULT, POWER-FAIL, PROCESSOR-FAULT, HARDWARE-FAULT | - | fatal: always reported to the monitor |
 
-**Trap vector:** Table of trap handler addresses.
+An ignorable trap that is locally enabled calls the handler; locally disabled, it is reported to the
+monitor only if the MTE bit is set, otherwise ignored. A non-ignorable trap not handled locally is
+reported to the monitor regardless of MTE [manual, section 6.7]. (The manual's section 6.7 table spells
+some entry names slightly differently from its sample job, e.g. `#FLTOFLW` against `#FLOFLW`; both are
+reproduced as printed.)
 
-**Defining traps in linker:**
+**Trap vector:** Table of trap handler addresses. The first `SET-TRAP-CONDITION` allocates 2000B bytes at
+the current data load address for the vector and a trap stack; THA points there when the domain is
+placed. If no `SET-TRAP-CONDITION` is given at all, the linker allocates the area anyway when a *domain*
+is closed (not for a free segment) [manual, command SET-TRAP-CONDITION].
+
+**Defining traps in linker** [manual, command SET-TRAP-CONDITION]:
 
 ```bash
-NDL(ADV): SET-TRAP-CONDITION OWN, ENAB, #FLOFLW
-%                            |    |     └─ Trap type
-%                            |    └─ ENAB (enable) or DISA (disable)
-%                            └─ OWN (use own handler) or MONITOR (use monitor's)
+NDL(ADV): SET-TRAP-CONDITION OWN, ENABLE, #FLOFLW, FLOATING-OVERFLOW
+%                            |    |       |        └─ Trap name(s), or ALL
+%                            |    |       └─ Entry name of the handler routine (your own, or the
+%                            |    |          EXCEPT-LIB routine; default is the EXCEPT-LIB one;
+%                            |    |          omitted when disabling or when destination is MOTHER)
+%                            |    └─ ENABLE (default) or DISABLE; ENAB is an abbreviation
+%                            └─ OWN (default), MOTHER or CHILD: which register pair (OTE, MTE, CTE)
 ```
 
-**Example (from LINKER-AUTO-FORT:JOB):**
+The October 2025 version of this guide read the third parameter as the trap type and the first as
+"OWN or MONITOR"; neither is what the manual says. Giving `SET-TRAP-CONDITION` yourself makes the linker
+skip the trap definition part of the auto job, so either repeat the whole set or call the auto job
+explicitly first and then change the one condition [manual].
+
+**Example (the manual's sample LINKER-AUTO-FORT:JOB, section 4.3, in the four-parameter form the
+SET-TRAP-CONDITION command page prints; the sample job defines 15 traps, these are nine of them):**
 
 ```bash
-SET-TRAP-CONDITION OWN, ENAB, #INVALOP    % Invalid operation
-SET-TRAP-CONDITION OWN, ENAB, #INVALDI    % Divide by zero
-SET-TRAP-CONDITION OWN, ENAB, #FLOFLW     % Floating overflow
-SET-TRAP-CONDITION OWN, ENAB, #ILLOPER    % Illegal operand
-SET-TRAP-CONDITION OWN, ENAB, #ILLINDX    % Illegal index
-SET-TRAP-CONDITION OWN, ENAB, #STKOFLW    % Stack overflow
-SET-TRAP-CONDITION OWN, ENAB, #STKUFLW    % Stack underflow
-SET-TRAP-CONDITION OWN, ENAB, #PROGTRA    % Programmed trap
-SET-TRAP-CONDITION OWN, ENAB, #PVIOLAT    % Protect violation
+SET-TRAP-CONDITION OWN, ENAB, #INVALOP, INVALID-OPERATION
+SET-TRAP-CONDITION OWN, ENAB, #INVALDI, DIVIDE-BY-ZERO
+SET-TRAP-CONDITION OWN, ENAB, #FLOFLW, FLOATING-OVERFLOW
+SET-TRAP-CONDITION OWN, ENAB, #ILLOPER, ILLEGAL-OPERAND-VALUE
+SET-TRAP-CONDITION OWN, ENAB, #ILLINDX, ILLEGAL-INDEX
+SET-TRAP-CONDITION OWN, ENAB, #STKOFLW, STACK-OVERFLOW
+SET-TRAP-CONDITION OWN, ENAB, #STKUFLW, STACK-UNDERFLOW
+SET-TRAP-CONDITION OWN, ENAB, #PROGTRA, PROGRAMMED-TRAP
+SET-TRAP-CONDITION OWN, ENAB, #PVIOLAT, PROTECT-VIOLATION
 ```
+
+To disable a trap, the entry name is left out: `SET-TRAP-CONDITION OWN,DISABLE,DIVIDE-BY-ZERO` [manual,
+section 6.8]. To use the EXCEPT-LIB handler without naming it: `SET-TRAP-CONDITION OWN, ENABLE, ,
+DIVIDE-BY-ZERO` creates an undefined reference to `#INVALDI` that the auto job's load of EXCEPT-LIB
+defines [manual, section 6.11].
 
 **Trap handler address:**
 
@@ -2034,45 +2470,36 @@ REFER-ENTRY #MAINGRA, #THA, D, D
 %           └─ Symbol containing trap vector address
 ```
 
-**Trap priority:**
+**Trap block priority** [manual, section 4.1 and command CLOSE]:
 
-1. **SET-TRAP-CONDITION in linker** (highest priority)
-2. **Trap block from linked SEG file** (if domain has no trap block)
-3. **Auto-job trap setup** (LINKER-AUTO-FORT:JOB)
-4. **Monitor default traps** (if none above)
+1. **SET-TRAP-CONDITION in the linker** sets up a valid trap block unless the domain already has one
+2. **Trap block from a linked SEG file** is copied to the domain if the domain has none (copied after the
+   auto job has run; SET-TRAP-CONDITION commands in the auto job are then skipped)
+3. **Auto-job trap setup** (LINKER-AUTO-FORT:JOB) runs at CLOSE when there is still no valid trap block
+4. The program can change THA and the enable registers at run time
 
-**User-defined trap handlers:**
+**User-defined trap handlers** [manual, section 6.9]:
 
-Write trap handler in NORD-500 assembly:
+The manual's example is a PLANC module with two `ROUTINE SPECIAL` handlers written in inline ND-5000
+assembler: each starts with `ENTT`, puts a trap code in the `W1` register, calls a PLANC routine that
+prints which trap happened, and returns with `RETT`. The rules the manual gives: a trap handler must
+start with the `ENTT` instruction and return through `RETT`, and if one routine handles several traps it
+must be told which trap occurred, since it cannot find out by itself. The handler entry names are then
+given as parameter 3 of `SET-TRAP-CONDITION`. (The assembler sketch that stood here in the October 2025
+version of this guide was not from the manual and has been removed.)
 
-```asm
-MODULE TRAPS
-
-% Trap vector (addresses of handlers)
-TRAP_VECTOR:
-    W DATA INVALID_OP_HANDLER
-    W DATA DIV_ZERO_HANDLER
-    W DATA FLOAT_OVERFLOW_HANDLER
-    % ... more handlers ...
-
-% Handler for divide by zero
-DIV_ZERO_HANDLER:
-    % Save registers
-    % Display error message
-    % Terminate program or recover
-    % Return from trap
-
-ENDROUTINE
-
-ENDMODULE
-```
-
-Link trap handler:
+Link trap handler [manual, section 6.9 mode file]:
 ```bash
-NDL(ADV): LOAD TRAPS:NRF
-NDL(ADV): SET-TRAP-CONDITION OWN, ENAB, #INVALDI
-NDL(ADV): REFER-ENTRY TRAP_VECTOR, #THA, D, D
+NDL(ADV): LOAD PLANC-VERS-1
+NDL(ADV): LOAD PLANC-LIB
+NDL(ADV): SET-TRAP-CONDITION OWN ENABLE TRAPDIVZERO DIVIDE-BY-ZERO
+NDL(ADV): SET-TRAP-CONDITION OWN ENABLE TRAPPROTVIOL PROTECT-VIOLATION
+NDL(ADV): EXIT
 ```
+
+`REFER-ENTRY <entry>, #THA, D, D` (as in the sample FORTRAN job, `REFER-ENTRY #MAINGRA, #THA, D, D`)
+stores the trap vector address into a data word of the program; `#THA` is "the address where the
+TrapHandler Address vector is allocated" [manual, command DEFINE-ENTRY].
 
 ### 7.3 FORTRAN COMMON Blocks
 
@@ -2082,90 +2509,135 @@ NDL(ADV): REFER-ENTRY TRAP_VECTOR, #THA, D, D
 
 **Solution:** Linker uses special **#CCLC** pointer (Common Current Location Counter) separate from **#DCLC** (Data Current Location Counter).
 
-**FORTRAN-COMMON-SEGMENT attribute:**
+A program that uses COMMON does not need any special treatment; a separate COMMON segment is for very
+large COMMON areas or for two ND-500 processes that share one COMMON area [manual, section 6.5].
+
+**FORTRAN-COMMON-SEGMENT attribute** [manual, section 6.5 example]:
 
 ```bash
-NDL(ADV): OPEN-SEGMENT "COMMON1", 8, D, FORTRAN-COMMON-SEGMENT
-NDL(ADV): LOAD FORTRAN_MODULE1
-NDL(ADV): LOAD FORTRAN_MODULE2
-NDL(ADV): CLOSE
+NDL: SET-ADVANCED-MODE
+NDL(ADV): OPEN-DOMAIN "TEMP"
+NDL(ADV): OPEN-SEGMENT "COMMON5" 5 D FORTRAN-COMMON-SEGMENT WRITE-PERMIT
+Fortran common segment COMMON5:SEG linked as data segment 5 in current domain.
+NDL(ADV): DEFINE-FORTRAN-COMMON CSEG5
+NDL(ADV): OPEN-SEGMENT "COMMON7" 7 D FORTRAN-COMMON-SEGMENT WRITE-PERMIT
+Fortran common segment COMMON7:SEG linked as data segment 7 in current domain.
+NDL(ADV): DEFINE-FORTRAN-COMMON CSEG7
+NDL(ADV): LOAD TEMP
+Program:.......314B P01  Data:..........274B D01
+COMMON5:SEG    Data:........14404B D05
+COMMON7:SEG    Data:........14404B D07
+NDL(ADV): EXIT
 ```
 
-**What happens:**
+**What happens** [manual, section 6.5 notes and appendix D]:
 
-1. FORTRAN compiler generates special NRF control groups for COMMON
-2. Linker loads COMMON data using #CCLC pointer to segment 8
-3. COMMON segment can be shared across modules
-4. Largest COMMON size wins (if multiple definitions)
+1. The FORTRAN compiler generates a size specification for each COMMON block (a data LIB or DDF group
+   with a numeric field)
+2. `OPEN-SEGMENT ... FORTRAN-COMMON-SEGMENT` does **not** close the open domain: the new segment is
+   linked to it, and from then on common blocks are loaded there through `#CCLC` while everything else
+   still goes to the domain
+3. `DEFINE-FORTRAN-COMMON <name>` puts the block on the open common segment; its size is fixed when the
+   first NRF module that defines the block is loaded
+4. **The first definition applies.** "If several such groups are loaded, the first applies. If this is
+   not the largest, you will get an error message." (The October 2025 version said the largest wins;
+   that is the opposite of the manual.)
+5. A COMMON segment must be a data segment; `P` is an error and `PD` is silently reduced to `D`
+6. Do not use segments 0 and 26 for COMMON segments if the Symbolic Debugger will be used, and not 30 if
+   the FORTRAN runtime library is linked as a free segment
 
-**Separate segments for COMMON:**
-
-**Advantage:** Keep COMMON data isolated from regular data.
-
-**Example:**
+**Loading some COMMON areas to a common segment and others to a normal segment** [manual, section 6.5,
+the two mode-file forms]:
 
 ```bash
-% Main program segment
-NDL(ADV): OPEN-DOMAIN "FORTPROG"
-NDL(ADV): LOAD MAIN:NRF                      % Segment 1 (data)
+% Form 1: build the common segment first
+open-segment "common", 5, d, write-permit
+load common-seg-modul
+close
+open-domain "links-to-common"
+link common
+load data-seg-module
 
-% Separate COMMON segment
-NDL(ADV): OPEN-SEGMENT "COMMON1", 8, D, FORTRAN-COMMON-SEGMENT
-NDL(ADV): DEFINE-ENTRY CSEG1, 0, D, 8       % Define COMMON block name
-NDL(ADV): CLOSE
-
-% Back to main domain, link COMMON
-NDL(ADV): APPEND-DOMAIN FORTPROG
-NDL(ADV): LINK COMMON1:SEG
-NDL(ADV): CLOSE
+% Form 2: open the common segment while the domain is open; after that, common
+% areas can no longer be loaded to a normal segment
+open-domain "links-to-common"
+load data-seg-module1
+open-segment "common", 5, d, write-permit
+load common-seg-modul
+close
+append-domain links-to-common
+link common
+load data-seg-module2
 ```
 
-**Result:** FORTPROG:DOM with data at segment 1, COMMON at segment 8.
+**Result:** a domain with its ordinary data on segment 1 and COMMON on segment 5.
 
 ### 7.4 Memory Allocation Control
 
-**Working set size:** Number of pages kept resident in physical memory.
+[manual, section 6.4 and the commands SET-SEGMENT-LIMITS and FIX-SEGMENT. The commands
+`SET-WORKING-SET-SIZE` and `SET-SEGMENT-ATTRIBUTE` given in the October 2025 version of this guide do not
+exist.]
 
-**Default:** System determines based on available memory.
+**Working set limits:** per segment, the minimum number of pages that stay in physical memory and the
+maximum that may be there at one time.
+
+**Default:** minimum 0, maximum 1.
 
 **Override:**
 
 ```bash
-NDL(ADV): SET-WORKING-SET-SIZE <number-of-pages>
+NDL(ADV): SET-SEGMENT-LIMITS <Domain or segment name>, <Segment number>, <Segment type (D,P)>,
+                             <Minimum number of pages>, <Maximum number of pages>
 ```
 
 **Example:**
 ```bash
-NDL(ADV): SET-WORKING-SET-SIZE 100          % Keep 100 pages resident
+NDL(ADV): SET-SEGMENT-LIMITS ,1,D,100,200   % data segment 1 of the current domain: 100 to 200 pages
 ```
 
-**Fixed segments:** Prevent paging for critical code.
+"This command is most useful to prevent thrashing ... abuse of this command can easily result in
+trashing for the other programs instead." [manual]
+
+**Fixed segments:** Prevent paging for critical code or for I/O buffers.
 
 ```bash
-NDL(ADV): SET-SEGMENT-ATTRIBUTE <segment-number>, FIXED
+NDL(ADV): FIX-SEGMENT <Fix type (Contiguous,Scattered,Absolute,Unfix)>, <Domain or segment name>,
+                      <Segment number>, <Segment type (D,P)>, <Low address>, <High address>,
+                      <Physical address>
 ```
 
 **Example:**
 ```bash
-NDL(ADV): SET-SEGMENT-ATTRIBUTE 1, FIXED    % Segment 1 never paged out
+NDL(ADV): FIX-SEGMENT CONTIGUOUS,,1,D      % data segment 1 of the current domain, whole loaded range
 ```
 
-**Use case:** Real-time systems where page faults unacceptable.
+"Only user SYSTEM can execute domains with fixed segments." [manual, command FIX-SEGMENT]
+
+**Use case:** Real-time systems where page faults unacceptable; device buffers that must stay in
+contiguous physical memory.
 
 ### 7.5 ND-100 to ND-500 Communication
 
-**Shared memory (5MPM):** Multiport memory accessible by both CPUs.
+**Shared memory:** "On the ND-500(0), the shared memory is part (or all) of a segment. On the ND-100, the
+shared memory is an ND-100 segment, or it is the RTCOMMON area." [manual, section 6.6]
 
-**Message passing:** ND-100 and ND-500 communicate via shared buffers.
+**Linker role** [manual, section 6.6 and chapter 7, "Commands for ND-100/ND-500(0) Communication"]:
+- `MATCH-RT-SEGMENT <segment name or number>` - declares that part of the current free segment uses the
+  same physical pages as an ND-100 segment (or RTCOMMON). The linker reads the ND-100 symbol table in
+  `(SYSTEM)RTFIL:DATA`, copies the "defined common symbols" of that ND-100 segment into its own symbol
+  table, and reserves an area of the matching size on the current data or common segment from the next
+  page boundary. Nothing can be loaded into that area, but the program can refer to the symbols.
+- `LINK-RT-PROGRAMS` - the second command in this group; its details are on the manual's command page.
 
-**In domains:**
+The manual's worked example: an RT program `RTBRF` on the ND-100 increments a variable in RTCOMMON every
+second; the ND-500 side is a free segment `RT-SEG` opened with `OPEN-SEGMENT "RT-SEG" 10` and
+`MATCH-RT-SEGMENT RTCOMMON`, which the domain `RT-TEST` links to. The programs must agree on their own
+synchronisation (reservation flags or semaphores; the ND-500 side would use the test-and-set instruction
+`BY TSET`).
 
-NORD-500 programs can:
-- Access 5MPM shared memory areas
-- Send/receive messages to ND-100
-- Use XMSG protocol
-
-**Linker role:** None directly, but domains can use shared segments.
+(The October 2025 version said "Linker role: None directly" and mentioned 5MPM and XMSG; the linker does
+have the two commands above, and 5MPM and XMSG are not mentioned in the Linker manual - the
+cross-references below cover them.)
 
 **Cross-reference:** See `../../SINTRAN/OS/08-MESSAGE-PASSING-DETAILED.md` for message passing protocol and `../../SINTRAN/OS/06-MULTIPORT-MEMORY-AND-ND500-COMMUNICATION.md` for 5MPM architecture.
 
@@ -2179,22 +2651,31 @@ NORD-500 programs can:
 - Variable types
 - Module names
 
-**Size:**
-- DOM files: Default 2 MB
-- SEG files: Default 4 MB
+**Size** [manual, sections 3.1.1 and 3.1.2]:
+- DOM files: Default 2 MB (1024 pages) each for debug and link information
+- SEG files: Default 4 MB (2048 pages) each
 
-**Customizing:**
+In the measured C hello domain the debug area starts at byte 0x2000 and holds 179 bytes, the link
+information starts at 0x202000 and holds 2547 bytes (96 entries) [measured].
+
+**Customizing** [manual, command SET-AREA-SIZE: two parameters, both in pages; only valid when no domain
+or segment is open; applies to every file opened afterwards in the session; range 0 to 170000B pages]:
 
 ```bash
 NDL(ADV): LINKER-SERVICE-PROGRAM
-LSP: SET-AREA-SIZE <domain>, DEBUG, <size-in-MB>
-LSP: EXIT
+NDL(SRV): SET-AREA-SIZE <Debug area size (in pages)>, <Link area size (in pages)>
+NDL(SRV): EXIT
 ```
 
 **Example:**
 ```bash
-LSP: SET-AREA-SIZE BIGAPP, DEBUG, 10        % 10 MB debug info
+NDL(SRV): SET-AREA-SIZE 5120,1024           % 10 MB debug area, link area left at 2 MB
 ```
+
+If the area is too small the load stops with `*** ERROR - Debug information area of size 24000B full.`
+and the manual's recovery is `RESET-LINKER`, a larger `SET-AREA-SIZE`, and `OPEN-DOMAIN` again. To leave
+the debug information out altogether, give `IGNORE-DEBUG-INFORMATION` (advanced mode) before loading;
+`DELETE-DEBUG-INFORMATION` in the NRF Library Handler strips it from library modules [manual].
 
 **Using debug info:**
 
@@ -2223,280 +2704,209 @@ Generates extended debug information in NRF file, copied to domain.
 
 **NRF files consist of binary control groups.** Each control group directs the linker.
 
-**Control group format:**
+> **This section was rewritten on 5 October 2026.** The control-group table in the October 2025 version
+> (BEG=0, END=1, ERR=2, ... up to EXT=35, with groups named ORG, BSS, BYT, HWD, WRD, TXT, TRP, COM) did
+> not come from the manual and was wrong throughout. What follows is the manual's appendix D, "The ND
+> Relocatable Format". Control numbers are **octal**, as the manual prints them. Nothing here was
+> checked against NRF bytes on 5 October 2026; the NRF files were only loaded.
+
+**Control group format** [manual, appendix D]:
 
 ```
-Byte 0: Control Byte
-  Bits 7-6: Numeric Length (NL) encoding
-    00 = No numeric field
-    01 = 1-byte numeric field
-    10 = 2-byte numeric field
-    11 = 3-byte numeric field
-  Bits 5-0: Control Group Type (0-63)
+Control Field (1 byte, mandatory):
+  5-bit NRF control number + 3-bit numeric length NL (0 to 7)
 
-Bytes 1-3: Control Field (NL bytes)
-  Numeric value (if NL > 0)
+Numeric Field (NL bytes, optional):
+  numeric value, two's complement, up to 7 bytes
 
-Bytes 4+: Trailing Fields
-  Symbol names, additional parameters (variable length)
+Symbolic Field (optional, only for the groups marked (S)):
+  SL (1 byte, symbol length 0 to 255) followed by SL ASCII characters.
+  "If the control field implies a symbolic field, but none is present, its length is 0."
 ```
 
-**Complete control group table:**
+A symbol whose name begins with `#` is hidden from `LIST-ENTRIES`.
 
-| Code | Mnemonic | NL | Parameters | Description |
-|------|----------|----|------------|-------------|
-| **0** | **BEG** | 0 | Module name (SL) | **Begin module.** Marks start of NRF module. Module name in trailing field. |
-| **1** | **END** | 1 | Checksum (1-byte) | **End module.** Marks end of module. Checksum is sum of all bytes BEG to END (mod 256). |
-| **2** | **ERR** | 0 | Error message (SL) | **Error.** Error message from compiler. Linker may display warning. |
-| **3** | **MSA** | 2 | Address (2-byte), Language code | **Main Start Address.** Defines entry point and language (0=Asm, 1=Fortran, 2=Planc, etc.). |
-| **4** | **ESA** | 2 | Address (2-byte) | **Extra Start Address.** Additional entry point. |
-| **5** | **DEF** | 0 or 2 | Symbol (SL), optional offset | **Program symbol definition.** Symbol value = PP (+ offset if NL=2). Symbol name in trailing field. |
-| **6** | **DDF** | 0 or 2 | Symbol (SL), optional offset | **Data symbol definition.** Symbol value = DP (+ offset if NL=2). Symbol name in trailing field. |
-| **7** | **LIB** | 0 or 2 | Symbol (SL), optional offset | **Library symbol.** Like DEF but only loaded if symbol undefined. |
-| **8** | **REF** | 0-2 | Symbol (SL), optional offset | **Program symbol reference.** Insert symbol value (+ offset) at BP. |
-| **9** | **LRF** | 0-2 | Symbol (SL), optional offset | **Literal reference.** Like REF, for literal pool. |
-| **10** | **DRF** | 0-2 | Symbol (SL), optional offset | **Data symbol reference.** Insert symbol value (+ offset) at BP. |
-| **11** | **PMO** | 0 | - | **Program mode.** Set mode to Program, BP := PP. |
-| **12** | **DMO** | 0 | - | **Data mode.** Set mode to Data, BP := DP. |
-| **13** | **FMO** | 0-2 | Address | **Free mode.** Set mode to Free, BP := XP = address. |
-| **14** | **ORG** | 1-2 | Address | **Origin.** Set BP to absolute address (rarely used). |
-| **15** | **BSS** | 1-2 | Size | **Block Started by Symbol.** Reserve uninitialized space, advance BP by size. |
-| **16** | **BYT** | 1 | Value (1-byte) | **Byte.** Store 1-byte value at BP, BP += 1. |
-| **17** | **HWD** | 1-2 | Value (2-byte) | **Halfword.** Store 2-byte value at BP, BP += 2. |
-| **18** | **WRD** | 1-3 | Value (4-byte) | **Word.** Store 4-byte value at BP, BP += 4. |
-| **19** | **TXT** | 1-2 | Length, Text (bytes) | **Text.** Store byte string at BP, BP += length. |
-| **20** | **REP** | 1-2 | Repeat count | **Repeat.** Repeat next control group N times. |
-| **21** | **CGR0** | 0 | - | **Compound group start.** Start group of control groups (for REP). |
-| **22** | **CGR1** | 0 | - | **Compound group end.** End group of control groups. |
-| **23** | **ADD** | 0 | - | **Add.** Add next symbol value to word at BP (relocation). |
-| **24** | **SUB** | 0 | - | **Subtract.** Subtract next symbol value from word at BP. |
-| **25** | **MUL** | 0 | - | **Multiply.** Multiply word at BP by next numeric value. |
-| **26** | **DIV** | 0 | - | **Divide.** Divide word at BP by next numeric value. |
-| **27** | **AND** | 0 | - | **Bitwise AND.** AND word at BP with next numeric value. |
-| **28** | **IOR** | 0 | - | **Bitwise OR.** OR word at BP with next numeric value. |
-| **29** | **EOR** | 0 | - | **Bitwise XOR.** XOR word at BP with next numeric value. |
-| **30** | **PSH** | 0 | - | **Push.** Push BP onto internal stack. |
-| **31** | **POP** | 0 | - | **Pop.** Pop BP from internal stack. |
-| **32** | **LBB** | 2-3 | Module offset, Symbol (SL) | **Library Block Begin.** Fast load vector entry: symbol → file offset. |
-| **33** | **TRP** | 1-2 | Trap definition | **Trap.** Define trap vector entry. |
-| **34** | **COM** | 0-2 | Symbol (SL), size | **Common.** Define FORTRAN COMMON block. |
-| **35** | **EXT** | 0 | Symbol (SL) | **External.** Declare external symbol (deprecated, use REF). |
-| **36-63** | (Reserved) | - | - | Reserved for future use or vendor-specific extensions. |
+**Complete control group table** [manual, appendix D, "Summary of NRF-control numbers" and the group
+descriptions]:
 
-**Symbol Length (SL) encoding:**
+| Code (octal) | Mnemonic | Fields | Description |
+|------|----------|--------|-------------|
+| **0** | **NUL** | N | **Group ignored.** NL must be zero. |
+| **1** | **BEG** | N | **Begin module.** Numeric bytes: 1st realtime priority; 2nd language code (0 Assembly, 1 Fortran, 2 Planc, 3 Cobol, 4 Pascal, 5 Simula, 6 Ada, 7 Coral, 8 C, 9 Basic); 3rd address length (4); 4th target machine and type (0/1 = Norsk Data ND-500(0)); 5th OS id (0-9 SINTRAN III, 10-19 UNIX, 20-29 MS-DOS). After BEG the mode is program mode. BEG-END pairs may not nest; only LBB and MSG may appear outside them. |
+| **2** | **END** | N | **End module.** NL is the size of the checksum (0 = no test, 2 = default); the checksum is the sum of the byte values from BEG to END, trailing fields included, overflow ignored. |
+| **3** | **MSA** | N | **Main start address.** The current BP is the main start address. A second MSA gives a warning; the first applies. |
+| **4** | **LIB** | N, S | **Library.** All LIBs come right after BEG. If any LIB symbol of a module is referenced but undefined, the whole module is loaded, otherwise it is skipped (SPECIAL-LOAD overrides). In data mode with NL>0 it defines a common block of size N. |
+| **5** | **DEF** | N, S | **Program symbol definition.** NL=0: value = PP. NL≠0: value = the numeric value. |
+| **6** | **REF** | N, S | **Program symbol reference.** The symbol value (plus the numeric value) is inserted at BP in 4 bytes (NL=0) or N bytes; BP advances by that. |
+| **7** | **LRF** | N, S | **Library reference.** Like REF if the symbol is defined; if undefined, a zero is written and no undefined entry is made. "Norsk Data plans to remove this group". |
+| **10** | **DDF** | N, S | **Data symbol definition.** As DEF for DP. In C, Cobol, Fortran and Pascal the numeric field is a common block size; an already defined symbol allocates no new block. |
+| **11** | **DRF** | N, S | **Data symbol reference.** As REF for data symbols. |
+| **12** | **RMV** | N, S | **Remove symbol** from the symbol table (keeps the table small; avoids local-name conflicts). |
+| **13** | **SLA** | N, S | **Set load address.** BP = N (+ symbol value if a symbol is given). Bypassed pages are not allocated on disk. |
+| **14** | **AJS** | N | **Adjust.** BP = BP + N. |
+| **15** | **PMO** | N | **Set program mode.** BP = PP = PP + N. |
+| **16** | **DMO** | N | **Set data mode.** BP = DP = DP + N. |
+| **17** | **FMO** | N, S | **Set free mode.** BP = XP = N + symbol value (or BP + N without a symbol); later data overwrites what was loaded there; PP and DP are unchanged. |
+| **20** | **REP** | N | **Repeat** the next group N times. |
+| **21** | **LDI** | N | **Load immediately.** The NL trailing bytes are loaded at BP; BP += NL. |
+| **22** | **ADI** | N | **Add immediately.** N is added into the next NL bytes at BP; BP += NL. |
+| **23** | **APA** | N | **Add program address.** PP + N stored in the next 4 bytes; BP += 4. |
+| **24** | **ADA** | N | **Add data address.** DP + N stored in the next 4 bytes; BP += 4. |
+| **25** | **IHB** | N | **Execution inhibit.** The NRF is incomplete because of compiler errors. |
+| **26** | **EOF** | N | **End of file.** |
+| **27** | **DBG** | N | **Debug.** Start or end of debug information, which goes to the debug and link area. |
+| **30** | **LBB** | N, S | **Library module byte pointer.** Fast load vector entry: N is the byte position in the NRF file of the module defining the symbol. N=0 with a null symbol opens the vector, N=-1 with a null symbol closes it; an entry with N≠0 and no symbol is loaded unconditionally in the first pass. |
+| **31** | **MSG** | N, S | **Message.** The string is printed while loading; `$` becomes CR LF. |
+| **32** | **MIS** | N | **Miscellaneous**; N is a sub-number: 0 CGR0 start of compound group, 1 CGR1 end of compound group (used with REP, may nest), 2 ADD, 3 SUB, 4 MUL, 5 DIV - combine the next referenced symbol's value with the value at BP. |
+| **33** | **LDN** | N | **Load N bytes immediately** (the N bytes follow the numeric field; no symbolic field). |
+| **34-37** | **IL1-IL4** | - | Illegal control numbers. |
+
+Version B changed the format (manual, appendix I, "Changes in NRF format"): the DDF, LIB, REP and BEG
+groups; the details are in that appendix.
+
+**Example - the first LBB of a fast load vector** [manual, appendix D]:
 
 ```
-First byte of symbol name:
-  Bits 7-0: Symbol length (0-255)
-
-Following bytes: Symbol characters (ASCII)
+Byte:   0     1  2  3  4    5    6
+        304B  0  0  0  0    1    0
+        |     |           |  |    |
+        |     N (4 bytes) |  SL   S (one null byte)
+        control field: LBB (30B) with NL = 4  ->  (30B << 3) | 4 = 304B
 ```
 
-**Example NRF hex dump:**
+(The byte-level dump of a whole module that stood here in the October 2025 version was invented and has
+been removed.)
 
-```
-Offset  Hex                                   ASCII       Control Group
-------  ------------------------------------  ----------  ---------------
-0000    00 05 48 45 4C 4C 4F                  ..HELLO     BEG "HELLO"
-0007    03 00 10 00                           ....        MSA 0x0010, Lang=0
-000B    0B                                    .           PMO
-000C    12 01 02                              ...         HWD 0x0102
-000F    05 04 4D 41 49 4E                     ..MAIN      DEF "MAIN"
-0015    0C                                    .           DMO
-0016    11 00 64                              ..d         WRD 0x00000064
-001A    06 06 42 55 46 46 45 52               ..BUFFER    DDF "BUFFER"
-0022    01 3A                                 .:          END (checksum=0x3A)
-```
-
-**Interpretation:**
-- BEG: Module "HELLO"
-- MSA: Main start at 0x0010, language 0 (assembly)
-- PMO: Enter program mode
-- HWD: Store halfword 0x0102 at PP (program code)
-- DEF: Symbol "MAIN" = PP
-- DMO: Enter data mode
-- WRD: Store word 0x64 at DP (data)
-- DDF: Symbol "BUFFER" = DP
-- END: Module end, checksum 0x3A
-
-**Reading NRF files:** Use NRF-LIBRARY-HANDLER command LIST-NRF for formatted dump.
+**Reading NRF files:** Use the NRF-LIBRARY-HANDLER command LIST-NRF; it prints one group per line in the
+form `(BEG,2 0B 2B)`, `(LBB,4 CASE_TO_case 1268B)` and so on, with the fast load vector first if there is
+one [manual, command PREPARE-LIBRARY example].
 
 ### 8.2 DOM File Binary Layout
 
-**DOM file structure (byte level):**
+> **This section was rewritten on 5 October 2026.** The word-by-word header layout in the October 2025
+> version (magic number `0x4E44`, "number of segments" at word 4, a 2-word segment descriptor table at
+> words 5-36, a working-set field, 3-word free-segment references) was invented; none of it is in the
+> manual. What follows is the manual's appendix E, "The New Domain Format", as transcribed in this
+> repository, plus the positions measured on 5 October 2026. The appendix is a scan and several of its
+> offset tables are garbled; the offsets below are given as the transcription prints them and have **not**
+> been checked against DOM bytes. The local file
+> [../../SINTRAN/File-Formats/DOM-FILE-FORMAT.md](../../SINTRAN/File-Formats/DOM-FILE-FORMAT.md) is
+> being corrected separately and is not a source here.
+
+**File layout with default sizes** [manual, appendix E; byte addresses as printed there, which match the
+measured positions only as octal with a trailing digit missing - see section 3.2.2]:
 
 ```
-╔══════════════════════════════════════════════╗
-║ DOMAIN:DOM File                              ║
-╠══════════════════════════════════════════════╣
-║ Pages 0-1: Domain Header                     ║
-║   Word 0: Magic number (0x4E44 = "ND")       ║
-║   Word 1: Format version                     ║
-║   Word 2: Domain flags                       ║
-║   Word 3: Entry point address                ║
-║   Word 4: Number of segments used            ║
-║   Word 5-36: Segment descriptor table        ║
-║     Each entry (2 words):                    ║
-║       - Segment number + type (P/D)          ║
-║       - File offset + size                   ║
-║   Word 37: Debug area offset                 ║
-║   Word 38: Debug area size                   ║
-║   Word 39: Link area offset                  ║
-║   Word 40: Link area size                    ║
-║   Word 41-50: Trap block                     ║
-║     - THA (Trap Handler Address)             ║
-║     - MTE (Memory Trapping Enable)           ║
-║     - OTE (Overflow Trapping Enable)         ║
-║     - CTE (Condition Trapping Enable)        ║
-║     - TEMM (Trap Enable Mask Mode)           ║
-║   Word 51: Working set size                  ║
-║   Word 52-60: Free segment references        ║
-║     Each entry (3 words):                    ║
-║       - Segment number                       ║
-║       - File name (packed string)            ║
-║       - Link key (version check)             ║
-║   Word 61-255: Reserved                      ║
-╠══════════════════════════════════════════════╣
-║ Pages 2-3: Reserved (not allocated)          ║
-╠══════════════════════════════════════════════╣
-║ Debug Info Area (variable size)              ║
-║   Symbol table with names, types, addresses  ║
-║   Source line number table                   ║
-║   Module name table                          ║
-╠══════════════════════════════════════════════╣
-║ Link Info Area (variable size)               ║
-║   Defined symbol table                       ║
-║   Entry: Symbol name, value, segment, type   ║
-╠══════════════════════════════════════════════╣
-║ Slave Segment 1                              ║
-║   Program Segment 1 (variable size)          ║
-║     Machine code bytes                       ║
-║   Data Segment 1 (variable size)             ║
-║     Initialized data bytes                   ║
-╠══════════════════════════════════════════════╣
-║ Slave Segment 2 (if used)                    ║
-║   ...                                        ║
-╠══════════════════════════════════════════════╣
-║ ... (more slave segments)                    ║
-╚══════════════════════════════════════════════╝
+Domain file                                   Segment file
+00000000  DOMAIN HEADER (2 pages)             00000000  SEGMENT HEADER (2 pages)
+00002000  DEBUG INFO (2 MB)                   00002000  DEBUG INFO (4 MB)
+01002000  LINK INFO (2 MB)                    02002000  LINK INFO (4 MB)
+02002000  PROGRAM, 1st slave segment (2 MB)   04002000  PROGRAM (4 MB)
+03002000  DATA, 1st slave segment (32 MB)     06002000  DATA (rest of the file)
+23002000  PROGRAM, 2nd slave segment (2 MB)
+24002000  DATA, 2nd slave segment (32 MB)
+44002000  PROGRAM, 3rd slave segment (2 MB)
+45002000  DATA, 3rd slave segment
+EOF
 ```
 
-**Important fields:**
+"Only those pages actually being used, are allocated on disk. (For contiguous files, all pages are
+allocated on disk.)" Measured positions for a freshly linked domain: header at 0, debug information at
+0x002000, link information at 0x202000, program segment 1 at 0x402000, data segment 1 at 0x602000
+[measured]. In the vendor's shipped domains, which have no holes, the debug information starts at
+0x1000 and every following area starts on the next page boundary [measured; that `COMPRESS` produced
+that layout is inferred].
 
-**Entry point (Word 3):**
-- 32-bit address where execution begins
-- Format: `0xSSSSAAAA` where SSSS = segment number, AAAA = offset
+**Domain header, byte offsets in octal** [manual, appendix E, "Domain Header Layout" and the following
+pages, as transcribed]:
 
-**Segment descriptor (Words 5-36):**
-```
-Descriptor entry (2 words, 8 bytes):
-  Word 0:
-    Bits 31-24: Segment number (0-31)
-    Bits 23-16: Segment type (0=unused, 1=P only, 2=D only, 3=PD)
-    Bits 15-0:  Attributes (fixed, paged, etc.)
-  Word 1:
-    Bits 31-16: File offset (pages)
-    Bits 15-0:  Segment size (pages)
-```
+| Octal byte | Field | Meaning |
+|---|---|---|
+| 0000 | LINKLOCK | "Magic number. Link keys in other domains should match this lock." A random number; 4 bytes, then "future use" |
+| 0004 | VERSION, REVISION | Version/revision of the ND Linker used to generate this domain |
+| 0010 | FLAGS, MACHINE | Target machine (bits 5-7: 0 Norsk Data, 1 Motorola, 2 Intel) and type (bits 0-3: 1 = ND-500(0)); flag bits 11 trap block valid, 12 TRUE if :DOM file, 13 root domain, 14 SIN-III domain, 15 TRUE if ND-500/5000 domain |
+| 0012 | OSID | 0-9 ND-OS (SINTRAN III), 10-19 UNIX, 20-29 MS-DOS; then 6 bytes "subsystem key" |
+| 0020 | PRIVILEGES | Enable escape; privileged instruction allowed ("ND use only, cannot place domain"); the rest future use |
+| 0046 | mother + 16 child domains | 8 bytes each: MIN and MAX index into the name pool, LINKKEY that "should match the LINK LOCK in the corresponding domain" |
+| 0266 | not used | 30 bytes, "to align common part for domain/segment header" |
+| 0304/0310 | FREIND | Free pointer in name pool |
+| 0314, 0320 | DEBUG LB, SZ | Lower bound and size of the debug info area within the :DOM file |
+| 0320, 0324 | LINK LB, SZ | Lower bound and size of the link info area (the transcription repeats 0320; one of the two is wrong) |
+| 0330 | STADR | Start address |
+| 0334 | RESTADR | Restart address |
+| 0340 | THA | Trap handler vector address |
+| 0344-0400 | MTE2, MTE1, OTE2, OTE1, CTE2, CTE1, TEMM2, TEMM1 | Mother, own and child traps enabled and the trap enable modification mask, each as a most/least significant pair |
+| 0404 | PRIORITY | (reserved) process priority |
+| 0410 | 32 indirect segments | 10 bytes each: MIN/MAX index to a domain name in the name pool, LINKKEY, SLOG logical segment number within that domain |
+| 1110 | LANGUAGE, MSAL | Source language mask (bit 31 Assembler, 30 Fortran, 29 Planc, 28 Cobol, 27 Pascal, 26 Simula, 25 Ada, 24 Coral, 23 C, 22 Basic) and the MSA language code (0 ASM, 1 FORT, 2 PLNC, 3 COB, 4 PASC, 5 SIMU, 6 ADA, 7 COR, 8 C, 9 BASC) |
+| 1114 | MIN, MAX | Indexes to a free text (the id message) in the name pool |
+| 1124 ... 4520 | 32 x (program, data) segment descriptors | see below; the start of each is in the manual's SEGTABDISP table (segment 0 program at 1124B, data at 1160B; segment 1 at 1214B / 1250B; ... segment 31 at 4434B / 4470B; 70B apart) |
+| 4524 - 10000 | NAME POOL | "Buffer for SINTRAN III file name references and other text strings" |
 
-**Trap block (Words 41-50):**
-```
-Word 41: THA (Trap Handler Address)
-Word 42: MTE (Memory Trapping Enable mask)
-Word 43: OTE (Overflow Trapping Enable mask)
-Word 44: CTE (Condition Trapping Enable mask)
-Word 45: TEMM (Trap Enable Mask Mode)
-Words 46-50: Reserved for additional trap configuration
-```
+**Segment descriptor** (34B bytes for the program half and 34B for the data half) [manual, appendix E]:
 
-**Free segment reference (Words 52-60, 3 words per entry):**
-```
-Entry (3 words, 12 bytes):
-  Word 0: Segment number that will be occupied
-  Word 1-2: File name (8 chars packed, e.g., "MATHLIB:SEG")
-  Word 3: Link key (32-bit checksum for version verification)
-```
+| Displacement (octal) | Field | Meaning |
+|---|---|---|
+| 00 | LB | Lower bound of the segment in the file; if ATT.LINKED, instead MIN/MAX indexes to the segment file name in the name pool |
+| 04 | SZ | Size of the segment; if ATT.LINKED, instead the LINKKEY of the linked segment file |
+| 10 | ATT | Attributes (bits: 10 fixed absolute, 11 fixed contiguous, 12 fixed scattered, 13 segment used, 14 linked segment, 15 routine vector, 16 insufficiently loaded, 17 Fortran common segment, 18 other machine segment, 19 start vector on segment, 20 indirect segment, 21 shared/matched with ND-100, 22 copy capability allowed, 23 clear capability allowed, 24 cache, 25 file as segment, 26 empty data segment, 27 shared data segment, 28 program segment, 29 swap on swap file, 30 parameter access, 31 write permit) |
+| 14 | FLA | Fixed lower address |
+| 20 | FUA | Fixed upper address |
+| 24 | AFA | Absolute fix address |
+| 30 | MINP, MAXP | Minimum and maximum number of pages in memory (SET-SEGMENT-LIMITS) |
 
-**For emulator developers:**
+So a free segment the domain is linked to occupies a descriptor whose LB/SZ hold the file name and link
+key instead of a file position; there is no separate "free segment reference" table.
 
-Parsing a DOM file:
+**Link information entries** [manual, appendix G]: each symbol entry holds a pointer to the next entry,
+the symbol length SL, the numeric length, an operation code, flag bits (save, omit, select, included in
+start vector, common label, data symbol, data reference, undefined), a language byte, the 4-byte value,
+a 4-byte size (block size for a common label, or index in the start vector), and the symbol text. The
+manual prints the layout as a PLANC `RECORD PACKED` declaration.
 
-```c
-// Read header (first 2 pages)
-read_file(dom_file, header, 2 * PAGE_SIZE);
-
-// Extract key fields
-uint32_t magic = header[0];              // Should be 0x4E44
-uint32_t entry_point = header[3];
-uint32_t num_segments = header[4];
-
-// Parse segment descriptors
-for (int i = 0; i < num_segments; i++) {
-    uint32_t desc0 = header[5 + i*2];
-    uint32_t desc1 = header[5 + i*2 + 1];
-
-    uint8_t seg_num = (desc0 >> 24) & 0xFF;
-    uint8_t seg_type = (desc0 >> 16) & 0xFF;
-    uint16_t file_offset = (desc1 >> 16) & 0xFFFF;  // pages
-    uint16_t seg_size = desc1 & 0xFFFF;              // pages
-
-    // Load segment from file
-    uint32_t byte_offset = file_offset * PAGE_SIZE;
-    uint32_t byte_size = seg_size * PAGE_SIZE;
-
-    read_file(dom_file, segment_buffer, byte_size, byte_offset);
-    // Map to virtual memory at segment seg_num
-}
-
-// Parse trap block
-uint32_t THA = header[41];
-uint32_t MTE = header[42];
-// Initialize trap registers...
-
-// Parse free segment references
-for (int i = 0; i < 3; i++) {  // Up to 3 free segments
-    uint32_t seg_ref_seg = header[52 + i*3];
-    char* seg_file_name = (char*)&header[52 + i*3 + 1];
-    uint32_t link_key = header[52 + i*3 + 3];
-
-    if (seg_ref_seg != 0) {
-        // Load SEG file
-        load_seg_file(seg_file_name, link_key);
-    }
-}
-
-// Set PC to entry point
-PC = entry_point;
-
-// Begin execution
-execute();
-```
+**For emulator developers:** read the header with the offsets above, treat them as unverified until
+compared with real DOM bytes, and read segment data from the LB/SZ of each used descriptor. The C sketch
+that stood here in the October 2025 version used the invented layout and has been removed.
 
 ### 8.3 SEG File Binary Layout
 
-**SEG file structure (similar to DOM, but single segment):**
+**SEG file structure** [manual, appendix E, "Segment Header Layout", as transcribed; the word layout in
+the October 2025 version, with a magic number `0x5345`, was invented]:
 
 ```
 ╔══════════════════════════════════════════════╗
 ║ SEGMENT:SEG File                             ║
 ╠══════════════════════════════════════════════╣
-║ Pages 0-1: Segment Header                    ║
-║   Word 0: Magic number (0x5345 = "SE")       ║
-║   Word 1: Format version                     ║
-║   Word 2: Segment number (0-31)              ║
-║   Word 3: Segment type (P, D, or PD)         ║
-║   Word 4: Entry point (if executable)        ║
-║   Word 5: Debug area offset                  ║
-║   Word 6: Debug area size                    ║
-║   Word 7: Link area offset                   ║
-║   Word 8: Link area size                     ║
-║   Word 9: Program segment size               ║
-║   Word 10: Data segment size                 ║
-║   Word 11-20: Trap block (if any)            ║
-║   Word 21-25: Included segment references    ║
-║     (Other SEG files this links to)          ║
-║   Word 26: Link lock (checksum)              ║
-║   Word 27-255: Reserved                      ║
+║ Pages 0-1: Segment Header (octal byte offsets)║
+║   0000 LINKLOCK (random number; link keys     ║
+║        in domains must match it)             ║
+║   0004 VERSION, REVISION of the linker        ║
+║   0010 FLAGS, MACHINE   0014 OSID             ║
+║   0020 (subsystem key, 6 bytes)               ║
+║   0024 PROGRAM segment: LB, SZ, ATT, FLA,     ║
+║        FUA, AFA, MINP/MAXP                    ║
+║   0060 DATA segment: LB, SZ, ATT, FLA, FUA,   ║
+║        AFA, MINP/MAXP                         ║
+║   0110 PR, DA: logical segment numbers of the ║
+║        program and data segment; NOOFN100:    ║
+║        number of matched ND-100 RT segments   ║
+║   0114 10 x matched ND-100 segment: name,     ║
+║        ND-100 segment number, map address in  ║
+║        ND-500 logical memory, size (pages)    ║
+║   0304 alignment                              ║
+║   0310 FREIND free pointer in name pool       ║
+║   0314/0320 DEBUG LB, SZ   0324/0330 LINK LB, SZ ║
+║   0330 STADR  0334 RESTADR  0340 THA           ║
+║   0344-0400 MTE2/1, OTE2/1, CTE2/1, TEMM2/1    ║
+║   0404 PRIORITY                               ║
+║   0410 32 x indirect segment (MIN/MAX, LINKKEY,║
+║        SLOG)                                  ║
+║   1110 LANGUAGE mask, MSAL                    ║
+║   1114 MIN/MAX of the id message              ║
+║   1124 32 x linked program segment and        ║
+║        32 x linked data segment: MIN/MAX of   ║
+║        the file name, LINKKEY                 ║
+║   2124 NAME POOL (to 10000)                   ║
 ╠══════════════════════════════════════════════╣
 ║ Pages 2-3: Reserved                          ║
 ╠══════════════════════════════════════════════╣
@@ -2512,17 +2922,19 @@ execute();
 ╚══════════════════════════════════════════════╝
 ```
 
-**Link lock (Word 26):**
-- 32-bit checksum of segment content
-- Used by domains to verify correct version
-- If domain's link key ≠ segment's link lock → Error
+**Link lock** [manual, appendix E "LINKLOCK: Random number", section 3.7, commands OPEN-SEGMENT and
+CHANGE-LINK-LOCK]:
+- A random number written when the segment file is created (not a checksum of the content)
+- Every domain linked to the segment stores it as the link key for that segment
+- A new `OPEN-SEGMENT` on the file gives it a new link lock, so the old domains can no longer be placed
+  until the lock is restored with the service program's `CHANGE-LINK-LOCK` or the domains are relinked;
+  `APPEND-SEGMENT` keeps the lock
+- "the link locks of the segment files [must] equal the link keys in the domain file. If they do not, it
+  means the segment file at hand is a different version than the one the domain was linked to, and,
+  almost certainly, it cannot be used."
 
-**Included segment references:**
-```
-Entry (2 words):
-  Word 0: Segment number
-  Word 1-2: File name (packed string)
-```
+**Included segment references:** the "32 x linked program/data segment" entries above - name pool
+indexes of the file name and the LINKKEY [manual, appendix E].
 
 ---
 
@@ -2532,9 +2944,11 @@ Entry (2 words):
 
 **Purpose:** Convert legacy PSEG/DSEG/LINK + DESC to modern DOM format.
 
-**Syntax:**
+**Syntax** [manual, appendix F: "two mandatory and one optional parameter" in the text, five in the
+listing]:
 ```bash
-@ND CONVERT-DOMAIN <new-domain-name> <old-domain-name>
+@ND CONVERT-DOMAIN <Destination domain> <Source domain> <Include linked segment(s) (Y,N)>
+                   <Display progress information (Yes,No)> <Force free segment number(s)>
 ```
 
 **Example:**
@@ -2544,7 +2958,7 @@ Entry (2 words):
 
 **What happens:**
 
-**Input files (old format):**
+**Input files (old format)** [manual, appendix E and Loader Monitor manual, section 1.5]:
 ```
 User directory:
   OLDPROG:PSEG       % Program segment(s)
@@ -2553,16 +2967,17 @@ User directory:
   DESCRIPTION-FILE:DESC  % Contains OLDPROG entry
 ```
 
-**Conversion process:**
+**Conversion process** [manual, appendix F, "Segment handling"; the eight-step list in the October 2025
+version was the author's reconstruction, not the manual's]:
 
-1. **Read PSEG file:** Extract all program segments
-2. **Read DSEG file:** Extract all data segments
-3. **Read LINK file:** Extract symbol table, entry points
-4. **Read DESC entry:** Extract domain metadata (trap block, entry point, segment info)
-5. **Create DOM header:** Populate with all metadata
-6. **Write slave segments:** Copy program/data to DOM file
-7. **Write debug/link info:** Copy from LINK file
-8. **Close DOM file:** `NEWPROG:DOM` created
+1. Segments that belong to the source domain are converted to slave segments in the destination domain
+2. Segments linked to are converted to free segments (`SEGFILE:PSEG/:DSEG/:LINK` -> `SEGFILE:SEG`); if
+   a `:SEG` of that name already exists on the destination user it is used as it is, judged by name
+   only
+3. A linked segment on another user area is converted there if possible, else on the destination user,
+   else on the current user; with parameter 3 = YES a copy is made on the destination user instead
+4. Segment numbers given in parameter 5 (`3-6`, `3..6` or `3:6` for a range) are written to separate
+   segment files, "useful if you plan to link another domain to these segments"
 
 **Output:**
 ```
@@ -2571,17 +2986,9 @@ User directory:
   (Old files still exist)
 ```
 
-**Verification:**
-```bash
-@LINKER
-NDL: LIST-STATUS NEWPROG
-
-Domain: NEWPROG:DOM
-  Program segment 1: ...
-  Data segment 1: ...
-  Entry point: ...
-  Trap block: ...
-```
+**Verification:** `LIST-STATUS NEWPROG` in the linker shows the main start address, the trap handler
+vector, each segment's address in the file and size, and the linked segment files (format in section
+4.4). [The output printed here in the October 2025 version was invented.]
 
 **After verification:**
 ```bash
@@ -2594,10 +3001,11 @@ Domain: NEWPROG:DOM
 
 **Important notes:**
 
-- **One-way conversion:** Cannot convert DOM back to PSEG/DSEG/LINK
-- **Preserves all functionality:** Execution identical
+- **One-way conversion:** no DOM-to-old converter is described in either manual
 - **No recompilation needed:** NRF files not involved
-- **Safe:** Old files untouched (can delete after verification)
+- **Old files untouched** [manual: the old files are read, a new `:DOM` is written]
+- "Preserves all functionality" and "safe to delete after verification" are the October 2025 author's
+  expectations [not verified]
 
 **See also:** [CONVERT-DOMAIN-PSEG-DSEG-TO-DOM.md](CONVERT-DOMAIN-PSEG-DSEG-TO-DOM.md) - detailed procedure, all 5 parameters, segment handling rules, and what to do when the :LINK file is missing.
 
@@ -2607,7 +3015,7 @@ Domain: NEWPROG:DOM
 - **Required:** If old files need to be portable
 - **Optional:** Legacy systems still support old format
 
-**When NOT to convert:**
+**When NOT to convert** [not verified - not in either manual]:
 
 - Legacy RT programs that don't recognize DOM files
 - Build scripts hardcoded for old format
@@ -2651,127 +3059,188 @@ Domain: NEWPROG:DOM
 
 ### 10.1 ND Linker Commands - Quick Reference
 
-**Standard Mode Commands:**
+[manual, appendix A - complete lists. The October 2025 tables had `LIBRARY`, `FAST-VECTOR` and
+`COPY-CAPABILITY-ALLOWED` as commands and `LSP:` as a prompt; none of those exist.]
+
+**Standard Mode Commands (NDL:):**
 
 | Command | Purpose |
 |---------|---------|
-| **OPEN-DOMAIN** | Create/open domain file |
-| **LOAD** | Load NRF file(s) |
-| **LIBRARY** | Load NRF library (selective) |
-| **CLOSE** | Close current domain/segment |
+| **CLOSE** | Close current domain/segment (load map, auto job yes/no, output file) |
 | **EXIT** | Exit linker |
-| **LIST-ENTRIES** | Show symbol table |
-| **LIST-DOMAINS** | List domain files |
+| **LIST-DOMAINS** | List domain files of a user area |
+| **LIST-ENTRIES** | Show symbol table (undefined/defined/all) |
 | **LIST-STATUS** | Detailed domain/segment info |
+| **LOAD** | Load NRF file(s), libraries included |
+| **OPEN-DOMAIN** | Create/open domain file (name, privileges) |
 | **SET-ADVANCED-MODE** | Enter advanced mode |
-| **HELP** | Context-sensitive help |
+| **@** | Execute a SINTRAN command |
+| **%** | Comment |
+| HELP key / SHIFT+HELP | Context-sensitive help; list of matching commands |
 
-**Advanced Mode Commands (NDL(ADV):):**
+**Advanced Mode Commands (NDL(ADV):)** - all standard commands plus:
 
 | Command | Purpose |
 |---------|---------|
-| **OPEN-SEGMENT** | Create/open free segment |
-| **APPEND-SEGMENT** | Open segment without erasing |
+| **ABORT-BATCH-ON-ERROR** | Abort a mode/batch job at the first error |
 | **APPEND-DOMAIN** | Open domain without erasing |
-| **LINK** | Link to free segment |
-| **SET-SEGMENT-NUMBER** | Change current segment |
+| **APPEND-SEGMENT** | Open segment without erasing |
+| **CREATE-ROUTINE-VECTOR** | Make a routine vector on the segment |
 | **DEFINE-ENTRY** | Manually define symbol |
-| **LIST-SEGMENTS** | List segment files |
-| **SPECIAL-LOAD** | Load with options (LIBRARY, etc.) |
-| **SPECIAL-LINK** | Link with options (LIBRARY, etc.) |
-| **NRF-LIBRARY-HANDLER** | Enter library handler mode |
+| **DEFINE-FORTRAN-COMMON** | Define a COMMON block on a common segment |
+| **DELETE-ENTRIES** | Remove entries from the symbol table |
+| **FIX-SEGMENT** | Fix a segment (or part) in physical memory |
+| **IGNORE-DEBUG-INFORMATION** | Do not store debug information |
+| **INCLUDE-IN-ROUTINE-VECTOR** | Put an entry into the routine vector |
+| **LINK** | Link to free segment(s) |
+| **LINK-RT-PROGRAMS** | ND-100/ND-500 communication |
 | **LINKER-SERVICE-PROGRAM** | Enter service program mode |
+| **LIST-SEGMENTS** | List segment files |
+| **MATCH-RT-SEGMENT** | Share memory with an ND-100 segment / RTCOMMON |
+| **NRF-LIBRARY-HANDLER** | Enter library handler mode |
+| **OPEN-SEGMENT** | Create/open free segment |
+| **REFER-ENTRY** | Store an entry's value at an address |
+| **RELOAD** | Reload a module |
+| **RESET-LINKER** | Reset the linker's state |
+| **SAVE-ENTRIES** | Keep entries in the link information |
+| **SET-COMPUTER** | ND-500 or MC68000 |
+| **SET-HIGH-ADDRESS** | Upper load limit |
+| **SET-IO-BUFFERS** | FORTRAN I/O buffers (2 KB each, default 16) |
+| **SET-LIST-MODE** | Listing / disassembly while loading |
+| **SET-LOAD-ADDRESS** | Set the current load address |
+| **SET-SEGMENT-LIMITS** | Min/max pages in memory per segment |
+| **SET-SEGMENT-NUMBER** | Change current segment |
+| **SET-START-ADDRESS** | Set the main start address |
 | **SET-TRAP-CONDITION** | Define trap handling |
-| **REFER-ENTRY** | Reference symbol for trap/entry |
+| **SPECIAL-DEFINE** | Define entries from a free segment without linking |
+| **SPECIAL-LINK** | Link with options (LIBRARY, TOTAL, SELECT, OMIT) |
+| **SPECIAL-LOAD** | Load with options (LIBRARY, TOTAL, SELECT, OMIT) |
 
 **NRF Library Handler Mode (NDL(NLH):):**
 
 | Command | Purpose |
 |---------|---------|
-| **GET-MODULES** | Copy modules to library |
-| **LIST-MODULES** | Show library modules |
-| **LIST-NRF** | Show NRF hex dump |
-| **SAVE-LIBRARY** | Write library to disk |
+| **DELETE-DEBUG-INFORMATION** | Strip debug information from modules |
 | **DELETE-MODULES** | Remove modules |
-| **SET-LIBRARY** | Change current library |
-| **FAST-VECTOR** | Create fast load vector |
+| **EXIT** | Exit NLH (no save) |
+| **FORCE-LIBRARY** | Choose which symbol kinds enter the fast load vector |
+| **GET-MODULES** | Copy modules into the library |
 | **INSERT-MESSAGE** | Add load message |
-| **EXIT** | Exit NLH |
+| **LIST-MODULES** | Show library modules |
+| **LIST-NRF** | List NRF control groups |
+| **LIST-STATUS** | Files, module/entry counts, heap usage |
+| **PREPARE-LIBRARY** | Fast load vector on SAVE (default yes) |
+| **REPLACE-MODULES** | Replace modules from a source file |
+| **SAVE-LIBRARY** | Write library to disk |
+| **SET-CASE-SIGNIFICANCE** | Case-sensitive entry names yes/no |
+| **SET-LIBRARY** | Change current library |
 
-**Linker Service Program Mode (LSP:):**
+**Linker Service Program Mode (NDL(SRV):):**
 
 | Command | Purpose |
 |---------|---------|
-| **SET-SEGMENT-SIZE** | Customize segment allocation |
-| **SET-AREA-SIZE** | Change debug/link area size |
-| **SET-FORMAT** | Number system (octal/decimal/hex) |
-| **COMPRESS** | Remove holes from file |
-| **CHANGE-FILE-REFERENCES** | Update file paths in domain |
-| **COPY-CAPABILITY-ALLOWED** | Set copy protection |
+| **CHANGE-FILE-REFERENCES** | Change the segment file names stored in a domain |
+| **CHANGE-LINK-LOCK** | Set a domain's or segment's link lock |
+| **COMPRESS** | Pack a domain or segment file (removes holes) |
 | **EXIT** | Exit service program |
+| **INSERT-MESSAGE** | Put a message into a domain or segment |
+| **SET-AREA-SIZE** | Debug/link area size in pages |
+| **SET-FORMAT** | Number system (octal/decimal/hex/default) |
+| **SET-HEAP-SIZE** | Symbol table and NRF handler heap sizes |
+| **SET-SEGMENT-SIZE** | Program/data reservation per segment in pages |
+
+Copy protection is a *segment attribute* (`COPY-CAPABILITY-ALLOWED` / `NOT-COPY-CAPABILITY-ALLOWED`,
+default NOT) given to OPEN-SEGMENT, APPEND-SEGMENT or SET-SEGMENT-NUMBER, not a service-program command.
 
 ### 10.2 File Type Summary
 
 | Extension | Type | Created By | Used By | Description |
 |-----------|------|------------|---------|-------------|
-| `:SYMB` | Source | Editor | NORD-500-ASSEMBLER | Assembly source code |
-| `:NRF` | Object | NORD-500-ASSEMBLER, Compilers | ND Linker | Relocatable object code |
+| `:SYMB` | Source | Editor | assembler, FORTRAN-500 [manual] | Assembly or FORTRAN source; NC uses `:C` and `:H`, PLANC-500 `:PLNC` (or `:SYMB`) [measured] |
+| `:NRF` | Object | Assembler, NC, PLANC-500, FORTRAN-500, ... | ND Linker | Relocatable object code |
 | `:DOM` | Executable | ND Linker | ND-500 Monitor | Executable domain (new format) |
 | `:SEG` | Executable | ND Linker | ND-500 Monitor | Free segment (shared library) |
 | `:PSEG` | Executable | Old Linkage-Loader | ND-500 Monitor | Program segment (old format) |
 | `:DSEG` | Executable | Old Linkage-Loader | ND-500 Monitor | Data segment (old format) |
 | `:LINK` | Metadata | Old Linkage-Loader | ND-500 Monitor | Link information (old format) |
-| `:DESC` | Metadata | ND-500 Monitor | ND-500 Monitor | Domain descriptions (old format) |
-| `:LST` | Listing | Assembler/Compiler | Human | Assembly listing with machine code |
+| `:DESC` | Metadata | Old Linkage-Loader (NLL) | NLL | `DESCRIPTION-FILE:DESC`, one per user (old format) [Loader Monitor manual, section 1.5] |
+| `:LIST` | Listing | NC, PLANC-500 [measured] | Human | Compiler listing (the October 2025 version said `:LST`; not seen) |
+| `:CAT` | Intermediate | NC | CAT-CAT5-B06 code generator | NC's intermediate file [measured] |
 | `:JOB` | Script | Editor | ND Linker | Batch commands for linker |
+| `:HELP`, `:INIT` | Text | - | ND Linker | Help text (`LINKER-B01:HELP`) and optional start-up job |
 
 ### 10.3 Segment Number Conventions
 
-| Segment Range | Use | Notes |
-|---------------|-----|-------|
-| **0** | Unused by convention | Available for user |
-| **1-19** | User programs and data | General application use |
-| **20** | Math libraries (typical) | Convention, not enforced |
-| **21-25** | Other system libraries | E.g., COBOL-LIB, PLANC-LIB |
-| **26-29** | Utility libraries | E.g., exception handling |
-| **30** | FORTRAN runtime library | Standard convention |
-| **31** | Monitor calls | **Reserved, always** |
+[manual, section 5.5; the October 2025 table ("20 math libraries", "26-29 utility libraries") did not
+match it]
+
+| Segment | Use | OK to use? |
+|---------|-----|-----------|
+| **0** | ADDRESS-ZERO-ACCESS traps; pointer errors into an unused segment 0 give PROTECT-VIOLATION, which helps debugging | avoid |
+| **1-19** | User programs and data | yes |
+| **20** | SIBAS message segment | maybe |
+| **21** | COBOL multiuser file access | maybe |
+| **22** | The Linker | maybe |
+| **23** | FOCUS and VTM | maybe |
+| **24** | SIBAS library | maybe |
+| **25** | SIBAS message | maybe |
+| **26** | Symbolic Debugger | maybe |
+| **27** | PASCAL library | maybe |
+| **28** | COBOL library | maybe |
+| **29** | PLANC library | maybe |
+| **30** | FORTRAN library and other language libraries | maybe |
+| **31** | Monitor calls | **no** |
+
+"Maybe" means usable as long as that product is not in use. Several versions of one standard library can
+each be a separate segment file with the same segment number [manual].
 
 ### 10.4 NRF Control Group Summary (Essentials)
 
-| Code | Mnemonic | Purpose | Example |
-|------|----------|---------|---------|
-| 0 | BEG | Begin module | Start of module "MYMOD" |
-| 1 | END | End module | Checksum and end |
-| 3 | MSA | Main start address | Entry point = 0x1000 |
-| 5 | DEF | Define program symbol | "MAIN" = PP |
-| 6 | DDF | Define data symbol | "BUFFER" = DP |
-| 7 | LIB | Library symbol | "SQRT" loaded if undefined |
-| 8 | REF | Reference program symbol | Insert "FUNC" address at BP |
-| 10 | DRF | Reference data symbol | Insert "DATA" address at BP |
-| 11 | PMO | Program mode | BP := PP |
-| 12 | DMO | Data mode | BP := DP |
-| 15 | BSS | Block storage | Reserve 100 bytes |
-| 16 | BYT | Byte | Store 0x42 |
-| 18 | WRD | Word | Store 0x12345678 |
-| 19 | TXT | Text | Store "HELLO" |
-| 20 | REP | Repeat | Repeat next group 10 times |
-| 32 | LBB | Fast library entry | SQRT → offset 0x1234 |
+[manual, appendix D; control numbers in octal]
 
-(See Section 8.1 for complete table with all 36 control groups)
+| Code (octal) | Mnemonic | Purpose | Example |
+|------|----------|---------|---------|
+| 1 | BEG | Begin module | priority, language code, target machine, OS id |
+| 2 | END | End module | checksum (NL bytes) |
+| 3 | MSA | Main start address | the current BP |
+| 4 | LIB | Library symbol | module loaded only if "SQRT" is referenced and undefined |
+| 5 | DEF | Define program symbol | "MAIN" = PP |
+| 6 | REF | Reference program symbol | insert "FUNC" value at BP |
+| 10 | DDF | Define data symbol | "BUFFER" = DP, or a common block of size N |
+| 11 | DRF | Reference data symbol | insert "DATA" value at BP |
+| 13 | SLA | Set load address | BP = N (+ symbol) |
+| 14 | AJS | Adjust | BP += N (reserve space) |
+| 15 | PMO | Program mode | BP = PP += N |
+| 16 | DMO | Data mode | BP = DP += N |
+| 20 | REP | Repeat | repeat next group N times |
+| 21 | LDI | Load immediately | NL bytes of code or data at BP |
+| 23 / 24 | APA / ADA | Add program / data address | PP + N or DP + N stored in 4 bytes |
+| 30 | LBB | Fast load vector entry | "SQRT" -> byte position N in the file |
+| 31 | MSG | Message | printed while loading |
+| 33 | LDN | Load N bytes immediately | longer code or data runs |
+
+(See Section 8.1 for the complete table.)
 
 ### 10.5 Common Error Messages
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| **Undefined symbols** | Symbol referenced but not loaded | LOAD missing module or LIBRARY |
-| **File is not closed** | Undefined symbols at CLOSE | Fix undefined symbols, CLOSE again |
-| **Segment size exceeded** | Code/data too large for segment | Use SET-SEGMENT-SIZE to increase |
-| **Segment number already used** | Trying to load to occupied segment | Use SET-SEGMENT-NUMBER to choose different |
-| **Link key mismatch** | SEG file version doesn't match domain | Relink or rebuild SEG file |
-| **Domain file too large** | Sum of segments > 124 MB | Reduce segment sizes or use free segments |
-| **Cannot open file** | File doesn't exist or locked | Check file name, ensure not in use |
-| **Invalid NRF format** | Corrupt NRF file | Recompile source |
+Messages that are quoted in the manual or were seen on 5 October 2026:
+
+| Message | Cause | Solution | Source |
+|-------|-------|----------|--------|
+| `The file is not closed` | Undefined entries at CLOSE/EXIT | `LIST-ENTRIES UNDEFINED`, load what is missing, or give CLOSE a second time to close anyway | manual, section 3.2 |
+| `Undefined entries: N` followed by the list | printed by `LIST-ENTRIES UNDEFINED`, and by CLOSE when entries are undefined | load the missing modules or library (`LOAD`, `SPECIAL-LOAD ... LIBRARY`) | manual; measured |
+| `*** ERROR - Debug information area of size 24000B full. (0054:23)` | SET-AREA-SIZE too small | `RESET-LINKER`, larger `SET-AREA-SIZE`, open again | manual, command SET-AREA-SIZE |
+| `Redefinition ignored` (warning) | a symbol defined twice; the first definition applies | use `SPECIAL-LINK ... LIBRARY` / `SPECIAL-LOAD` to avoid loading the duplicate | manual, section 6.1 and SPECIAL-LINK |
+| an error message when setting the fourth segment number | three default-sized segments fill the 128 MB file | `SET-SEGMENT-SIZE` first | manual, command SET-SEGMENT-SIZE |
+| `No such file name` after `LINKER:INIT` at start-up | the optional start-up job is absent | harmless | measured |
+| `NO SUCH PAGE` during a link, or a register dump and `ND LINKER abortion` | **an emulator defect**, not the linker's: the linker reads pages of its output file it has not written yet and relies on the swapper's Programmed Trap to be taken as soon as the process is active | fixed in the emulator (nd100x `70f4854` with nd500x `2d85a44`) | measured |
+
+Error messages are shown in inverse video with the SSI code and error code at the right; F4 shows the
+latest status code [manual, section 2.3]. The NRF Library Handler's messages are listed in the manual's
+appendix C. The texts "Segment size exceeded", "Segment number already used", "Link key mismatch",
+"Domain file too large", "Cannot open file" and "Invalid NRF format" in the October 2025 version of this
+table were not taken from the manual and were not seen; the conditions exist but the wording is
+[not verified].
 
 ---
 
@@ -2779,7 +3248,7 @@ Domain: NEWPROG:DOM
 
 ### 11.1 Undefined Symbols
 
-**Problem:** CLOSE fails with "Undefined symbols" error.
+**Problem:** CLOSE or EXIT answers `The file is not closed` [manual, section 3.2].
 
 **Diagnosis:**
 ```bash
@@ -2790,6 +3259,9 @@ Undefined entries:
   INIT_IO............/ASM........50B P01
 ```
 
+(Format as in the manual; a measured listing for a C program is in section 4.4. Each line names the
+entry, the language of the referencing module, and the address of the reference.)
+
 **Solutions:**
 
 **1. Missing module:**
@@ -2799,22 +3271,32 @@ NDL: LOAD MATHLIB                % If SQRT is in MATHLIB:NRF
 
 **2. Missing library:**
 ```bash
-NDL: LIBRARY STDLIB              % If SQRT is in STDLIB library
+NDL: LOAD STDLIB                          % a library file: only the needed modules are loaded
+NDL(ADV): SPECIAL-LOAD STDLIB LIBRARY     % a plain NRF file treated as a library
 ```
 
 **3. Typo in symbol name:**
 - Check source code for correct spelling
-- Symbol names case-sensitive in some contexts
+- Whether upper and lower case are distinct in entry names is a setting of the NRF Library Handler
+  (`SET-CASE-SIGNIFICANCE`) [manual]; the C runtime entries were listed in upper case (`PRINTF`, `C!INIT`)
+  although the source calls `printf` [measured]
 
 **4. Symbol in different segment:**
 - Verify symbol exported with EXPORT directive
 - Check MODULE declarations
+- A symbol defined in a segment *included* by a linked segment is not resolved until that segment is
+  linked explicitly too [manual, command LINK]
 
 **5. Auto-job not running:**
 ```bash
 % Manually execute auto-job
-NDL: LINKER-AUTO-FORT:JOB        % For FORTRAN
+NDL: LINKER-AUTO-FORT:JOB        % For FORTRAN (on the measured pack this file holds the C job)
+NDL: LINKER-AUTO-PLNC:JOB        % For PLANC
 ```
+
+The job that runs is chosen by the language of the main start address; a private copy under the linking
+user is used before the one under SYSTEM [manual, chapter 4]. The measured runtime entries that the C job
+must define are listed in section 4.4 (`C!INIT`, `C!EXIT`, `PRINTF`, `V!ARGV`, ...) [measured].
 
 **Prevention:**
 - Use LIST-ENTRIES UNDEFINED frequently during linking
@@ -2823,23 +3305,23 @@ NDL: LINKER-AUTO-FORT:JOB        % For FORTRAN
 
 ### 11.2 Segment Size Exceeded
 
-**Problem:** "Segment size exceeded" error during LOAD.
+**Problem:** the load address passes the size reserved for the segment (2 MB program / 32 MB data by
+default). [The message text "Segment size exceeded" and the diagnosis lines in the October 2025 version
+were not from the manual and are not verified.] The manual's advice: test beforehand with
+`SET-LOAD-ADDRESS` set to the expected highest address and back to 4B; if that gives no error the
+segment is big enough [manual, command SET-SEGMENT-SIZE notes].
 
-**Diagnosis:**
-```bash
-Program:......5000000B P01    Data:...........32MB D01
-Error: Data segment size exceeded
-```
-
-**Solution 1: Increase segment size (before OPEN-DOMAIN)**
+**Solution 1: Increase segment size (before the segment is first used)**
 
 ```bash
-NDL(ADV): LINKER-SERVICE-PROGRAM
-LSP: SET-SEGMENT-SIZE 1, D, 50          % 50 MB data segment
-LSP: EXIT
 NDL(ADV): OPEN-DOMAIN "BIGDATA"
+NDL(ADV): LINKER-SERVICE-PROGRAM
+NDL(SRV): SET-SEGMENT-SIZE 1,,25600     % data segment 1: 25600 pages = 50 MB; program size left as is
+NDL(SRV): EXIT
 NDL(ADV): LOAD BIGDATA:NRF
 ```
+
+(With no domain open, `SET-SEGMENT-SIZE ALL,...` sets the size for all files opened later [manual].)
 
 **Solution 2: Use multiple segments**
 
@@ -2871,7 +3353,8 @@ NDL(ADV): CLOSE
 
 ### 11.3 Domain File Corruption
 
-**Problem:** "Invalid domain format" when opening DOM file.
+**Problem:** a DOM file that the monitor or linker will not accept. [The message text "Invalid domain
+format" is not in the manual and was not seen: not verified.]
 
 **Causes:**
 - File transfer corruption
@@ -2903,23 +3386,28 @@ NDL: LIST-STATUS DOMAIN
 ```
 
 **Prevention:**
-- Always use CLOSE (not SHIFT+EXIT) to ensure proper write
+- Let the linker close the file (CLOSE, or EXIT which closes) rather than breaking out; "SHIFT+EXIT
+  leaves the current program and returns to SINTRAN" [manual, Standard Notation] - whether it closes
+  the open domain first is [not verified]
 - Keep NRF files as backups
-- Use @COPY-FILE for important domains before modification
+- Use @COPY-FILE for important domains before modification (the measured `COMPRESS` test was done on a
+  copy made with `@COPY-FILE "HELLOC:DOM",HELLO:DOM` [measured])
 
 ### 11.4 Link Information Conflicts
 
-**Problem:** "Link key mismatch" when linking to SEG file.
+**Problem:** the domain cannot be placed because a linked segment file's link lock no longer equals the
+link key stored in the domain. [The error text and the "Domain expects / Segment has" output in the
+October 2025 version were invented; the condition and the remedies below are the manual's, section 3.7
+and the commands LINK, OPEN-SEGMENT and CHANGE-LINK-LOCK.]
 
-**Diagnosis:**
-```bash
-NDL(ADV): LINK MATHLIB:SEG
-Error: Link key mismatch
-  Domain expects: 34244
-  Segment has:    35190
-```
+**Diagnosis:** `LIST-STATUS <domain>` prints each linked segment with its link key; `LIST-STATUS
+<segment>:SEG` prints the segment's link lock ("Link lock 19098 + 0" in the manual's appendix H
+listings). Compare the two.
 
-**Cause:** SEG file rebuilt with different content, domain still references old version.
+**Cause:** "If the segment linked to is later opened with the OPEN-SEGMENT command, its link lock
+changes. Then it becomes impossible to place and execute the domain, unless the link lock of the segment
+is restored to its original value with the Linker service program's CHANGE-LINK-LOCK command." Also when
+a domain is copied to another computer whose copy of the segment file is a different build.
 
 **Solution 1: Relink domain to new SEG**
 
@@ -2931,14 +3419,19 @@ NDL(ADV): LINK MATHLIB:SEG          % New link key recorded
 NDL(ADV): CLOSE
 ```
 
-**Solution 2: Restore old SEG file**
+**Solution 2: Restore the segment's link lock**
 
-If domain is correct:
+If the rebuilt segment defines exactly the same symbols with the same values as before:
 ```bash
-@COPY-FILE MATHLIB:SEG MATHLIB-BACKUP:SEG
+NDL(ADV): LINKER-SERVICE-PROGRAM
+NDL(SRV): CHANGE-LINK-LOCK MATHLIB:SEG,<old lock>
+NDL(SRV): EXIT
 ```
 
+**Solution 3: Copy the original segment file** along with the domain [manual, section 3.7].
+
 **Prevention:**
+- Use `APPEND-SEGMENT`, which keeps the link lock, when adding to a segment that domains already link to
 - Keep DOM and SEG files synchronized
 - Use version control for libraries
 - Document dependencies
@@ -2948,32 +3441,33 @@ If domain is correct:
 **Problem:** Fast library load vector corrupt or missing.
 
 **Symptoms:**
-- Slow library loading
-- "Invalid library format" error
+- Slow library loading (a "slow" library has no fast load vector; it still loads correctly [manual,
+  section 5.3.3])
+- ["Invalid library format" is not a message in the manual: not verified]
 
-**Solution: Rebuild fast vector**
+**Solution: Rebuild fast vector** [manual, section 5.3.3 and the commands PREPARE-LIBRARY, FORCE-LIBRARY,
+SAVE-LIBRARY]
 
 ```bash
 @LINKER
 NDL: SET-ADVANCED-MODE
 NDL(ADV): NRF-LIBRARY-HANDLER MYLIB
 
-% Rebuild fast vector
-NLH: FAST-VECTOR YES, LIB
-% Options: YES/NO, LIB/DEF/DDF/ALL
-% LIB = only library symbols (typical)
+% Only needed if the modules were NOT compiled in library mode:
+NDL(NLH): FORCE-LIBRARY
+% parameters: symbols defined by LIB (Yes), by DEF (Yes), by DDF (Yes), block data/common (Yes)
 
-% Save library
-NLH: SAVE-LIBRARY
-NLH: EXIT
+% The vector is written by SAVE-LIBRARY when PREPARE-LIBRARY is YES (the initial value)
+NDL(NLH): PREPARE-LIBRARY
+NDL(NLH): SAVE-LIBRARY
+NDL(NLH): EXIT
 ```
 
-**Verification:**
-```bash
-NLH: LIST-MODULES
+(There is no `FAST-VECTOR` command; the October 2025 version used one.)
 
-% Should show all modules with fast vector enabled
-```
+**Verification:** `LIST-NRF` on the saved file prints the fast load vector, `(LBB,4 ...)` lines, before
+any module [manual, command PREPARE-LIBRARY]; `LIST-MODULES` marks LIB-marked entries with `X` in the
+`P/D` column.
 
 ---
 
@@ -2981,9 +3475,22 @@ NLH: LIST-MODULES
 
 ### 12.1 Related Documentation
 
+**Measured on 5 October 2026 (read these first):**
+- [../ND500/README.md](../ND500/README.md) - what must be on the pack, the hello-world session in C and PLANC, what to do when it does not work
+- [../ND500/ND-LINKER-PRACTICAL-GUIDE.md](../ND500/ND-LINKER-PRACTICAL-GUIDE.md) - the linker session, auto jobs, several objects, LIST-STATUS, file sizes, COMPRESS
+- [../ND500/NC-C-COMPILER-GUIDE.md](../ND500/NC-C-COMPILER-GUIDE.md) - the NC C compiler
+- [../ND500/PLANC-500-COMPILER-GUIDE.md](../ND500/PLANC-500-COMPILER-GUIDE.md) - PLANC-500
+- [../../SINTRAN/ND500-APPS/README.md](../../SINTRAN/ND500-APPS/README.md) - the preserved vendor programs, libraries and job files
+
 **General Linking:**
 - [LINKING-GUIDE.md](LINKING-GUIDE.md) - General ND-100 and ND-500 linking overview
+- [CONVERT-DOMAIN-PSEG-DSEG-TO-DOM.md](CONVERT-DOMAIN-PSEG-DSEG-TO-DOM.md) - converting old-format domains
+- [VTM-TERMINAL-INTERFACES.md](VTM-TERMINAL-INTERFACES.md) - the DDBTABLES terminal tables the linker needs
 - Full path: `LINKING-GUIDE.md`
+
+**File formats (local descriptions, partly unverified):**
+- [../../SINTRAN/File-Formats/NRF-FILE-FORMAT.md](../../SINTRAN/File-Formats/NRF-FILE-FORMAT.md)
+- [../../SINTRAN/File-Formats/DOM-FILE-FORMAT.md](../../SINTRAN/File-Formats/DOM-FILE-FORMAT.md) - being corrected separately; use the manual's appendix E until then
 
 **NORD-500 Assembly:**
 - [NORD-500-ASSEMBLER-DEVELOPER-GUIDE.md](../Languages/System/NORD-500-ASSEMBLER-DEVELOPER-GUIDE.md) - Assembly language introduction
@@ -3004,9 +3511,12 @@ NLH: LIST-MODULES
 - Full path: `../../SINTRAN/Emulator`
 
 **Reference Manuals:**
-- [ND-860289-2-EN ND Linker User Guide and Reference Manual.md](../../Reference-Manuals/ND-860289-2-EN ND Linker User Guide and Reference Manual.md) - Complete linker manual
-- [ND-05.009.4 EN ND-500 Reference Manual.md](../../Reference-Manuals/ND-05.009.4 EN ND-500 Reference Manual.md) - ND-500 CPU architecture
-- [ND-60.113.02 EN Assembler Reference Manual.md](../../Reference-Manuals/ND-60.113.02 EN Assembler Reference Manual.md) - Assembler reference
+- [ND-860289-2-EN ND Linker User Guide and Reference Manual](../../Reference-Manuals/ND-860289-2-EN%20ND%20Linker%20User%20Guide%20and%20Reference%20Manual.md) - the linker manual this guide is checked against (version B0C of the linker, 1988)
+- [ND-60.136.04A ND-500 Loader Monitor](../../Reference-Manuals/ND-60.136.04A%20ND-500%20Loader%20Monitor.md) - the ND-500 monitor, standard domains, traps, the old Linkage-Loader (NLL) and its DESCRIPTION-FILE
+- [ND-05.009.4 EN ND-500 Reference Manual](../../Reference-Manuals/ND-05.009.4%20EN%20ND-500%20Reference%20Manual.md) - ND-500 CPU architecture
+- [ND-10311A ASSEMBLER FOR ND-500](../../Reference-Manuals/ND-10311A%20ASSEMBLER%20FOR%20ND-500.md) - the ND-500 assembler
+- [ND-60.113.02 EN Assembler Reference Manual](../../Reference-Manuals/ND-60.113.02%20EN%20Assembler%20Reference%20Manual.md) - Assembler reference
+- [ND-60.214.01 CC-100 and CC-500 C-Compiler User Manual](../../Reference-Manuals/ND-60.214.01%20CC-100%20and%20CC-500%20C-Compiler%20User%20Manual.md) - describes CC-500 (1984), a different and older C compiler than NC; its `CC-HEADER`/`CC-LIBRARY` files and command line do not apply to the NC toolchain measured here
 - Full path: `../../Reference-Manuals`
 
 ### 12.2 External Resources
@@ -3017,23 +3527,35 @@ NLH: LIST-MODULES
 
 **ND-500 Architecture:**
 - ND-500 Reference Manual (ND-05.009.4)
-- ND-500 Loader/Monitor Manual (ND-860136)
+- ND-500 Loader/Monitor Manual (ND-860136 / ND-60.136.04A, linked above)
 
 **Development Tools:**
-- NORD-500 Assembler documentation
-- FORTRAN-500, PLANC, COBOL compilers
+- ND-500 Assembler documentation
+- NC (C), PLANC-500, FORTRAN-500, COBOL-500 compilers
 
 ### 12.3 Document Information
 
 **File:** `LINKING-GUIDE-500-DEEP-DIVE.md`
 
-**Version:** 1.0
-**Date:** October 20, 2025
-**Status:** Complete
+**Version:** 1.1
+**Date:** October 20, 2025; corrected 5 October 2026
+**Status:** Complete; checked against measurements under real SINTRAN III
 **Author:** NDInsight Documentation Project
 **License:** CC BY 4.0 (Documentation), MIT (Code examples)
 
 **Changelog:**
+- 2026-10-05: Checked against the Linker manual and against measurements made with ND LINKER B01, NC A06
+  and PLANC-500 G under SINTRAN III VSX/500 L (ND-500/5000 MONITOR J04). Corrected: the service-program
+  prompt (`NDL(SRV):`, not `LSP:`); removed the non-existent commands `LIBRARY`, `FAST-VECTOR`,
+  `SET-WORKING-SET-SIZE`, `SET-SEGMENT-ATTRIBUTE`, `COPY-CAPABILITY-ALLOWED`; `SET-SEGMENT-SIZE` and
+  `SET-AREA-SIZE` take page counts (2 KB pages); `DEFINE-ENTRY` has three parameters; `APPEND-SEGMENT`
+  has no segment-number parameter; `CLOSE` parameters; `SET-TRAP-CONDITION` parameters; the NRF
+  control-group table (now the manual's octal numbering); the DOM and SEG header layouts (now the
+  manual's appendix E); library segment numbers (manual section 5.5); FORTRAN COMMON (first definition
+  applies, common segment does not close the domain); ND-100 communication commands; CONVERT-DOMAIN
+  parameters; file types. Added the measured link session, auto jobs, `LIST-ENTRIES`/`LIST-STATUS`
+  output, domain file positions and sizes, `COMPRESS`, and the ways to start a domain. Invented example
+  output and error texts are marked [not verified] or replaced.
 - 2025-10-20: Initial comprehensive version
   - Complete NRF format specification
   - DOM/SEG binary layout details

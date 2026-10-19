@@ -93,12 +93,12 @@ Numbers are **octal** (the manual's own numbering skips 8/9, going 7 -> 10 -> 11
 | 4 | 4 | LIB | S | Library conditional-load symbol. If the symbol is referenced but undefined, the rest of the module loads; otherwise it is skipped. NL has no meaning for program LIB. For data LIB with NL>0, treated as a FORTRAN common block of size N. |
 | 5 | 5 | DEF | S | Program symbol definition. NL=0: symbol value := PP. NL!=0: symbol value := numeric field (sign-extended to ADL if NL<=ADL). Resolves prior references. |
 | 6 | 6 | REF | S | Program symbol reference at current BP. NL=0: value occupies next ADL bytes; NL!=0: next NL bytes. BP += that many bytes. When the symbol resolves, `numeric_value + symbol_value` is stored into those bytes. |
-| 7 | 7 | LRF | S | Like REF if the symbol is already defined; if undefined/absent, stores zero instead. |
+| 7 | 7 | LRF | S | ND Linker B01 handles it exactly like REF (it prints `Please report to ND. PUT_NRF: LRF NRF contol group used`). An undefined symbol leaves zero in the place **for now**, and the place stays on the symbol's wait list: it is filled in when a later module defines the symbol, the same as for REF, and if the symbol is never defined the zero stays and the symbol is listed as undefined. (Checked with the real linker under nd500x, 2026-10-12: `LRF BB` in one module, `DEF BB` in the next gives the same program bytes as `REF BB`.) |
 | 10 | 8 | DDF | S | Data symbol definition. Same as DEF but for DP/data memory; for C/COBOL/FORTRAN/PASCAL with NL>0, defines a common block of size N (no new block if already defined). |
 | 11 | 9 | DRF | S | Data symbol reference. Same as REF but for data symbols. Illegal in debug-mode NRF. |
 | 12 | 10 | RMV | S | Remove the named symbol from the loader's symbol table (avoids table overflow / name clashes between modules). |
 | 13 | 11 | SLA | S | Set load address. BP := numeric value (+ symbol value if SL!=0). Load mode unchanged. |
-| 14 | 12 | AJS | | Adjust. BP += signed numeric value (+ symbol value if SL!=0, per Linker-manual revision). Load mode unchanged. |
+| 14 | 12 | AJS | | Adjust. BP += signed numeric value. **No symbolic field.** Load mode unchanged. (Checked with the real ND Linker B01 under nd500x, 2026-10-12: `61 04` between two LDI groups moves the next byte 4 on, `61 FE` moves it 2 back; the same group followed by a symbolic field is refused with `"4" in module AA is illegal control byte`.) |
 | 15 | 13 | PMO | | Set program mode. PP := PP + numeric value; BP := PP. |
 | 16 | 14 | DMO | | Set data mode. DP := DP + numeric value; BP := DP. |
 | 17 | 15 | FMO | S | Set free mode. BP := XP := BP + numeric value, or (if SL!=0) symbol value + numeric value. PP/DP untouched; resume with PMO/DMO. |

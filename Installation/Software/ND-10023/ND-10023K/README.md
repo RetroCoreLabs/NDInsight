@@ -40,13 +40,20 @@ other simple `:BPUN`-shaped product in this catalog (PLANC A/B, Backup-System B)
    @COPY-FILE "FTNRTLIBR-2092F:BRF",(SYSTEM)FTNRTLIBR:BRF
    @COPY-FILE "PRINT-FILE-2324B:BPUN",(SYSTEM)PRINT-FILE:BPUN
    ```
-2. Dump the compiler reentrant. **The start/restart addresses are NOT known** — every other PD
-   sheet in this catalog states them explicitly (PLANC uses `0 1`; Subsystem Package II's MAC/FMAC
-   use `-1 -3`); nothing on this floppy or in any document read so far gives FTN's values. Do not
-   guess a number:
+2. Dump the compiler reentrant. **Start address 0, restart address 1.** Source: the Program
+   Description sheet for `FTN-2090I` ("FTN", NORD 10/100 FORTRAN COMPILER, PART OF ND-NUMBER
+   10023K and 10033K), printed in
+   [ND-10033K FORTRAN 32 BITS FLOATING FORMAT](../../../Reference-Manuals/ND-10033K%20FORTRAN%2032%20BITS%20FLOATING%20FORMAT.md):
+   boundaries `0<76370+tables`, START ADDRESS 0, RESTART ADDRESS 1. That sheet is shared by the
+   48-bit (10023K) and 32-bit (10033K) products, and the floppy file name `FTN-2090I` matches the
+   sheet's revision log. Its own example is `@DUMP-REENTRANT FTN-20901,0,1,<input file>` (the
+   sheet's OCR prints the letter I as a digit 1). [DOC]
    ```
-   @DUMP-REENTRANT FTN,<start-address>,<restart-address>,(SYSTEM)FTN:BPUN
+   @DUMP-REENTRANT FTN,0,1,(SYSTEM)FTN-2090I:BPUN
    ```
+   **Run on the nd100x emulator (SINTRAN III VSX/500 L): it works.** The command prints nothing on
+   success; a second run answers `NAME ALREADY USED ON REENTRANT SUBSYSTEM`; `@LIST-REENTRANT`
+   shows `0B 1B 142B FTN`; `@FTN` then prints `NORD-10/ND-100 FORTRAN COMPILER FTN-2090I`.
 
 **Do not treat the above as verified.** Step 1 follows the well-established copy pattern; step 2
 is incomplete without a source for the actual addresses.
@@ -62,9 +69,19 @@ Unknown.
 
 ## Provenance & open items
 - Source: floppy directory listing only, via `ndtool` on the downloaded image.
-- **TODO (blocking the reentrant-dump step):** find the compiler's start/restart addresses — not
-  present anywhere read so far.
-- **TODO:** this install has not been run live in the emulator.
+- Start/restart addresses (0 and 1) found in the `FTN-2090I` Program Description sheet, see
+  step 2. They come from the document, not from a run.
+- Checked: the downloaded image (MD5 above) holds exactly the four files listed, with the sizes
+  in the catalog. The three files `FTN-2090I:BPUN`, `FTNLIBR-2091F:BRF` and
+  `FTNRTLIBR-2092F:BRF` were written into `(SYSTEM)` on a SINTRAN SMD pack with `ndtool --put` and
+  read back byte for byte identical.
+- `@DUMP-REENTRANT` and compiles have now been run live: `ADV-INIT` compiled with no messages.
+  The same compiler **rejected 11 lines** of ordinary logical-function code in a 1152-line program
+  (`"LOG. EXPR" ILL. ASSIGNMENT`) that the newer F02 compiler accepts. Prefer
+  [ND-210191F02](../../ND-210191/ND-210191F02/README.md); see
+  [FORTRAN-BUILD-LEARNINGS-FAQ](../../../../Developer/Languages/Application/FORTRAN-BUILD-LEARNINGS-FAQ.md).
+- **TODO:** the 32-bit sheet says the libraries are loaded at link time (`FTNLIBR`,
+  `FTNRTLIBR` = the reentrant runtime). Which of the two a given program needs is not confirmed.
 
 ---
 **Parent:** [../README.md](../README.md) (`ND-10023` product overview)
