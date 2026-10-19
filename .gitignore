@@ -56,3 +56,6 @@ SINTRAN/XMSG/DOC/captures/*.pcap
 # Python bytecode
 __pycache__/
 *.pyc
+
+# local assistant notes stay out of the repository
+CLAUDE.md
