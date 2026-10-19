@@ -6,7 +6,7 @@
 
 ## 📖 Overview
 
-This folder contains **96 complete reference manuals** (in the root) spanning system architecture,
+This folder contains **98 complete reference manuals** (in the root) spanning system architecture,
 ND-100/ND-110 hardware, the SINTRAN III operating system, database systems, programming languages,
 assemblers, editors, compilers, linkers, debuggers, diagnostics/test programs, and development
 tools. Five further sub-collections (NORD-1, NORD-10, ND-500/ND-5000, Device Controllers, and the
@@ -43,7 +43,7 @@ each with its own index:
 |----------|---------|
 | **System & CPU Architecture** | 5 |
 | **Hardware Documentation** | 1 |
-| **ND-100 / ND-110 Hardware & Architecture** | 6 |
+| **ND-100 / ND-110 Hardware & Architecture** | 8 |
 | **SINTRAN III System & OS** | 29 |
 | **Database Systems (SIBAS)** | 6 |
 | **Assemblers** | 7 |
@@ -56,7 +56,7 @@ each with its own index:
 | **Office Software (NOTIS-1)** | 1 |
 | **Diagnostics & Test Programs** | 4 |
 | **Documentation & Catalogues** | 1 |
-| **Total** | **96** |
+| **Total** | **98** |
 
 ---
 
@@ -93,7 +93,7 @@ each with its own index:
 ### ND-100 / ND-110 Hardware & Architecture
 
 The ND-100 and ND-110 processor hardware manual set - CPU architecture, functional
-descriptions, the I/O system, the big multiport memory, and the ND-110 instruction set.
+descriptions, microprogramming, the I/O system, the big multiport memory, and the ND-110 instruction set.
 Primary source material for emulator development and low-level hardware work.
 
 | Manual | Document # | Lines | Description |
@@ -104,8 +104,10 @@ Primary source material for emulator development and low-level hardware work.
 | **NORD-100 Input/Output System** | ND-06.016.01 | 8,708 | NORD-100 I/O system - device interfaces, IOX, DMA, interrupt system |
 | **ND-110 Instruction Set** | ND-06.029.1 EN | 8,436 | Complete ND-110 instruction set - opcodes, addressing, encoding |
 | **BIG MULTIPORT MEMORY SYSTEM** | ND-06.007.01 | 4,519 | Big multiport memory hardware - shared memory, port arbitration |
+| **NORD-100 Microprogramming Description** | ND-06.018.01 | 3,383 | Writing microprograms for the NORD-100 writable control store (1980): CPU architecture, microprogram word format, how to write a microprogram, WCS usage. Appendixes: mnemonic list, AM2901 bit slice and AM2914 interrupt controller data, 74S482 sequencer block diagram, microprogram flow charts, main memory/WCS correspondence. Pages 2, 8, 10, 12, 32, 50, 80, 82 and 85 came back from the OCR with no text |
+| **ND-110 and ND-120 Microprogrammer's Guide** | ND-06.031.1 EN | 3,388 | The 64-bit microinstruction word of the ND-110 and ND-120 CPUs (Version 1, November 1987): the CPU hardware the microcode drives, what each field of the word does, writing and assembling microcode, and patching the control store with the TRR CS instruction. Word format charts for ND-100, ND-110 and ND-120 side by side, control store address assignments. Appendixes: mnemonic lists for the ND-110 and the ND-120, glossary. Pages 11, 47 and 63 came back from the OCR with no text; the OCR called pages 13 and 83 blank |
 
-**Key Topics:** ND-100/ND-110 CPU architecture, hardware functional description, instruction set encoding, I/O system, interrupts, DMA, multiport memory
+**Key Topics:** ND-100/ND-110/ND-120 CPU architecture, hardware functional description, microprogramming and the writable control store, instruction set encoding, I/O system, interrupts, DMA, multiport memory
 
 **Related:**
 - [SINTRAN/OS/README.md](../SINTRAN/OS/README.md) - Operating system internals
@@ -499,7 +501,7 @@ All manuals are high-quality OCR-scanned versions from original NORD/SINTRAN doc
 |-------|------------------|-------|
 | **Missing page** | ND-60.117.5 (PLANC) | One page missing, documented in source |
 | **OCR artifacts** | Various | Minor formatting issues, generally readable |
-| **Blank / unreadable scan pages** | NEC-01 course, ND-80.001.2 (500/) | Some scanned pages could not be OCR'd |
+| **Blank / unreadable scan pages** | NEC-01 course, ND-80.001.2 (500/), ND-06.018.01, ND-06.031.1 | Some scanned pages could not be OCR'd |
 | **Page numbers** | All | Original page numbers preserved |
 | **Cross-references** | All | References use original document numbers |
 | **Formatting variance** | All | Each manual has unique formatting from original |
@@ -524,8 +526,8 @@ All manuals are high-quality OCR-scanned versions from original NORD/SINTRAN doc
 |----------|---------|
 | System & CPU Architecture | 5 |
 | Hardware Documentation | 1 |
-| ND-100 / ND-110 Hardware | 6 |
-| SINTRAN III System & OS | 28 |
+| ND-100 / ND-110 Hardware | 8 |
+| SINTRAN III System & OS | 29 |
 | Database (SIBAS) | 6 |
 | Assemblers | 7 |
 | Intel-8080 Cross-Tools | 2 |
@@ -537,19 +539,19 @@ All manuals are high-quality OCR-scanned versions from original NORD/SINTRAN doc
 | Office Software (NOTIS-1) | 1 |
 | Diagnostics & Test Programs | 4 |
 | Documentation & Catalogues | 1 |
-| **Total (Root)** | **95** |
+| **Total (Root)** | **98** |
 
 ### Whole Collection
 
 | Location | Manuals |
 |----------|---------|
-| Root | 95 |
+| Root | 98 |
 | [1/](1/README.md) - NORD-1 | 5 |
 | [10/](10/README.md) - NORD-10 | 13 |
 | [500/](500/README.md) - ND-500 / ND-5000 | 23 |
 | [Devices/](Devices/README.md) - Device Controllers | 7 |
 | [Notis/](Notis/README.md) - NOTIS Office System | 31 |
-| **Grand Total** | **171** |
+| **Grand Total** | **177** |
 
 ### By Era
 
@@ -571,8 +573,10 @@ All manuals are high-quality OCR-scanned versions from original NORD/SINTRAN doc
 | ND-06.014.2A | ND-100 Reference Manual | ND-100/110 HW | 9,590 |
 | ND-06.015.02 | ND-100 Functional Description | ND-100/110 HW | 13,839 |
 | ND-06.016.01 | NORD-100 Input/Output System | ND-100/110 HW | 8,708 |
+| ND-06.018.01 | NORD-100 Microprogramming Description | ND-100/110 HW | 3,383 |
 | ND-06.026-1 | ND-110 Functional Description | ND-100/110 HW | 9,805 |
 | ND-06.029.1 | ND-110 Instruction Set | ND-100/110 HW | 8,436 |
+| ND-06.031.1 | ND-110 and ND-120 Microprogrammer's Guide | ND-100/110 HW | 3,388 |
 | ND-10.004.01 | MPM 5 Technical Description | Hardware | 2,991 |
 | ND-10020G | COBOL Software Library Diskette | Language (COBOL) | 407 |
 | ND-10022S | SINTRAN Utility Programs | SINTRAN III | 1,158 |
@@ -698,9 +702,9 @@ When adding new reference manuals:
 
 ---
 
-**Last Updated**: 2026-08-17
-**Total Manuals (Root)**: 94
-**Total Manuals (All Collections)**: 170
+**Last Updated**: 2026-10-19
+**Total Manuals (Root)**: 98
+**Total Manuals (All Collections)**: 177
 **Status**: ✅ Complete Collection
 
 ---
