@@ -126,7 +126,7 @@ in the driver's entry at 6035.
   is 6014, the IOX base. The driver works through B-relative words 6000-6034.
 - 42 `IOXT` (150415, ND-110 Functional Description) with T built from 144300 plus an offset.
   The first sequence (6253-6304): WCONT 144305, WDESI 144347, transfer counter 144371 / 144373
-  / 144375, WNCOM 144343 with A = 11 octal = 0x09 (NCR 5386 "Select with ATN").
+  / 144375, WNCOM 144343 with A = 11 octal = 0x09 (NCR 5386 "Select w/o ATN", datasheet code 01001; 01000 is Select w/ATN).
 - No I/O to 1560. The only other I/O is `IOX 12` / `IOX 13` (6066, 6072, 6630, 6631); what
   device that is, is not known.
 
