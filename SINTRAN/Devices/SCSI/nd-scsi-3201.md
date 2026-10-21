@@ -20,6 +20,10 @@ The ND-3201 is **two independent controllers sharing one PCB and one host connec
 
 **The Z80 never touches the NCR 5386. Not once, anywhere in the 8KB ROM.**
 
+(But the ROM carries an ND-100 SCSI boot driver that the Z80 plants in ND-100 memory on
+autoload, and that driver drives the NCR from the ND-100 side - see "SCSI Autoload: the Planted
+ND-100 Driver".)
+
 ### Evidence (VERIFIED - exhaustive byte-level I/O sweep of 45900E.bin)
 
 Every `D3`/`DB`/`ED 4x`/`ED 5x`/`ED 6x`/`ED 7x` I/O opcode in ram:0000-1fff was located and its
@@ -74,6 +78,63 @@ datasheet - not by this ROM. See "What WCONT Actually Does" below.
   behind one WCONT/RSTAU-shaped interface.
 
 ---
+
+
+## SCSI Autoload: the Planted ND-100 Driver
+
+Read from the ROM bytes (Ghidra, `45900E.bin`) and by decoding the planted block as ND-100 code.
+This corrects the "identity handler" reading of 0x15B6 used elsewhere in earlier revisions.
+
+**Trigger.** `HostCmd` handler `ram:02ab`: CW1 (port 0x50) bit 0 set goes to 0x02DE; otherwise
+bits 0-4 clear, `IN (0x51)` = 0 and `IN (0x52)` = 4 go to 0x15B6 (via the computed dispatch at
+0x036A). The `IN (0x52); CP 4` test is the same gate the ND-3112 firmware analysis calls control
+word bit 2, "Activate Autoload" (`../FloppyDMA/04-boot-and-autoload.md` section 4.2). Which ND-100
+register value lands on port 0x52 is NOT verified.
+
+**Handler 0x15B6:**
+
+```
+15B6  RST 10
+15B7  XOR A
+15B8  LD BC,0x0C00      ; A:BC = ND-100 word address 0x000C00 = 6000 octal
+15BB  LD HL,0x15DF      ; source: ROM
+15BE  LD DE,0x04A8      ; 0x4A8 bytes = 596 ND words
+15C1  CALL 0x03F7       ; Z80 memory -> ND memory (DMA mode 0x0A, channel 2, memory to I/O)
+15C4  XOR A / LD B,A / LD C,A / LD D,A   ; ND address 0
+15C8  LD HL,0x15DB      ; ROM bytes AA 01 0C 1D
+15CB  LD E,4
+15CD  CALL 0x03F7       ; 2 words to ND address 0
+15D0  CALL 0x1AFA
+15D3  RST 18
+15D4  SET 1,(IX+0x19)
+15D8  JP 0x0614         ; completion status
+```
+
+`0x03F1` and `0x03F7` differ only in the byte stored to `(IX+0x3B)`: 0xB0 gives DMA mode 0x06
+(I/O to Z80 memory, ND to Z80), 0x90 gives mode 0x0A (Z80 memory to I/O, Z80 to ND). The source
+of this call is ROM, which cannot be a DMA destination, which fixes the direction.
+
+The handler does not touch the FD1797 or test for a diskette. It always plants the driver.
+
+**ND address 0-1:** `125001 006035` = `JMP I *+1`, word 1 = 6035. The CPU starting at 0 lands
+in the driver's entry at 6035.
+
+**The planted block (ND 6000-7123):**
+
+- 6014 holds `144300` (SCSI bus 1). 6021 holds `006000`.
+- Entry 6035: `LDA 6107` (= 5635), `COPY SA DB` - B = 5635, so `111,B` (displacement 157 octal)
+  is 6014, the IOX base. The driver works through B-relative words 6000-6034.
+- 42 `IOXT` (150415, ND-110 Functional Description) with T built from 144300 plus an offset.
+  The first sequence (6253-6304): WCONT 144305, WDESI 144347, transfer counter 144371 / 144373
+  / 144375, WNCOM 144343 with A = 11 octal = 0x09 (NCR 5386 "Select with ATN").
+- No I/O to 1560. The only other I/O is `IOX 12` / `IOX 13` (6066, 6072, 6630, 6631); what
+  device that is, is not known.
+
+**Not traced yet:** which disc blocks the driver reads, where it puts them, and where it jumps
+when done.
+
+**Consequence.** "The Z80 never touches the NCR" stays true, but the card still boots from SCSI:
+the Z80 hands the ND-100 a SCSI driver, and the ND-100 reads the disc itself.
 
 ## Document Status and Retractions
 
@@ -572,7 +633,8 @@ Based on the command word read from ports 0x50/0x54:
 | Bit 0 = 1 | SCSI disk I/O | 0x02DE | DMA reads config from ND-100 memory, processes SCSI operation |
 | Bit 1 = 1 | Bus control | 0x1B4A | Special bus operations |
 | Bit 4 = 1 | Device init | 0x0383 or 0x08A1 | Floppy init (0x08A1) or SCSI device init (0x0383) |
-| Bits 1-4 = 0 | Diagnostic | 0x15B6 or 0x0376 | Identity/diagnostic response |
+| Bits 0-4 = 0, port 0x51 = 0, port 0x52 = 4 | Autoload (SCSI boot) | 0x15B6 | Plants the ROM's ND-100 SCSI boot driver at ND 6000 octal and `JMP I` at ND 0 - see "SCSI Autoload: the Planted ND-100 Driver" |
+| Other values | Reject | 0x0376 | Rejected command (OUT NFINI) |
 
 The dispatch at 0x036A uses a computed jump:
 ```
@@ -1436,7 +1498,7 @@ flowchart TD
     CHK0 -->|1 = SCSI| SCSI
     CHK0 -->|0| CHK4
     CHK4 -->|1 = device init| DEVTYPE
-    CHK4 -->|0| IDENTITY["Identity query (0x15B6)"]
+    CHK4 -->|0| IDENTITY["Autoload: plant ND-100 SCSI driver (0x15B6)"]
     DEVTYPE -->|0x2C = floppy| FLOPPY
     DEVTYPE -->|0x1E = SCSI disk| SCSIINIT
     FLOPPY --> FD1797 --> AM9517 --> COMPLETE
@@ -1641,9 +1703,11 @@ Step 4: For device init (bit 4 set):
    e) If device type = 0x1E: dispatch to handler 0x0383 (SCSI-style init)
       If device type = other: dispatch to init_floppy_drive (0x08A1)
 
-Step 5: For identity query (bits 0-4 all zero, port 0x51=0, port 0x52=4):
-   Dispatch to identity handler (0x15B6) which DMAs the ROM identity
-   data block (from 0x15DF, contains IOX base 0xC8C0) to ND-100 memory
+Step 5: For autoload (bits 0-4 all zero, port 0x51=0, port 0x52=4):
+   Dispatch to 0x15B6, which DMAs 0x4A8 ROM bytes (from 0x15DF) to ND-100
+   memory at word 6000 octal - an ND-100 SCSI boot driver whose word 6014
+   holds the IOX base 144300 (0xC8C0) - then writes JMP I *+1 / 6035 to ND
+   address 0. See "SCSI Autoload: the Planted ND-100 Driver".
 
 Step 6: Dispatch mechanism (at 0x036A):
    The handler address (in BC) is pushed onto the stack via EX SP,HL
@@ -2185,11 +2249,11 @@ On real hardware, RSTAU bit 5 (Reset on SCSI bus) generates an ND-100 level 11 i
 
 **Suggested fix:** After setting `regs.resetOnSCSIBus = true`, check if `regs.interruptEnabled` and call `SetInterruptBit(true)`.
 
-### Missing Identity/Diagnostic Query Response
+### Missing SCSI Autoload (was: "Missing Identity/Diagnostic Query Response" - WRONG)
 
-The Z80 firmware has an identity handler at 0x15B6 that responds to diagnostic queries from the ND-100. When the ND-100 sends a specific command word (port 0x50 bits 0-4 all zero, port 0x51=0, port 0x52=4), the Z80 DMAs a 0xC00-byte identity data block from ROM (address 0x15DF) to ND-100 memory. This block contains the IOX base address (0xC8C0) and controller identification data.
+The handler at 0x15B6 is not an identity query. It is the card's autoload: it DMAs an ND-100 SCSI boot driver out of the ROM into ND-100 memory and points address 0 at it. The earlier text read `LD BC,0x0C00` as a 0xC00-byte length; BC (with A) is the ND-100 word address 6000 octal, and the length is DE = 0x4A8 bytes. See "SCSI Autoload: the Planted ND-100 Driver".
 
-The C# emulator has no equivalent. If SINTRAN or diagnostic software queries the controller identity, there would be no response. This only affects device discovery and diagnostics, not normal disk I/O.
+The C# emulator has no equivalent, so booting from SCSI through the card's autoload does not work there. Normal disk I/O by the SINTRAN driver is not affected.
 
 ### Two Interrupt Sources in RSTAU
 
