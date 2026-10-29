@@ -1331,7 +1331,7 @@ All markdown files in this folder:
 | Document | Description |
 |----------|-------------|
 | [00-SINTRAN-ARCHITECTURE-OVERVIEW.md](00-SINTRAN-ARCHITECTURE-OVERVIEW.md) | System overview and component map |
-| [01-BOOT-SEQUENCE.md](01-BOOT-SEQUENCE.md) | Boot sequence from ROM to monitor |
+| [01-BOOT-SEQUENCE.md](01-BOOT-SEQUENCE.md) | The boot in five stages (firmware page-0 load, page-0 bootstrap loads S3IMAGE, SINTR with paging off, monitor up, initial commands and banner), the three copies of the data page, cold versus warm start; then the SINTR code step by step |
 | [02-QUEUE-STRUCTURES-DETAILED.md](02-QUEUE-STRUCTURES-DETAILED.md) | Task scheduling queue structures |
 | [03-CPU-DETECTION-AND-INITIALIZATION.md](03-CPU-DETECTION-AND-INITIALIZATION.md) | CPU variant detection at boot |
 | [04-MMU-CONTEXT-SWITCHING.md](04-MMU-CONTEXT-SWITCHING.md) | MMU reconfiguration and context switching |
@@ -1343,7 +1343,7 @@ All markdown files in this folder:
 | [08-MESSAGE-PASSING-DETAILED.md](08-MESSAGE-PASSING-DETAILED.md) | Complete message passing flow ND-100↔ND-500 |
 | [09-ND500-CODE-LOADING.md](09-ND500-CODE-LOADING.md) | Compilation, loading, PLACE-DOMAIN, execution |
 | [10-ND500-STANDALONE-EMULATOR.md](10-ND500-STANDALONE-EMULATOR.md) | Standalone ND-500 without ND-100 |
-| [11-RT-SEGMENTS-AND-SEGFIL.md](11-RT-SEGMENTS-AND-SEGFIL.md) | RT segments, SEGFIL, MEMORY/SAVE/HENT |
+| [11-RT-SEGMENTS-AND-SEGFIL.md](11-RT-SEGMENTS-AND-SEGFIL.md) | What a segment is (the 8-word table entry, where the table and the names are), the segment files on a pack (0 = SEGFIL0:DATA, 4 = SINTRAN:DATA / MACM-AREA:DATA), save copy / image copy / running segment; then RT programs, RTCOMMON and the ND-500 |
 | [12-ND500-DOMAIN-SETUP-AND-MEMORY-MAPPING.md](12-ND500-DOMAIN-SETUP-AND-MEMORY-MAPPING.md) | How SINTRAN sets up ND-500 domains |
 | [13-INT14-HANDLER-DETAILED.md](13-INT14-HANDLER-DETAILED.md) | Internal interrupt (level 14) handler |
 | [14-MONITOR-KERNEL-MONCALLS.md](14-MONITOR-KERNEL-MONCALLS.md) | Monitor kernel and monitor calls |
@@ -1361,6 +1361,8 @@ All markdown files in this folder:
 | [26-INITIAL-COMMAND-BUFFER-ON-DISK.md](26-INITIAL-COMMAND-BUFFER-ON-DISK.md) | Locate/decode/encode the SINTRAN initial-command buffer (INIBU) offline in an NDFS image - implementation spec for ndfs-c/ts/py and RetroFS.NDFS |
 | [27-CPU-TYPE-THE-THREE-MEANINGS.md](27-CPU-TYPE-THE-THREE-MEANINGS.md) | The three values called "CPU type": the order-form code (never read by the kernel), HWINFO(0) found by SYSEVAL, and 5CPUTYPE for the coprocessor |
 | [28-CPU-NUMBER-AND-TYPE-ON-DISK.md](28-CPU-NUMBER-AND-TYPE-ON-DISK.md) | Where a pack holds its CPU number (SYSNO, FCPUN) and CPU type (HWINFO(2)): the three DPIT segments, the DMAC patch, per-build symbol addresses, the directory "entered by system N" stamp, and the spec for changing them offline |
+| [29-SEGMENT-MAP-FROM-THE-GENERATION.md](29-SEGMENT-MAP-FROM-THE-GENERATION.md) | The generation listing s3vs-4.symb decoded: which NPL file produced which addresses (the @DEV ranges and the COMMON/RPIT/MPIT/IPIT/5PIT/DPIT parts), the SEGFIL0 disk layout symbols, every segment-table entry with its page table and disk page, and the method to place a routine in its segment |
+| [30-SYSTEM-SEGMENTS-AND-PAGE-TABLES-BY-RELEASE.md](30-SYSTEM-SEGMENTS-AND-PAGE-TABLES-BY-RELEASE.md) | Every system segment 2-127 by number, the name on the K and L packs, the manuals' name and description, its page table and plain purpose, J to N; the 16 page tables and what is mapped in each; the disk layout per release; the configuration-dependent segments seen on the packs |
 
 ### Hardware and Device References
 

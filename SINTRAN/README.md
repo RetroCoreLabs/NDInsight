@@ -288,7 +288,9 @@ Unnumbered references in the same folder:
 | [OS/N500DF-STRUCTURE-COMPLETE-REFERENCE.md](OS/N500DF-STRUCTURE-COMPLETE-REFERENCE.md) | The N500DF structure |
 | [OS/SEGMENTS-INTRO-AND-DEEP-DIVE.md](OS/SEGMENTS-INTRO-AND-DEEP-DIVE.md) | Segments, introduction and deep dive |
 | [OS/28-CPU-NUMBER-AND-TYPE-ON-DISK.md](OS/28-CPU-NUMBER-AND-TYPE-ON-DISK.md) | Where a pack holds its CPU number and type (SYSNO, FCPUN, HWINF+2), the DPIT segments, the DMAC patch, the directory stamp, and the offline tool spec |
-| [SINTRAN-SOURCE-RECOVERY-PLAN.md](SINTRAN-SOURCE-RECOVERY-PLAN.md) | Boot flow from the page-0 bootstrap to the background programs, which segment holds what and which NPL module it came from, the tool chain state, and the phases to rebuild SINTRAN from source |
+| [OS/29-SEGMENT-MAP-FROM-THE-GENERATION.md](OS/29-SEGMENT-MAP-FROM-THE-GENERATION.md) | The generation listing decoded: which NPL file is in which segment, on which disk page |
+| [OS/30-SYSTEM-SEGMENTS-AND-PAGE-TABLES-BY-RELEASE.md](OS/30-SYSTEM-SEGMENTS-AND-PAGE-TABLES-BY-RELEASE.md) | Every system segment by name and purpose, every page table, the disk layout, J to N |
+| [SINTRAN-SOURCE-RECOVERY-PLAN.md](SINTRAN-SOURCE-RECOVERY-PLAN.md) | The tool chain state and the phases to rebuild SINTRAN from source (the facts live in OS/01, 11, 29, 30) |
 | [OS/BUS-EXPANDER-BUSC-REGISTER-REFERENCE.md](OS/BUS-EXPANDER-BUSC-REGISTER-REFERENCE.md) | Bus expander BUSC registers |
 | [OS/MEMORY-TYPE-DETECTION.md](OS/MEMORY-TYPE-DETECTION.md), [OS/HOW-TO-DETECT-FIRST-2MB-AS-LOCAL-MEMORY.md](OS/HOW-TO-DETECT-FIRST-2MB-AS-LOCAL-MEMORY.md), [OS/MPM5-MEMORY-DETECTION-AND-IDENTIFICATION.md](OS/MPM5-MEMORY-DETECTION-AND-IDENTIFICATION.md) | Memory detection and identification |
 | [OS/KERNEL-DOCUMENTATION-SUMMARY.md](OS/KERNEL-DOCUMENTATION-SUMMARY.md) | Summary of the kernel documentation set |

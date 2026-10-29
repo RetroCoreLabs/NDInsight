@@ -28,6 +28,9 @@ Cross-references:
   the page-0 field that CHDSI checks at ENTER-DIRECTORY.
 - [ndwiki-CPU-type.wiki](ndwiki-CPU-type.wiki) - the ndwiki article "CPU type" (the code table,
   the order form, NEW-SYSTEM).
+- [29-SEGMENT-MAP-FROM-THE-GENERATION.md](29-SEGMENT-MAP-FROM-THE-GENERATION.md) and
+  [30-SYSTEM-SEGMENTS-AND-PAGE-TABLES-BY-RELEASE.md](30-SYSTEM-SEGMENTS-AND-PAGE-TABLES-BY-RELEASE.md)
+  - the generation listing behind the DPIT segments, and every other system segment by name.
 - `tools/boot-floppy/patches/README.md` §6 and `tools/boot-floppy/patches/tools/read_revle.py` -
   the first offline read of SYSNO and REVLE out of carved DPIT segments.
 

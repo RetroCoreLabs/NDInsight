@@ -1,176 +1,163 @@
-# SINTRAN III Boot Sequence Analysis
+# SINTRAN III Boot: From the Load Button to the @ Prompt
 
-**Complete Boot Process from Power-On to First User Program**
+**Status:** Part A rewritten 2026-10-29 from a CPU trace of real K and L packs in RetroCore, the
+packs' own files, `PH-P2-OPPSTART.NPL` and the System Supervisor manual; every claim there is
+tagged **VERIFIED** (with the place it was read), **SOURCE** (the NPL source or a manual) or
+**OPEN**. Part B is the older walk through the SINTR initialisation code, written in 2025 against
+`PH-P2-OPPSTART.NPL`, `PH-P2-START-BASE.NPL`, `PH-P2-CONFG-TAB.NPL` and `PH-P2-RESTART.NPL`; it
+quotes the source and has not been re-measured on a pack, so take its line references as the
+evidence and its prose as a reading of them.
 
-**Version:** 1.0  
-**Last Updated:** October 16, 2025  
-**Primary Source Files:**
-- `PH-P2-OPPSTART.NPL` (SINTR routine)
-- `PH-P2-RESTART.NPL` (Power fail and restart)
-- `PH-P2-START-BASE.NPL` (Memory allocation tables)
-- `PH-P2-CONFG-TAB.NPL` (Configuration tables)
+Related chapters: [11-RT-SEGMENTS-AND-SEGFIL.md](11-RT-SEGMENTS-AND-SEGFIL.md) (what a segment
+and a segment file are), [29-SEGMENT-MAP-FROM-THE-GENERATION.md](29-SEGMENT-MAP-FROM-THE-GENERATION.md)
+(which NPL file is in which segment, on which disk page), [30-SYSTEM-SEGMENTS-AND-PAGE-TABLES-BY-RELEASE.md](30-SYSTEM-SEGMENTS-AND-PAGE-TABLES-BY-RELEASE.md)
+(every system segment and page table, K to N), [28-CPU-NUMBER-AND-TYPE-ON-DISK.md](28-CPU-NUMBER-AND-TYPE-ON-DISK.md)
+(the CPU number on disk), [26-INITIAL-COMMAND-BUFFER-ON-DISK.md](26-INITIAL-COMMAND-BUFFER-ON-DISK.md)
+(the initial commands), [../Filesystem/boot-creation.md](../Filesystem/boot-creation.md) (the page-0
+bootstrap bytes), [../Installation/OS/00-INSTALL-CONCEPTS.md](../../Installation/OS/00-INSTALL-CONCEPTS.md)
+(MACM, `)HENT`, the install floppies).
 
----
-
-## Table of Contents
-
-1. [Boot Overview](#1-boot-overview)
-2. [Pre-Boot Bootstrap](#2-pre-boot-bootstrap)
-3. [SINTR - Main System Initialization](#3-sintr---main-system-initialization)
-4. [Memory Detection and Mapping](#4-memory-detection-and-mapping)
-5. [Device Detection and Initialization](#5-device-detection-and-initialization)
-6. [I/O Buffer Allocation](#6-io-buffer-allocation)
-7. [Interrupt System Setup](#7-interrupt-system-setup)
-8. [Page Table Initialization](#8-page-table-initialization)
-9. [Post-Boot Transition](#9-post-boot-transition)
-10. [Boot Sequence Diagrams](#10-boot-sequence-diagrams)
+Units: a page is 1024 words = 2048 bytes; disk pages count from the start of the disk unless a
+file is named. Numbers are octal unless marked dec.
 
 ---
 
-## 1. Boot Overview
+# Part A. The boot in five stages
 
-### 1.1 Boot Phases
-
-The SINTRAN III boot process consists of several distinct phases:
+## A.1 Overview
 
 ```mermaid
-graph TD
-    A[Power On] --> B[Bootstrap Loader]
-    B --> C[Load SINTRAN Resident Image]
-    C --> D[SINTR Entry Point]
-    D --> E[Initialize MMU & Interrupts]
-    E --> F[Memory Detection]
-    F --> G[Read DPIT from Disk]
-    G --> H[Setup Page Tables]
-    H --> I[Hardware Detection]
-    I --> J[Device Driver Init]
-    J --> K[I/O Buffer Allocation]
-    K --> L[Start Monitor Kernel]
-    L --> M[Start First RT Program]
-    M --> N[System Operational]
-    
-    style A fill:#3F51B5,stroke:#303F9F,stroke-width:2px,color:#fff
-    style B fill:#2196F3,stroke:#1565C0,stroke-width:2px,color:#fff
-    style C fill:#2196F3,stroke:#1565C0,stroke-width:2px,color:#fff
-    style D fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
-    style E fill:#009688,stroke:#00695C,stroke-width:2px,color:#fff
-    style F fill:#009688,stroke:#00695C,stroke-width:2px,color:#fff
-    style G fill:#2196F3,stroke:#1565C0,stroke-width:2px,color:#fff
-    style H fill:#009688,stroke:#00695C,stroke-width:2px,color:#fff
-    style I fill:#2196F3,stroke:#1565C0,stroke-width:2px,color:#fff
-    style J fill:#009688,stroke:#00695C,stroke-width:2px,color:#fff
-    style K fill:#009688,stroke:#00695C,stroke-width:2px,color:#fff
-    style L fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
-    style M fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
-    style N fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
+flowchart TD
+    F["1. Firmware: mass-storage load<br/>disk page 0 -> memory 0, jump to 0"]
+    B["2. Page-0 bootstrap (RELOA)<br/>reads S3IMAGE from SEGFIL0 page 0<br/>into memory, jumps to SINTR"]
+    S["3. SINTR, paging off<br/>CPU probe, identity PROM, memory scan,<br/>DPIT from disk, page tables, devices"]
+    M["4. Paging on, interrupts on<br/>monitor on level 3, idle on level 1"]
+    C["5. Initial commands, banner, mode files<br/>ENTER-DIRECTORY, SET-AVAILABLE,<br/>XMSG, COSMOS, the @ prompt"]
+    F --> B --> S --> M --> C
+    style F fill:#3F51B5,stroke:#283593,color:#fff
+    style B fill:#2196F3,stroke:#1565C0,color:#fff
+    style S fill:#009688,stroke:#00695C,color:#fff
+    style M fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style C fill:#4CAF50,stroke:#2E7D32,color:#fff
 ```
 
-### 1.2 Boot Entry Points
+## A.2 Stage 1: the firmware loads one page **VERIFIED**
 
-| Entry Point | Location | Purpose |
-|-------------|----------|---------|
-| **Bootstrap** | ROM/Disk Block 0 | Minimal loader, loads resident image from disk |
-| **SINTR** | `PH-P2-OPPSTART.NPL` line 292 | Main system initialization routine |
-| **PWFAIL** | `PH-P2-RESTART.NPL` | Power fail handler |
-| **RESTART** | `PH-P2-RESTART.NPL` | System restart after power fail |
-| **SETPTABL** | `PH-P2-RESTART.NPL` | Set up page index tables during restart |
+Pressing LOAD (in RetroCore: `boot bd0`, in nd100x: `--boot=smd0`) runs the ND-100's mass-storage
+load: the firmware reads **disk page 0**, 1024 words, into memory starting at address 0 and starts
+the CPU at address 0. That is everything the hardware knows how to do (ND-06.014.2A §4.2.5.2,
+quoted in `../Filesystem/boot-creation.md`). The CPU trace of the K pack starts at address 0 with
+`PIOF`, the first word of that program.
 
-### 1.3 Boot Goals
+## A.3 Stage 2: the page-0 program loads the kernel **SOURCE**
 
-By the end of the boot sequence, SINTRAN has:
+The 1024 words are the loader `RELOA` plus the swap driver for the disk type (`PH-P2-OPPSTART.NPL`
+3712-3766): `PIOF`, move itself out of the way to 177000, read `NOBLK` blocks from the double-word
+disk address `DYBLS`, then `IDENT PL11; JMP I (SINTR`. SINTRAN itself fills those cells at every
+start (lines 850-853): `NOBLK` = 63 pages, `DYBLS` = `DBLST(0)`, the start of segment file 0, and
+it rewrites page 0 with the current `RELOA` and driver at every start (lines 867-876), so the
+bootstrap on a pack is always the one its own kernel wrote.
 
-1. ✓ Detected all physical memory
-2. ✓ Configured MMU (all 4 page index tables)
-3. ✓ Set up interrupt vectors for all 16 levels
-4. ✓ Detected and initialized all hardware devices
-5. ✓ Allocated I/O buffers
-6. ✓ Created kernel data structures (queues, tables)
-7. ✓ Started the monitor kernel
-8. ✓ Ready to execute RT programs
+What it reads is **segment 2 `S3IMAGE`** at page 0 of `(SYSTEM)SEGFIL0:DATA`: the "image of
+common / start / restart code", 77B pages (`s3vs-4.symb` 79729-79730, `MIMAG=0, LIMAG=77`). That
+is the resident kernel: the common code every page table shares, the start program (SINTR), the
+restart code and the configuration tables; chapter 29 §2.2 names the NPL files that are in it.
+Its untouched copy is segment 52 `S3SAVE` on segment file 4 (disk page 1, inside
+`(SYSTEM)SINTRAN:DATA`); on the K pack the two are byte-identical (measured). Destination is
+physical 0 (INFERRED from "common code always starts at physical address 0", K release
+information §10.1).
+
+## A.4 Stage 3: SINTR sets the system up, paging off **SOURCE**
+
+Entry at `SINTR` (`PH-P2-OPPSTART.NPL:292`). In order:
+
+| Step | What | Where |
+|---|---|---|
+| interrupt system off, PCR, "this is a NORD-100" check | `A:=0; *PIOF; TRR IIE; TRA IIC ... IF A NBIT 5N100 THEN CALL ERRFATAL` | 292-296 |
+| **read the resident data page (DPIT)** from disk into bank 1 at 4000B: from the **save copy S3SDPIT** when `HENTFLAG=0` (cold start), from the **image copy S3IDPIT** otherwise (warm start) | `DPRE`: `IF HENTFLAG=0 THEN A:=DPSA ELSE A:=DPIM FI; A+SEGFSTART*LSST` | 262, 283-284 |
+| build the page tables (`IPTMAP`), test for MMS II | | 300-310 |
+| probe the CPU (`SYSEVAL`): NORD-10 / ND-100 / ND-110 / ND-120, floating-point size, instruction set | | 312 |
+| read the ND-110/ND-120 identity PROM (`GCPUNR`), only when SYSEVAL found an ND-110 or later; with the signature 52652B it overwrites SYSNO, FCPUN, HWINFO(2), NLEGU in memory | `IF HWINFO(0)/\377 >= 3 THEN CALL GCPUNR FI` | 313, 3542-3569 |
+| refuse anything older than an ND-100/CX | `IF HWINFO(0)/\377 < 2 THEN CALL ERRFATAL FI` | 314 |
+| scan physical memory, find the devices, allocate buffers, set up interrupt vectors | Part B §4-§7 | |
+| **cold start only:** copy every save segment over its image segment (DPIT, RPIT, MPIT, IPIT, segment table, file system, command segment, RT-loader, error program, XMSG, servers, micro code, ND-500 monitor ...) with `CRWDISC` | `IF HENTFLAG><0 GO FAR OVCO` then the copy list | 771-841 |
+| both paths: load the image segments the kernel needs in memory (segment table, extended common, RPIT, MPIT, IPIT, 5PIT, system segment), rewrite page 0 (A.3) | | 843-876 |
+| `SETPTABL` (`PH-P2-RESTART.NPL` 454-685): `LOCOSTORE` loads or checks the ND-110/ND-120 control store from the micro code segment, maps the resident segments into the page tables, sets PCR on every level | | |
+
+**The K stop belongs here. VERIFIED by CPU trace (2026-10-29, BIGDISK0-K-100 on ND120CX and
+ND110CX in RetroCore):** the SINTRAN K start-up code at this point reads PROM bytes 6-7 through
+VERSN on levels 6 and 7 and, when they read 52652B, jumps through a pointer to `IOF; WAIT` at
+address 2, before anything is printed. That is why a K pack halts on an ND-110/ND-120 whose PROM
+carries the GCPUNR signature, and why RetroCore and nd100x present no signature until an identity
+key is set (chapter 28 §2.3).
+
+## A.5 Stage 4: paging on, interrupts on, the monitor runs **SOURCE**
+
+The interrupt levels are enabled, the monitor starts on level 3 and the idle program on level 1
+(Part B §9). From here on the data page in memory is the live segment 23 `S3DPIT`: the CPU number
+SINTRAN uses, the RT descriptions, the datafields and the system tables are whatever that page
+holds. The three copies are:
+
+```mermaid
+flowchart LR
+    SAVE["S3SDPIT seg 53, on disk<br/>save copy<br/>L, M: SEGFIL0 page 100B<br/>K: SINTRAN:DATA (segment file 4)"]
+    IMG["S3IDPIT seg 44, on disk<br/>image copy<br/>SEGFIL0 page 1773B (L)"]
+    MEM["S3DPIT seg 23, in memory<br/>bank 1 at 4000B<br/>the live data page"]
+    SAVE -- "cold start: copied over" --> IMG
+    IMG -- "warm start: loaded" --> MEM
+    SAVE -- "cold start: loaded" --> MEM
+    PROM["identity PROM (ND-110/120)<br/>SINTRAN L and later: GCPUNR<br/>overwrites SYSNO, type, NLEGU"] -. "every start, if signed" .-> MEM
+    TOOL["ND patch run, DMAC,<br/>ndtool --set-cpu"] -. "write" .-> SAVE
+    TOOL -. "write" .-> IMG
+    style SAVE fill:#2196F3,stroke:#1565C0,color:#fff
+    style IMG fill:#2196F3,stroke:#1565C0,color:#fff
+    style MEM fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style PROM fill:#FFA726,stroke:#EF6C00,color:#000
+    style TOOL fill:#009688,stroke:#00695C,color:#fff
+```
+
+A value present in only one disk copy survives only one kind of start; ND's own install run
+patches the save copy and then demands `@COLD-START` (chapter 28 §3.2).
+
+## A.6 Stage 5: initial commands, banner, mode files **VERIFIED**
+
+The start RT program `STSIN` runs the commands stored in the kernel buffer `INIBU` (chapter 26):
+first `ENTER-DIRECTORY` of the system disk, where the file system routine CHDSI compares the
+directory's page-0 stamp with SYSNO and refuses with **3203 DIRECTORY ENTERED BY ANOTHER SYSTEM**
+when they differ (chapter 28 §7), then `SET-AVAILABLE` and `APPEND-BATCH LOAD-MODE`. The banner
+(`SINTRAN III - VSX/500 K`, `CPU TYPE`, `CPU NUMBER`, patch level) is printed from the data page.
+The mode files start the background programs, XMSG, the network servers and COSMOS, and the
+`@` prompt appears. Seen on every boot of 2026-10-29; CHDSI compare at 040105-040117 in the carved
+L segment 006-S3FS.
+
+## A.7 Cold start, warm start, and the names
+
+- **Cold start** (`@COLD-START`, or MACM `)HENT` + `22!` without a running system): `HENTFLAG=0`;
+  the save copies are copied over the image copies and loaded. MACM's `)HENT` is "GET SINTRAN FROM
+  SAVE-AREA" (System Supervisor 3982, 4920), so despite the name HENT is the cold path.
+- **Warm start**: `HENTFLAG><0`; the image copies are loaded as they are. There is no third
+  "HENT snapshot area" on disk; what earlier text called that is the set of image segments
+  (chapter 11 §3).
+- **Where `HENTFLAG` is set** (the operator's start form, the firmware, the `22!` restart): the
+  available NPL only reads it. **OPEN.**
+
+## A.8 What the packs showed (2026-10-29)
+
+| Pack | CPU in RetroCore | PROM signature | Result |
+|---|---|---|---|
+| BIGDISK0-K-100 (K) | ND120CX, ND110CX | present (old default) | stop at address 2 before the banner |
+| BIGDISK0-K-100 (K) | ND120CX, ND110CX | absent | `SINTRAN III RUNNING`, CPU TYPE 110, CPU NUMBER 100, COSMOS up |
+| BIGDISK0-L2-100 (L) | ND120CX | present | runs; banner shows the PROM's 102 / 100 |
+| BIGDISK0-L2-100 (L) | ND120CX | absent | runs; banner shows the pack's 100 / 9883 |
+| both, copies set to CPU number 21238 with `ndtool --set-cpu` | ND120CX | absent | banner `CPU NUMBER: 21238`, no 3203 |
 
 ---
 
-## 2. Pre-Boot Bootstrap
+# Part B. The SINTR initialisation code, step by step
 
-### 2.1 Bootstrap Loader
-
-The bootstrap loader is stored in ROM or disk block 0. Its sole purpose is to load the SINTRAN resident image into memory.
-
-**Minimal bootstrap responsibilities:**
-1. Initialize basic hardware (memory controller, disk controller)
-2. Read SINTRAN resident image from known disk location
-3. Jump to SINTR entry point
-
-**Disk layout for boot (from disk block 0):**
-
-| Disk Block | Content |
-|------------|---------|
-| 0 | Bootstrap loader |
-| 1-63 | SINTRAN resident image |
-| 64+ | System segments, data files |
-
-> **Corrections 2026-10-29 - the table above has no source and the measured packs disagree
-> with it.** Measured on BIGDISK0-K-100, BIGDISK0-L2-100, BIGDISK0-L-SEMICS and nd100x SMD0
-> (disk pages of 1024 words = 2048 bytes):
->
-> | Disk page | Content | Source |
-> |---|---|---|
-> | 0 | page-0 bootstrap (`RELOA`..`LDEND` + swap driver), rewritten by SINTRAN at every start (below) | `PH-P2-OPPSTART.NPL` 867-876 |
-> | 1-63 | `(SYSTEM)SINTRAN:DATA` = the **SAVE** copies, "segment file 4": segment 52 `S3SAVE` (save of common/start code) at disk page 1, 27 pages on K; `S3SDPIT` (53) at page 28; error program and RT-loader saves at absolute pages 100B and 137B | `s3vs-4.symb` 79848-79849 (`MERRP=100`, `MRTLO=137`); System Supervisor App. D lines 15285-15293; `PH-P2-OPPSTART.NPL:751` (file-4 base = disk page 1) |
-> | 64-127 | `(SYSTEM)MACM-AREA:DATA` | measured; K release information line 7941 |
-> | 128.. | `(SYSTEM)SEGFIL0:DATA` (`DBLST(0) = 256` blocks / `ABLPAGE(0) = 2`); its page 0 is segment 2 `S3IMAGE` = **the image the bootstrap loads** | `s3vs-4.symb` 79729-79730 `MIMAG=0, LIMAG=77` "IMAGE OF COMMON/START/RESTART CODE"; `S3IMAGE` and `S3SAVE` are byte-identical on the K pack (measured) |
->
-> So "blocks 1-63 = resident image" is wrong on both counts: the bootstrap does not read disk
-> pages 1-63, and what it reads is the **image** copy in `SEGFIL0`, not the save copy. The
-> page-0 program (`RELOA`, OPPSTART 3729-3766) reads `NOBLK` blocks from the double-word disk
-> address `DYBLS` (3752-3754, 3759-3761) and ends with `IDENT PL11; JMP I (SINTR` (3766).
-> SINTRAN fills those cells at start-up: `NOBLK = CDABLPAGE*77` (= `ABLPAGE` × 63 pages, line
-> 850) and `DYBLS = DBLST(0)` = the start of `SEGFIL0` (line 853), plus the driver entry
-> `LDRAD = SWPDRIVER` and the disk type (854-865).
->
-> **SINTRAN rewrites the page-0 bootstrap itself at every start.** After label `OVCO` (line
-> 843, reached on both the cold and the warm path) lines 867-876 read page 0 (`CRDISC`), copy
-> `RELOA`..`LDEND` into it, append the swap driver (`ZBDIS` SMD / `ZWDIS` ST-506 / `SCSWD` SCSI,
-> picked from the `MDISCS` table at lines 22-31) and write the page back. So the bootstrap on a
-> running system's pack is always the one from that kernel's own `RELOA`. The first words of
-> SMD0.IMG page 0 (`boot-creation.md` lines 147-156: `PIOF; TRA STS; SAA 12; TRR PCR ...`) are
-> not byte-identical to s3vs-4's `RELOA` (`PIOF; TRA STS; BSKP ONE 140 DA; ...`, line 3729), so
-> the L07 `RELOA` may differ from this K-source listing: **UNVERIFIED**.
-
-### 2.2 Main Swapping Disk Table
-
-The system needs to know which disk device to use for swapping. This is defined in the **MDISCS** table:
-
-```npl
-% From PH-P2-OPPSTART.NPL, lines 22-32
-INTEGER ARRAY MDISCS:=(
-        0,    0,    0,    0,    0,    0,    0,    0,   % 00 - 07
-    WWDIS,WWDIS,WWDIS,WWDIS,WWDIS,WWDIS,    0,BBDIS,   % 10 - 17
-    BBDIS,BBDIS,BBDIS,BBDIS,BBDIS,BBDIS,BBDIS,BBDIS,   % 20 - 27
-    BBDIS,BBDIS,BBDIS,BBDIS,BBDIS,BBDIS,SCDIS,    0,   % 30 - 37
-        0,    0,    0,    0,    0,    0,    0,    0);  % 40 - 47
-
-INTEGER ARRAY WWDIS:=(WIGDI,1224,ZWDIS,WIDIS,   500);  % ST-506
-INTEGER ARRAY BBDIS:=(BIGDI,1100,ZBDIS,BDISK,  1540);  % SMD
-INTEGER ARRAY SCDIS:=(SCDI1,2210,SCSWD,SCSWD,144300);  % SCSI
-```
-
-**Each entry contains 5 words:**
-
-| Offset | Field | Description |
-|--------|-------|-------------|
-| 0 | SWDDFIELD | Address of datafield |
-| 1 | SWDLOGNO | Logical device number |
-| 2 | SWDSWDRIVER | Boot-time swap driver address |
-| 3 | SWDDRIVER | Runtime driver address |
-| 4 | SWHDEV | Hardware device number for controller |
-
-**Device types:**
-- **ST-506**: Winchester disk (e.g., 30MB drives)
-- **SMD**: Storage Module Device (e.g., 80MB, 300MB drives)
-- **SCSI**: SCSI interface devices
-
----
+*Written against the NPL source in 2025; line numbers refer to `PH-P2-OPPSTART.NPL` unless
+another file is named. The older sections 1 and 2 of this part ("bootstrap in ROM", "disk blocks
+1-63 = resident image") were wrong and have been replaced by Part A.*
 
 ## 3. SINTR - Main System Initialization
 
@@ -946,8 +933,8 @@ At this point, SINTRAN is fully operational:
 
 ```mermaid
 flowchart TD
-    A[Power On] --> B[Bootstrap Loader ROM]
-    B --> C[Load SINTRAN Resident from Disk]
+    A[Power On] --> B[Page-0 bootstrap from the disk]
+    B --> C[Load S3IMAGE from SEGFIL0]
     C --> D[Jump to SINTR]
     
     D --> E[Disable Interrupts]
@@ -1121,25 +1108,6 @@ PIT 3 (IPIT - I/O):
 
 ---
 
-## Summary
-
-The SINTRAN III boot sequence is a carefully orchestrated series of steps:
-
-1. **Bootstrap** loads resident image
-2. **SINTR** initializes MMU and interrupts
-3. **Memory detection** builds physical memory map
-4. **DPIT loading** enables POF area access
-5. **Page table setup** configures virtual memory
-6. **Device scanning** detects all hardware
-7. **Buffer allocation** sets up DMA-safe I/O buffers
-8. **Interrupt configuration** enables all interrupt levels
-9. **Monitor activation** starts the kernel
-10. **First program** runs, system is operational
-
-The boot code is defensive, checking for errors at each step and calling `ERRFATAL` if anything critical fails. This ensures the system only becomes operational if all essential components are working correctly.
-
----
-
 ## Appendix A: Key Symbols and Addresses
 
 ### Boot Routine Addresses
@@ -1180,7 +1148,6 @@ Examples:
 
 ---
 
-**Document Status:** Phase 2 Complete - Boot Sequence Fully Documented
 
 **Next:** Phase 3 - Interrupt Handling Deep-Dive (02-INTERRUPT-HANDLING.md)
 

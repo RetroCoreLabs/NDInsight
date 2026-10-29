@@ -1,8 +1,7 @@
-# Recreating SINTRAN III from its packs: what we have, what is missing, and the phases
+# Recreating SINTRAN III from its packs: the plan
 
-**Date:** 2026-10-29. **Status:** analysis and plan. Every fact below is tagged VERIFIED (read
-from a pack, a kernel listing, the generation listing or a manual, with the place named),
-INFERRED or OPEN. Numbers are octal unless marked dec.
+**Date:** 2026-10-29. **Status:** plan. Facts live in the chapters; this file holds the open work
+and the phases only.
 
 **The question.** Can we understand each SINTRAN segment, follow the boot from the page-0
 bootstrap to the background programs, know where the NPL sources we have went, and from there
@@ -17,91 +16,20 @@ MACM exist only as binaries, and the reverse direction (binary to NPL) is a desi
 nothing built. The disk side is solved: `ndtool` lists, exports and imports any segment of any
 pack and changes a pack's identity, so every phase below can be measured on real packs.
 
-Related chapters: [OS/11](OS/11-RT-SEGMENTS-AND-SEGFIL.md) segments and segment files,
-[OS/22](OS/22-READING-RT-AND-SEGMENT-TABLES-FROM-MEMORY.md) tables and the name records,
-[OS/26](OS/26-INITIAL-COMMAND-BUFFER-ON-DISK.md) and [OS/28](OS/28-CPU-NUMBER-AND-TYPE-ON-DISK.md)
-offline edits, [NPL-SOURCE/NPL-COVERAGE-AND-GAPS.md](NPL-SOURCE/NPL-COVERAGE-AND-GAPS.md) what
-source exists, [CARVING-HANDOFF.md](CARVING-HANDOFF.md) the static carving effort. The compiler
-lives in the sibling repository `new-planc` (`src/npl`, `docs/npl`).
+**Where the facts are** (moved out of this file on 2026-10-29):
+- what a pack holds, segment files, save/image/running copies: [OS/11](OS/11-RT-SEGMENTS-AND-SEGFIL.md)
+- how the system boots, stage by stage: [OS/01](OS/01-BOOT-SEQUENCE.md) Part A
+- which NPL file is in which segment, the generation listing's disk layout and segment table:
+  [OS/29](OS/29-SEGMENT-MAP-FROM-THE-GENERATION.md)
+- every system segment by name and purpose, every page table, K to N:
+  [OS/30](OS/30-SYSTEM-SEGMENTS-AND-PAGE-TABLES-BY-RELEASE.md)
+- the tables in memory and the name records: [OS/22](OS/22-READING-RT-AND-SEGMENT-TABLES-FROM-MEMORY.md)
+- offline edits: [OS/26](OS/26-INITIAL-COMMAND-BUFFER-ON-DISK.md), [OS/28](OS/28-CPU-NUMBER-AND-TYPE-ON-DISK.md)
+- what source exists: [NPL-SOURCE/NPL-COVERAGE-AND-GAPS.md](NPL-SOURCE/NPL-COVERAGE-AND-GAPS.md);
+  the static carving effort: [CARVING-HANDOFF.md](CARVING-HANDOFF.md). The compiler lives in the
+  sibling repository `new-planc` (`src/npl`, `docs/npl`).
 
 ---
-
-## 1. What a pack holds (VERIFIED on K and L packs, 2026-10-29)
-
-| Disk pages (dec) | NDFS file | What |
-|---|---|---|
-| 0 | boot block | page-0 bootstrap plus the directory label; SINTRAN rewrites the bootstrap at every start (PH-P2-OPPSTART.NPL 867-876) |
-| 1-63 | `(SYSTEM)SINTRAN:DATA` | the kernel's "segment file 4": SAVE copies with absolute addresses: 52 S3SAVE (common/start code, 27 pages, at page 1), 53 S3SDPIT (at 28), 54 S3SSYS, 55 S3SERRP (error program, at 100), 60 S3SERD |
-| 64-127 | `(SYSTEM)MACM-AREA:DATA` | more of segment file 4: 56 S3SRTC (RT-loader code, at 137), 57 S3SRTD, 63 S3MEMTF |
-| 128 up | `(SYSTEM)SEGFIL0:DATA` | segment file 0: everything else, starting with 2 S3IMAGE at page 0 (the memory image the bootstrap loads; byte-identical to S3SAVE after a cold start) |
-
-The segment table (segments 27 S3ISGT image, 24 S3SSGT save) describes 1-255 with LOGAD, SEGLE,
-MADR (page in its segment file), FLAG (file number in bits 13-15) and status. The names are the
-RT-loader's type-25B records in `(SYSTEM)RTFIL:DATA`. The kernel finds a segment file through
-DBLST(N)/ABLPAGE(N) (256 blocks / 2 = disk page 128 for file 0; file 4 is set to one page at
-start-up, OPPSTART:751). `ndtool --segments` prints all of this from the pack; `--export-segment`
-and `--import-segment` move a segment's pages to and from a host file (sibling repository
-`norskdata-ndfs`, `ndfs-c/src/sintran_segments.c`).
-
-## 2. How the system boots (VERIFIED from PH-P2-OPPSTART.NPL and the System Supervisor manual)
-
-1. **Firmware load**: STOP, MCL, LOAD; the ND-100 mass-storage load reads 1 KW from disk address 0
-   to memory 0 and starts there (ND-06.014.2A, quoted in Filesystem/boot-creation.md:61-63).
-2. **Bootstrap** (RELOA, OPPSTART 3712-3766): PIOF, moves itself to 177000, reads NOBLK sectors
-   from DYBLS = DBLST(0) = SEGFIL0 page 0, i.e. segment 2 S3IMAGE, 77 pages of "image of common,
-   start and restart code" (s3vs-4.symb 79729-79730), then `IDENT PL11; JMP I (SINTR`. Destination
-   physical 0 (INFERRED; the manual says common code starts at physical 0, SUP 15437).
-3. **SINTR** (OPPSTART 292-325): interrupt system off, PCR, ND-100 check, level 0. DPRE reads the
-   DPIT (55 pages) from the SAVE copy S3SDPIT when HENTFLAG = 0 (cold start) or from the IMAGE copy
-   S3IDPIT otherwise (262, 283-284). Then page tables, MMS-II test, SYSEVAL (CPU type), memory scan,
-   device presence tests, swap device.
-4. **Cold start only**: 32 CRWDISC save-to-image copies (OPPSTART 772-841): extended common, DPIT,
-   RPIT, MPIT, IPIT, segment table, file system, RT-loader code and data, error program, edit page,
-   command segment, SM, system segment, 5PIT, XMSG kernel and XROUT, device names, servers, the
-   ND-110/ND-120 microcode segments, ND-500 monitor. Plus the MADR set-up of spool, ND-500, RFA,
-   debugger and background system segments. (Where HENTFLAG is set: OPEN.)
-5. **Both paths**: read segment table, extended common, RPIT, MPIT, IPIT, segment 42, system
-   segment, 5PIT from the image copies; microcode image if UCLOAD; terminal and TAD datafields;
-   background programs BAKnn/BCHnn get SEGM1 = 3 (the command segment) and SEGM2 = their own system
-   segment (OPPSTART 2534-2540); SGBUILD builds the memory-only segments 23, 47, 35, 67, 51, 64, 42.
-6. **SETPTABL** (PH-P2-RESTART.NPL 454-685): LOCOSTORE loads or compares the ND-110/ND-120
-   control store from the microcode segment; maps common, RPIT, MPIT, IPIT, DPIT, 42 and 5PIT into
-   the page tables; sets PCR on all levels; register blocks for DUMMY, STSIN and 1SWAP; `GO PENT0`.
-7. **After start**: STSIN is the start RT program; the initial commands in INIBU (segment 3) run
-   (ENTER-DIRECTORY, APPEND-BATCH LOAD-MODE), LOAD-MODE starts batch, spooling, XMSG/COSMOS, UE,
-   ND-500, SET-AVAILABLE. Background programs BAK01.. run the command processor in segment 3 S3CP
-   (S3COM on K) through SPIT; file-system calls go to segment 6 S3FS through FPIT.
-8. **Cold start from the operator side**: `@COLD-START`, or MACM `)HENT` + `22!` without a running
-   system; the save area is copied to the image area and HENT-MODE runs (SUP 3787-4041).
-
-## 3. Which segment holds what (VERIFIED: L release information 2497-2598, s3vs-4.symb 79870-80191, the L carve)
-
-| Segment | Name | Holds | Source we have? |
-|---|---|---|---|
-| 2 / 52 | S3IMAGE / S3SAVE | common code, start and restart program (the memory image) | yes: CC-P2-COMMON, CC-P2-N500, PH-P2-START-BASE, PH-P2-RESTART, PH-P2-CONFG-TAB, PH-P2-OPPSTART |
-| 23 / 44 / 53 | S3DPIT / S3IDPIT / S3SDPIT | resident data: variables, datafields, RT descriptions, the system information table, segment-file tables | yes: DP-P2-VARIABLES plus the inline generation text (s3vs-4.symb 79720-80200) |
-| 47 / 25 / 16 | S3RPIT and its image/save | resident code, MON call workers | yes: RP-P2-* |
-| 35 / 26 / 17 | S3MPIT | monitor level, level 14, drivers, segment administration | yes: MP-P2-* |
-| 67 / 66 / 65 | S3IPIT | IPIT code | yes: IP-P2-* |
-| 51 / 50 / 46 | 5PIT | ND-500 MON 60 | yes: 5P-P2-MON60 |
-| 64 / 61 / 60 | S3ECOM | extended common | yes: XC-P2-1, XC-P2-2, XC-P2-N500 |
-| 3 / 13 | S3CP (K: S3COM) | command processor, INIBU, 9ENTO | **no** |
-| 6 / 12 | S3FS | file system | **no** |
-| 4, 37 / 56, 57 | S3RTL, S3RTD | RT-loader code and data | **no** |
-| 14 / 55, 5 | S3ERRP, S3ERRS | error program | **no** |
-| 7 | S3DMAC | DMAC, loaded by HENT-MODE | **no** |
-| 71 / 70 | S3SM | SINTRAN-SERVICE-PROGRAM, MAIL | **no** |
-| 76, 77, 103 | XMSG kernel, XROUT, FIDO | XMSG | **no** |
-| 30 / 62, 20, 21 | S3SM5, S3SDT5, S3NMS5 | ND-500 monitor, domains, name tables | **no** |
-| 104-127 | NUCLEUS, microcode, ERS, servers | servers; the ND-110/ND-120 microcode segments | microcode: the micro code listings exist (NDMicroCpu); servers: **no** |
-| 43 | S3PATCH | addresses for the patch mode file | n/a |
-| 63 | S3MEMTF | memory dump to floppies | yes: PH-P2-MEMTOF (INFERRED by name) |
-
-The prefixes CC, XC, DP, RP, MP, IP, 5P match the split markers `%$--:COMMON/RPIT/MPIT/IPIT/5PIT/DPIT`
-in the generation listing (INFERRED; P2 = "part 2" is attested; PH is OPEN). Two cautions: the
-listing we hold (s3vs-4) is **not the L07 build** (addresses differ, e.g. M1 071455 vs 071633B)
-although its disk layout and module grouping match the L carve exactly; and some drivers in the
-listing were never split into NPL files (BDISK, SCSWD, BFDIS, STC).
 
 ## 4. The tool chain today (VERIFIED, inventory of 2026-10-29)
 
