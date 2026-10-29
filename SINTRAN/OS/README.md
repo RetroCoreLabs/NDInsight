@@ -1316,6 +1316,8 @@ All markdown files in this folder:
 | [23-MON-CALL-DISPATCH-DEVELOPER-GUIDE.md](23-MON-CALL-DISPATCH-DEVELOPER-GUIDE.md) | How a MON call dispatches (level 14, GOTAB jump table, handler levels); reading it in memory, DAP breakpoints, disassembly |
 | [24-INITIAL-COMMANDS-AND-STARTUP.md](24-INITIAL-COMMANDS-AND-STARTUP.md) | SINTRAN startup commands: the in-memory initial-command buffer (INICO / @LIST-INITIAL-COMMANDS) and the disk mode files (HENT-MODE / LOAD-MODE) |
 | [26-INITIAL-COMMAND-BUFFER-ON-DISK.md](26-INITIAL-COMMAND-BUFFER-ON-DISK.md) | Locate/decode/encode the SINTRAN initial-command buffer (INIBU) offline in an NDFS image - implementation spec for ndfs-c/ts/py and RetroFS.NDFS |
+| [27-CPU-TYPE-THE-THREE-MEANINGS.md](27-CPU-TYPE-THE-THREE-MEANINGS.md) | The three values called "CPU type": the order-form code (never read by the kernel), HWINFO(0) found by SYSEVAL, and 5CPUTYPE for the coprocessor |
+| [28-CPU-NUMBER-AND-TYPE-ON-DISK.md](28-CPU-NUMBER-AND-TYPE-ON-DISK.md) | Where a pack holds its CPU number (SYSNO, FCPUN) and CPU type (HWINFO(2)): the three DPIT segments, the DMAC patch, per-build symbol addresses, the directory "entered by system N" stamp, and the spec for changing them offline |
 
 ### Hardware and Device References
 

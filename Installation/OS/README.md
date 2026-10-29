@@ -33,7 +33,11 @@ verification reference.
 
 ## Cross-cutting dimensions
 
-- **CPU type / ID** — TODO: source not yet located. Do **not** invent.
+- **CPU type / ID** — asked by NEW-SYSTEM from K on ("Give CPU number (in decimal)", "Give CPU
+  type (in decimal)"), written by the patch run into the save copy of the resident data (`S3SDPIT`:
+  `SYSNO/ 33CPN`, `FCPUN/ 33CPN`, `HWINF+2/ 33CPU`), then a cold start. Where the words are and how
+  to change them on a disk image:
+  [`../../SINTRAN/OS/28-CPU-NUMBER-AND-TYPE-ON-DISK.md`](../../SINTRAN/OS/28-CPU-NUMBER-AND-TYPE-ON-DISK.md).
 - **Floppy file-system identity** — each distribution floppy is itself a SINTRAN file
   system; its "Directory name" (e.g. `N-220046K03--01D`) is its identity. See
   [floppy-contents/](floppy-contents/README.md).
