@@ -511,10 +511,27 @@ Done on 2026-10-29:
     PACK-THREE,DISC-75MB-1,2` answered `DIRECTORY ENTERED BY ANOTHER SYSTEM`. A directory whose
     name is already entered answers `DIRECTORY ENTERED` without touching the pack (seen first,
     before the renames), so the test needs distinct directory names.
-  - Not concluded: `@ENTER-DIRECTORY PACK-TWO,DISC-75MB-1,1` of the released L copy on unit 1 did
-    not return within six minutes (no message, emulator alive, ESC ignored). That is an emulator
-    or multi-unit question, not a verdict on the stamp; the clean boot of the released K copy
-    above already shows a released pack is accepted.
+  - **Released pack on SMD unit 1 (2026-10-29, late evening): concluded.** `@ENTER-DIRECTORY
+    PACK-TWO,DISC-75MB-1,1` of the released L copy on unit 1 first did not return within six
+    minutes in the prebuilt RetroCore. nd100x entered it at once, and its `--log=smd:debug`
+    gave the driver's exact sequence on the new unit: a Read Parity Transfer (M2) of one page at
+    cylinder 1465B, surface 0, sector 0 (the probe), then the master block at 0/0/0, compare
+    transfers, the directory tables around cylinder 415, the stamp write, and alternating
+    writes to units 1 and 0 - 50 operations, no seek. The two emulators' SMD controllers were
+    then held to the same unit tests (nd100x `tests/test_smd_units.c`, RetroCore
+    `NDBusDiscControllerSMDMultiUnitTests`), on temporary copies of the K pack, and RetroCore's
+    had four defects: every completion assigned `seekCompleteBits = 1 << selectedUnit`, wiping
+    the other units' bits; a unit with no pack read READY; a GO against it ended without
+    hardware error b7; and the address check compared the head against the cylinder count. On
+    top of that an operation ending in error raised no interrupt unless the error-interrupt bit
+    was set, so a failed operation left the driver in ID11 for ever. With those fixed (RetroCore
+    c44d5be95, model per ND-11.020.01: M4 complete when the drive accepts it, M6 waits for any
+    unit's pulse) the command returns, `LIST-DIRECTORIES-ENTERED` shows
+    `DIR INDEX 1 : DISC-75MB-1 UNIT 1 : PACK-TWO`, and the controller trace
+    (`RETROCORE_SMD_TRACE`) shows 33 operations on unit 1 and no error. Which single defect
+    stalled the old build was not isolated. Both nd100x (4881abc) and RetroCore now complete
+    Initiate Seek at the controller at once and let the drive raise the seek-complete pulse
+    later, as the manual describes.
 
 - **Segment file 1 on a real pack (2026-10-29, later):** on the booted K copy,
   `@CREATE-FILE SEGFIL1:DATA,64`, then `@SINTRAN-SERVICE-PROGRAM` `*DEFINE-SEGMENT-FILE`
