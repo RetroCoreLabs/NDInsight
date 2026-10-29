@@ -414,8 +414,10 @@ release, and still uses the disproved XOR checksum (OPEN, to fix before it ever 
 2. Read `(SYSTEM)RTFIL:DATA` (or, failing that, `SEGFIL0:DATA`) and find the "DEFINED SEGMENT
    NAME" records for `S3IDPIT` and `S3SDPIT` (§4.1); that gives the two segment numbers. Refuse if
    either is missing. Read `(SYSTEM)SEGFIL0:DATA`; find the segment table page (chapter 26 §3.2);
-   take those two entries; require the `5OK` bit and a range that contains SYSNO (the logical
-   base is `(LOGAD & 77B) * 2000B` from the entry, not a constant).
+   take those two entries; require a length and a range that contains SYSNO (the logical base
+   is `(LOGAD & 77B) * 2000B` from the entry, not a constant). Do NOT require the `5OK` bit: it
+   means "loaded in memory" (SEGIN sets it at run time), not "has pages on disk"; a segment the
+   RT-loader has just written has it clear (§9, segment file 1).
 3. For each: segment file = `(FLAG >> 13) & 7`; 0 means `SEGFIL0:DATA`, 4 means `SINTRAN:DATA`
    (the K save copy), anything else is OPEN and must be reported. Read the words at SYSNO, FCPUN,
    HWINF+2, REVLE with the §4.2 formula, each checked against the file length.
@@ -514,9 +516,22 @@ Done on 2026-10-29:
     or multi-unit question, not a verdict on the stamp; the clean boot of the released K copy
     above already shows a released pack is accepted.
 
-Not done:
+- **Segment file 1 on a real pack (2026-10-29, later):** on the booted K copy,
+  `@CREATE-FILE SEGFIL1:DATA,64`, then `@SINTRAN-SERVICE-PROGRAM` `*DEFINE-SEGMENT-FILE`
+  (MEMORY? Y, SAVE-AREA? Y, number 1, name SEGFIL1:DATA), then `@RT-LOADER`
+  `SET-SEGMENT-FILE 1`, `NEW-SEGMENT 101,2,,,,`, `READ-BINARY (BPUN-FILES)DITAP-1880D:BPUN,,,,`,
+  `END-LOAD`, `EXIT-LOADER`. Read back with ndtool while the system ran: segment file 1 = disk
+  page 36489 from `DBLST(1)` / `ABLPAGE` in the S3IDPIT copy, labelled `SYSTEM/SEGFIL1:DATA`
+  (the contiguous file's first page); entry 101B = segment file 1, MADR 0, 1 page, and disk page
+  36489 holds DITAP's text. The S3IDPIT image copy held the new DBLST at once (the service
+  program's MEMORY? Y reaches it without a stop).
+  **Finding:** entry 101B has FLAG 020000, the `5OK` bit clear, while every system segment has
+  000111. `5OK` is the "loaded in memory" flag SEGIN sets at run time (SEGMENTS-INTRO), not
+  "has pages on disk"; system segments carry it on disk only because the table image was
+  written while they were loaded. The lister in all ports used `5OK` as a condition for the
+  disk page and so showed `?` for 101B; the condition was removed the same day.
 
-- A segment on segment file 1 to 3 (`*DEFINE-SEGMENT-FILE`), see the ndfs plan file.
+Not done:
 - The DMAC write timing (deposit vs `)9EXIT`) and the name-to-number resolution of `)CLOAD` were not
   observed.
 
