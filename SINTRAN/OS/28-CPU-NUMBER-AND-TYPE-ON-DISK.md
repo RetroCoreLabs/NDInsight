@@ -1,7 +1,7 @@
 # Reading and Changing the CPU Number and CPU Type of a SINTRAN Pack From a Disk Image
 
-**Status:** measured on five real packs (SINTRAN K and L) on 2026-10-29; the write path is specified
-but not yet run end to end (see §9).
+**Status:** measured on five real packs (SINTRAN K and L) on 2026-10-29; the write path is
+implemented in `norskdata-ndfs` (`ndtool --set-cpu`) and proven by boot the same day (see §9).
 **Scope:** SINTRAN III VSX / VSX-500, versions K and L measured, M from the symbol lists and the
 carved M-VSX-500 image.
 **Purpose:** a complete, implementable specification for finding the words that hold a pack's
@@ -231,6 +231,14 @@ Three things to take from it: the addresses come from the pack's **own symbol li
 
 ### 4.1 The three DPIT segments
 
+**Their numbers are not fixed by this chapter; a tool reads them from the pack.** The RT-loader
+keeps every segment name as a "DEFINED SEGMENT NAME" record (symbol type 25B, 8 words: packed
+SIXBIT name, segment number, 0, type, segment number, 0; chapter 22 §6.5) and the records are on
+disk in `(SYSTEM)RTFIL:DATA` and again inside `SEGFIL0:DATA` (the S3RTFIL segment). **VERIFIED
+2026-10-29** on the K pack, both L packs and nd100x's SMD0: the records decode to S3DPIT 23,
+S3IDPIT 44, S3SDPIT 53 on every one, which matches the manuals below. The same lookup gives any
+other segment's number too.
+
 From the system-included segment tables (`../../Reference-Manuals/ND-820023-1-EN SINTRAN III-VSX System Documentation.md`
 lines 837, 854, 861; the L, M, N release information) and the L07 generation source
 (`../NPL-SOURCE/s3vs-4.symb` lines 79991, 80070, 80089) - **VERIFIED**:
@@ -261,7 +269,9 @@ says it: "All system included segments are placed on segment file number 0 ... e
 52-60 and 63 which are placed on the files SINTRAN:DATA and MACM-AREA:DATA" (K release information
 line 7941). On the K pack, `SINTRAN:DATA` is 60 pages long and page 27 of it holds the save copy:
 word 004051 = 000144, 004054 = 000156, 004057 = 010200, 105034 = 000144, identical to S3IDPIT
-(**VERIFIED** by reading the file).
+(**VERIFIED** by reading the file). Note that 27 + 35 pages is 62, past the file's 60 pages:
+the segment's tail is not in the file, but every identity word is (FCPUN at 105034B is page 59).
+A tool must check each word against the file length, not the whole segment.
 
 ### 4.2 The formula
 
@@ -398,11 +408,14 @@ release, and still uses the disproved XOR checksum (OPEN, to fix before it ever 
    `SYSNO`, `HWINF`, `REVLE`, `FCPUN`, `33CPN`, `33CPU`, `33CPV`, `INIBU`. Refuse if SYSNO or FCPUN
    is missing. Determine the version letter from `INIBU` (067172 K, 074123 L, 102327 M; chapter 26)
    and cross-check SYSNO = 004051.
-2. Read `(SYSTEM)SEGFIL0:DATA`; find the segment table page (chapter 26 §3.2); take entries 44B and
-   53B; require `LOGAD & 77B = 2` and `SEGLE` of 35 or 45 pages (report, do not refuse, other values).
+2. Read `(SYSTEM)RTFIL:DATA` (or, failing that, `SEGFIL0:DATA`) and find the "DEFINED SEGMENT
+   NAME" records for `S3IDPIT` and `S3SDPIT` (§4.1); that gives the two segment numbers. Refuse if
+   either is missing. Read `(SYSTEM)SEGFIL0:DATA`; find the segment table page (chapter 26 §3.2);
+   take those two entries; require the `5OK` bit and a range that contains SYSNO (the logical
+   base is `(LOGAD & 77B) * 2000B` from the entry, not a constant).
 3. For each: segment file = `(FLAG >> 13) & 7`; 0 means `SEGFIL0:DATA`, 4 means `SINTRAN:DATA`
    (the K save copy), anything else is OPEN and must be reported. Read the words at SYSNO, FCPUN,
-   HWINF+2, REVLE with the §4.2 formula.
+   HWINF+2, REVLE with the §4.2 formula, each checked against the file length.
 4. Read the page-0 extended-info block: flag bit 15, stored system number, checksum validity.
 5. Print: version, the two DPIT copies with their file and page, SYSNO / FCPUN / type / REVLE for
    each, the generation symbols 33CPN / 33CPU, and the directory stamp. Flag a mismatch between the
@@ -445,10 +458,21 @@ Done on 2026-10-29:
 - Kernel side: the CHDSI compare and the 3203 code from the carved listing; the K halt on the PROM
   signature by CPU trace in RetroCore.
 
+- **Write path, end to end (2026-10-29, later the same day):** `norskdata-ndfs` got
+  `ndfs_read_cpu_identity` / `ndfs_write_cpu_identity` (`ndfs-c/src/sintran_identity.c`) and
+  `ndtool --cpu-identity` / `--set-cpu`, built exactly as §8 says (symbols from the pack's lists,
+  segment numbers from the name records, pages from the segment table, per-word file check, both
+  copies, 33CPN/33CPU rewritten with parity, stamp cleared, read back). Copies of BIGDISK0-K-100
+  and BIGDISK0-L2-100 were changed to CPU number 21238 (K also to type 9883) and booted in RetroCore
+  as ND120CX with a signature-less PROM. Both banners read `CPU TYPE: 9883` / `CPU NUMBER: 21238`,
+  both reached `SINTRAN III RUNNING`, the K pack started COSMOS, and no directory message appeared.
+  Unit tests (synthetic K and L shaped packs, name-driven segment numbers, a K save copy in
+  `SINTRAN:DATA`, refusal cases): `ndfs-c/tests/test_sintran_identity.c`.
+
 Not done:
 
-- No pack has yet been patched with the §8.2 procedure and then booted to show the new CPU NUMBER on
-  the banner and a clean ENTER-DIRECTORY. That is the acceptance test for the implementation.
+- `@LIST-TITLE` and an explicit `@ENTER-DIRECTORY` of a second pack were not typed on the booted
+  patched packs; the banner and the absence of the 3203 message at boot are the evidence so far.
 - The DMAC write timing (deposit vs `)9EXIT`) and the name-to-number resolution of `)CLOAD` were not
   observed.
 
