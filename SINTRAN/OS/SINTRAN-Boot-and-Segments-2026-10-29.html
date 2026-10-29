@@ -1,0 +1,601 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>html{color-scheme:light}body{margin:0;font:14px system-ui}img{max-width:100%}</style></head><body data-theme="light"><title>SINTRAN Boot and Segments</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a long onboarding document. Numbered chapters, each one diagram plus the words it needs.
+   Diagrams are inline SVG and HTML grids only, so the same file prints to PDF. */
+:root {
+  --bg: #f6f4ef; --fg: #1d2326; --muted: #5c6670; --line: #cfd4cf; --panel: #ffffff;
+  --accent: #0b6e73; --accent-soft: #d9ecec;
+  --warn: #a4521a; --warn-soft: #f6e4d6;
+  --ok: #2f6b3a; --ok-soft: #dcebdd;
+  --blue: #2b4f8c; --blue-soft: #dde6f5;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15191b; --fg: #e6e9e6; --muted: #9ba5a8; --line: #343c3e; --panel: #1d2326;
+    --accent: #5fc3c6; --accent-soft: #163b3d; --warn: #e49a62; --warn-soft: #3b2616;
+    --ok: #8fcf98; --ok-soft: #1f3522; --blue: #8fb0e8; --blue-soft: #1d2a44; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15191b; --fg: #e6e9e6; --muted: #9ba5a8; --line: #343c3e; --panel: #1d2326;
+  --accent: #5fc3c6; --accent-soft: #163b3d; --warn: #e49a62; --warn-soft: #3b2616;
+  --ok: #8fcf98; --ok-soft: #1f3522; --blue: #8fb0e8; --blue-soft: #1d2a44; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 64px; }
+main { max-width: 1060px; margin: 0 auto; display: grid; gap: 56px; }
+h1 { font-size: clamp(26px, 4vw, 40px); font-weight: 600; margin: 0 0 8px; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font-size: 24px; font-weight: 600; margin: 0 0 6px; text-wrap: balance; }
+h3 { font-size: 17px; font-weight: 600; margin: 18px 0 6px; }
+p { margin: 0 0 10px; max-width: 72ch; }
+.lead { color: var(--muted); font-size: 17px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+.chapter-no { font-family: var(--font-mono); color: var(--accent); font-size: 14px; letter-spacing: 0.08em; }
+code, .mono { font-family: var(--font-mono); font-size: 0.92em; }
+.tag { display: inline-block; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; vertical-align: middle; }
+.tag.v { background: var(--ok-soft); color: var(--ok); }
+.tag.d { background: var(--accent-soft); color: var(--accent); }
+.tag.o { background: var(--warn-soft); color: var(--warn); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 18px; color: var(--muted); font-size: 14px; align-items: center; }
+.toc { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 24px; font-size: 15px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.toc a { color: var(--fg); text-decoration: none; } .toc a:hover { text-decoration: underline; }
+.toc span { color: var(--accent); font-family: var(--font-mono); margin-right: 8px; }
+
+/* Glossary cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; min-width: 0; }
+.card b { display: block; font-family: var(--font-mono); font-size: 14px; color: var(--accent); margin-bottom: 4px; }
+.card p { font-size: 14px; margin: 0; max-width: none; }
+
+/* Stages */
+.stages { display: grid; border-left: 2px solid var(--line); margin-left: 18px; }
+.stage { display: grid; grid-template-columns: 40px 1fr; gap: 0 12px; padding: 14px 0 22px 0; }
+.stage .n { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff; font-family: var(--font-mono); font-weight: 500; display: grid; place-items: center; margin-left: -19px; font-size: 14px; }
+.stage.k .n { background: var(--warn); }
+.stage h3 { margin: 4px 0 6px; }
+.stage p { max-width: 74ch; }
+.stage .where { color: var(--muted); font-size: 14px; margin-top: 6px; }
+.stage .halt { margin-top: 10px; padding: 10px 12px; border-left: 3px solid var(--warn); background: var(--warn-soft); font-size: 14px; max-width: 74ch; }
+
+/* Diagrams */
+.diagram { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; overflow-x: auto; }
+.diagram svg { display: block; width: 100%; height: auto; min-width: 680px; max-width: 100%; }
+svg text { font-family: var(--font-body); fill: var(--fg); font-size: 13px; }
+svg text.mono { font-family: var(--font-mono); font-size: 12px; }
+svg text.small { font-size: 11px; fill: var(--muted); }
+svg text.b { font-weight: 600; }
+svg .box { fill: var(--panel); stroke: var(--line); stroke-width: 1.2; }
+svg .box.dpit { fill: var(--accent-soft); stroke: var(--accent); }
+svg .box.mem { fill: var(--ok-soft); stroke: var(--ok); }
+svg .box.prom { fill: var(--warn-soft); stroke: var(--warn); }
+svg .box.blue { fill: var(--blue-soft); stroke: var(--blue); }
+svg .arrow { fill: none; stroke: var(--accent); stroke-width: 2; marker-end: url(#ah); }
+svg .arrow.warm { stroke-dasharray: 6 4; }
+svg .arrow.prom { stroke: var(--warn); marker-end: url(#ahw); }
+svg .arrow.tool { stroke: var(--ok); marker-end: url(#ahg); }
+svg .arrow.blue { stroke: var(--blue); marker-end: url(#ahb); }
+svg .grp { fill: none; stroke: var(--line); stroke-dasharray: 3 3; }
+svg text.grp-label { fill: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--font-mono); }
+svg .bar { stroke: var(--fg); stroke-width: 0.6; }
+svg .bar.save { fill: var(--blue-soft); } svg .bar.image { fill: var(--accent-soft); } svg .bar.code { fill: var(--ok-soft); } svg .bar.free { fill: var(--panel); }
+
+/* PIT grid */
+.pits { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.pit { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 10px 12px; min-width: 0; font-size: 14px; }
+.pit h4 { margin: 0 0 6px; font-family: var(--font-mono); font-size: 13px; color: var(--accent); }
+.pit h4 span { color: var(--muted); font-weight: 400; }
+.pit ul { margin: 0; padding-left: 16px; }
+.pit li { margin: 2px 0; }
+.pit.data { border-color: var(--accent); background: var(--accent-soft); }
+.pit.user { border-color: var(--blue); }
+
+/* Catalogue */
+.cat { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.cat .grp { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; min-width: 0; }
+.cat h4 { margin: 0 0 8px; font-size: 15px; }
+.cat table { font-size: 13px; }
+.cat td, .cat th { padding: 4px 6px; }
+
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+td.mono { white-space: nowrap; }
+.tablewrap { overflow-x: auto; }
+.note { font-size: 14px; color: var(--muted); max-width: 74ch; margin-top: 10px; }
+pre { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.45; margin: 0; }
+@media (max-width: 520px) { body { font-size: 15px; } .stage { grid-template-columns: 32px 1fr; } }
+@media print {
+  body { background: #fff; color: #000; padding: 0; font-size: 11pt; }
+  main { gap: 28px; max-width: none; }
+  section { break-inside: avoid-page; }
+  .diagram, .card, .pit, .cat .grp { break-inside: avoid; }
+  .diagram svg { min-width: 0; }
+  .toc { break-after: page; }
+  a { color: #000; text-decoration: none; }
+}
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">Norsk Data ND-100 family, SINTRAN III</div>
+    <h1>SINTRAN boot and segments: how the operating system gets from a disk pack into memory</h1>
+    <p class="lead">A guide for people new to the machine. It follows the load button to the <code>@</code> prompt, shows what sits where on a pack and in memory, and explains the one thing that trips everyone: the three copies of the resident data page and why a CPU number change has to reach two files.</p>
+    <div class="legend" style="margin-top:14px">
+      <span class="tag v">verified</span> read off real packs or seen in a CPU trace on 2026-10-29
+      <span class="tag d">source</span> from the SINTRAN NPL source, the generation listing or an ND manual
+      <span class="tag o">open</span> not checked yet
+    </div>
+    <nav class="toc" style="margin-top:18px" aria-label="Contents">
+      <a href="#c1"><span>1</span>The machine in one picture</a>
+      <a href="#c2"><span>2</span>Eight words you need</a>
+      <a href="#c3"><span>3</span>What is on a system pack</a>
+      <a href="#c4"><span>4</span>The boot, stage by stage</a>
+      <a href="#c5"><span>5</span>Memory after boot: the page tables</a>
+      <a href="#c6"><span>6</span>The three copies of the data page</a>
+      <a href="#c7"><span>7</span>Finding a segment from the pack alone</a>
+      <a href="#c8"><span>8</span>The system segments, by job</a>
+      <a href="#c9"><span>9</span>Where the CPU number sits</a>
+      <a href="#c10"><span>10</span>Looking at a pack yourself</a>
+      <a href="#c11"><span>11</span>Where to read on</a>
+    </nav>
+  </header>
+
+  <!-- 1 -->
+  <section id="c1">
+    <div class="chapter-no">1</div>
+    <h2>The machine in one picture</h2>
+    <p>An ND-100 (and its faster siblings ND-110 and ND-120) is a 16-bit minicomputer. A program sees 64 K words; physical memory is up to 16 M words in banks of 64 K words. Between the two sits the memory management system: <strong>16 page tables</strong> of 64 entries each, every entry mapping one 1024-word page. SINTRAN III gives each table a job and switches tables as it moves between the user, the monitor, the file system and the drivers. Disks are divided into 1024-word pages too, and every disk carries an NDFS directory of named files.</p>
+    <div class="diagram">
+      <svg viewBox="0 0 960 300" role="img" aria-label="CPU with 16 page tables between a 64K logical space and physical banks, and a disk pack with files">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+          <marker id="ahw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/></marker>
+          <marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ok)"/></marker>
+          <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--blue)"/></marker>
+        </defs>
+        <rect class="box blue" x="20" y="40" width="180" height="110" rx="4"/>
+        <text class="b" x="32" y="64">CPU</text>
+        <text class="small" x="32" y="84">16 interrupt levels (0-15)</text>
+        <text class="small" x="32" y="100">16-bit words, 64 KW visible</text>
+        <text class="small" x="32" y="116">ND-110/120: identity PROM</text>
+        <text class="small" x="32" y="132">read by the VERSN instruction</text>
+
+        <rect class="box" x="250" y="30" width="230" height="130" rx="4"/>
+        <text class="b" x="262" y="54">16 page tables (PITs)</text>
+        <text class="small" x="262" y="74">each: 64 pages of 1024 words</text>
+        <text class="small" x="262" y="90">1 UPITN user   7 DPIT data   10 RPIT resident</text>
+        <text class="small" x="262" y="106">4 FPIT file system   12 MPIT monitor</text>
+        <text class="small" x="262" y="122">11 SPIT commands, loader   15 IPIT I/O</text>
+        <text class="small" x="262" y="138">5 5PIT ND-500   6 XPIT XMSG   ...</text>
+
+        <rect class="box mem" x="530" y="30" width="190" height="130" rx="4"/>
+        <text class="b" x="542" y="54">Physical memory</text>
+        <text class="small" x="542" y="74">banks of 64 KW, up to 16 MW</text>
+        <text class="small" x="542" y="90">bank 0: common code at 0</text>
+        <text class="small" x="542" y="106">bank 1: resident data at 4000B</text>
+        <text class="small" x="542" y="122">then RPIT, MPIT, segment</text>
+        <text class="small" x="542" y="138">table, memory map, buffers</text>
+
+        <rect class="box" x="770" y="30" width="170" height="130" rx="4"/>
+        <text class="b" x="782" y="54">Disk pack (NDFS)</text>
+        <text class="small" x="782" y="74">pages of 1024 words</text>
+        <text class="small" x="782" y="90">page 0: boot + directory</text>
+        <text class="small" x="782" y="106">files: SEGFIL0:DATA,</text>
+        <text class="small" x="782" y="122">SINTRAN:DATA, RTFIL:DATA,</text>
+        <text class="small" x="782" y="138">SYMBOL-1/2-LIST:SYMB ...</text>
+
+        <path class="arrow blue" d="M200,95 L250,95"/>
+        <path class="arrow blue" d="M480,95 L530,95"/>
+        <path class="arrow blue" d="M720,95 L770,95"/>
+        <text class="small" x="205" y="88">address</text>
+        <text class="small" x="485" y="88">page</text>
+        <text class="small" x="725" y="88">swap</text>
+
+        <text x="20" y="205" class="b">The one idea to hold on to</text>
+        <text x="20" y="226">Nearly everything outside the small common code is a <tspan class="b">segment</tspan>: a block of up to 64 KW that has a number, a place on the</text>
+        <text x="20" y="244">disk, a length, and a page table it is mapped in while it runs. The kernel's own code and data are segments; so is every program.</text>
+        <text x="20" y="262">One <tspan class="b">segment table</tspan> describes them all. Boot is "load the right segments into the right page tables"; running is "swap segments in</text>
+        <text x="20" y="280">and out of those tables". Once that is clear, the rest of this page is detail.</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section id="c2">
+    <div class="chapter-no">2</div>
+    <h2>Eight words you need</h2>
+    <div class="cards">
+      <div class="card"><b>segment</b><p>A numbered block of up to 64 KW of code or data that SINTRAN swaps as a unit. It has a logical base inside the 64 KW space, a length in pages, a disk page in a segment file, and a page table it runs in. Names like <code>S3FS</code> are given by the RT-loader.</p></div>
+      <div class="card"><b>page table (PIT)</b><p>One of the 16 tables of the memory management system. SINTRAN uses each for a role: 7 DPIT for the resident data, 10 RPIT for resident code, 12 MPIT for the monitor and drivers, 4 FPIT for the file system, 11 SPIT for the command processor and loaders, 1 and 2 for the user.</p></div>
+      <div class="card"><b>segment file</b><p>One contiguous NDFS file holding segments page after page. File 0 is <code>SEGFIL0:DATA</code>. "File 4" is the kernel's name for an absolute save area at disk page 1, which is inside <code>SINTRAN:DATA</code> and <code>MACM-AREA:DATA</code>. Files 1-3 exist only if the installer made them.</p></div>
+      <div class="card"><b>segment table</b><p>8 words per segment: links, LOGAD (base page), SEGLE (length), MADR (page in its file), FLAG (file number in bits 13-15), status, core-map head. Lives in memory, and on disk as segments 27 (image) and 24 (save) inside <code>SEGFIL0</code>.</p></div>
+      <div class="card"><b>DPIT, the resident data page</b><p>The data every part of the kernel shares: RT descriptions, device datafields, system variables, the CPU number (SYSNO), the segment-file tables. Logical 4000B in page table 7. Stored as segments 23 (memory), 44 (image on disk), 53 (save on disk).</p></div>
+      <div class="card"><b>save / image / running</b><p>Most system segments exist three times. The save copy is what the installer wrote; a cold start copies it over the image copy and loads it. The image copy is the working copy; a warm start loads it as it is. The running segment is the one in memory.</p></div>
+      <div class="card"><b>symbol list</b><p><code>(SYSTEM)SYMBOL-1-LIST:SYMB</code> and <code>SYMBOL-2-LIST:SYMB</code>: every kernel symbol of that build with its octal address (<code>SYSNO=004051</code>). Every system pack carries its own. Addresses move between builds, so tools read these, never a table.</p></div>
+      <div class="card"><b>RTFIL and the name records</b><p>The RT-loader keeps every segment name as a "DEFINED SEGMENT NAME" record (type 25B, the name packed as SIXBIT, the segment number) in <code>RTFIL:DATA</code> and in segment 10 <code>S3RTFIL</code>. That is where <code>S3SDPIT = 53</code> comes from.</p></div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section id="c3">
+    <div class="chapter-no">3</div>
+    <h2>What is on a system pack</h2>
+    <p>Measured on real K and L packs <span class="tag v">verified</span>: the kernel lives in three NDFS files at fixed disk pages, and inside <code>SEGFIL0:DATA</code> the generation job laid the system segments out page by page. The bar is the start of <code>SEGFIL0</code> on an L pack, drawn to scale (one unit = 8 pages, octal page numbers from the listing).</p>
+    <div class="diagram">
+      <svg viewBox="0 0 960 330" role="img" aria-label="Disk pages of a pack and the layout of SEGFIL0">
+        <text class="b" x="20" y="24">Disk pages (dec) on every pack measured</text>
+        <rect class="bar code" x="20" y="36" width="12" height="28"/><text class="small" x="36" y="56">0: page-0 bootstrap + directory label + "entered by system N" stamp</text>
+        <rect class="bar save" x="20" y="70" width="110" height="28"/><text class="small" x="136" y="90">1-63: SINTRAN:DATA = segment file 4: S3SAVE (52), on K also S3SDPIT (53), S3SSYS (54), S3SERRP (55), S3SERD (60)</text>
+        <rect class="bar save" x="20" y="104" width="110" height="28"/><text class="small" x="136" y="124">64-127: MACM-AREA:DATA = segment file 4: S3SRTC (56), S3SRTD (57), S3MEMTF (63)</text>
+        <rect class="bar image" x="20" y="138" width="600" height="28"/><text class="small" x="626" y="158">128 up: SEGFIL0:DATA = segment file 0, 10000 pages: everything else</text>
+
+        <text class="b" x="20" y="200">Inside SEGFIL0 (L layout from the generation listing, octal pages; save areas first, image areas after 1773B)</text>
+        <!-- scale: 1 unit = 8 pages (decimal). 3664B = 1972 pages -> 246 units -> *3.6 = 886 px -->
+        <g transform="translate(20,212)">
+          <rect class="bar code"  x="0"     y="0" width="22.8" height="30"/>
+          <rect class="bar save"  x="22.8"  y="0" width="16.2" height="30"/>
+          <rect class="bar save"  x="39"    y="0" width="3.2"  height="30"/>
+          <rect class="bar save"  x="42.2"  y="0" width="2"    height="30"/>
+          <rect class="bar save"  x="44.2"  y="0" width="18.5" height="30"/>
+          <rect class="bar save"  x="62.7"  y="0" width="18.5" height="30"/>
+          <rect class="bar save"  x="81.2"  y="0" width="18.5" height="30"/>
+          <rect class="bar save"  x="99.7"  y="0" width="1.8"  height="30"/>
+          <rect class="bar save"  x="101.5" y="0" width="17.3" height="30"/>
+          <rect class="bar save"  x="118.8" y="0" width="5.8"  height="30"/>
+          <rect class="bar save"  x="124.6" y="0" width="11.5" height="30"/>
+          <rect class="bar save"  x="136.1" y="0" width="11.5" height="30"/>
+          <rect class="bar save"  x="147.6" y="0" width="19.1" height="30"/>
+          <rect class="bar save"  x="166.7" y="0" width="19.1" height="30"/>
+          <rect class="bar save"  x="185.8" y="0" width="12.8" height="30"/>
+          <rect class="bar save"  x="198.6" y="0" width="8.6"  height="30"/>
+          <rect class="bar save"  x="207.2" y="0" width="14.4" height="30"/>
+          <rect class="bar save"  x="221.6" y="0" width="19.4" height="30"/>
+          <rect class="bar save"  x="241"   y="0" width="1.8"  height="30"/>
+          <rect class="bar save"  x="242.8" y="0" width="1.2"  height="30"/>
+          <rect class="bar save"  x="244"   y="0" width="18.5" height="30"/>
+          <rect class="bar save"  x="262.5" y="0" width="23"   height="30"/>
+          <rect class="bar save"  x="285.5" y="0" width="5.8"  height="30"/>
+          <rect class="bar save"  x="291.3" y="0" width="20.2" height="30"/>
+          <rect class="bar save"  x="311.5" y="0" width="18.5" height="30"/>
+          <rect class="bar save"  x="330"   y="0" width="18.5" height="30"/>
+          <rect class="bar save"  x="348.5" y="0" width="18.5" height="30"/>
+          <rect class="bar save"  x="367"   y="0" width="1.2"  height="30"/>
+          <!-- image areas from 1773B = 1019 dec -> 1019/8*3.6 = 458.6 -->
+          <rect class="bar image" x="368.2" y="0" width="16.2" height="30"/>
+          <rect class="bar image" x="384.4" y="0" width="3.2"  height="30"/>
+          <rect class="bar image" x="387.6" y="0" width="2"    height="30"/>
+          <rect class="bar image" x="389.6" y="0" width="18.5" height="30"/>
+          <rect class="bar image" x="408.1" y="0" width="18.5" height="30"/>
+          <rect class="bar image" x="426.6" y="0" width="18.5" height="30"/>
+          <rect class="bar image" x="445.1" y="0" width="1.8"  height="30"/>
+          <rect class="bar image" x="446.9" y="0" width="17.3" height="30"/>
+          <rect class="bar image" x="464.2" y="0" width="5.8"  height="30"/>
+          <rect class="bar image" x="470"   y="0" width="11.5" height="30"/>
+          <rect class="bar image" x="481.5" y="0" width="11.5" height="30"/>
+          <rect class="bar image" x="493"   y="0" width="19.1" height="30"/>
+          <rect class="bar image" x="512.1" y="0" width="18.8" height="30"/>
+          <rect class="bar image" x="530.9" y="0" width="12.8" height="30"/>
+          <rect class="bar image" x="543.7" y="0" width="8.6"  height="30"/>
+          <rect class="bar image" x="552.3" y="0" width="14.4" height="30"/>
+          <rect class="bar image" x="566.7" y="0" width="19.4" height="30"/>
+          <rect class="bar image" x="586.1" y="0" width="1.8"  height="30"/>
+          <rect class="bar image" x="587.9" y="0" width="1.2"  height="30"/>
+          <rect class="bar image" x="589.1" y="0" width="18.5" height="30"/>
+          <rect class="bar image" x="607.6" y="0" width="23"   height="30"/>
+          <rect class="bar image" x="630.6" y="0" width="5.8"  height="30"/>
+          <rect class="bar image" x="636.4" y="0" width="20.2" height="30"/>
+          <rect class="bar image" x="656.6" y="0" width="18.5" height="30"/>
+          <rect class="bar image" x="675.1" y="0" width="18.5" height="30"/>
+          <rect class="bar image" x="693.6" y="0" width="18.5" height="30"/>
+          <rect class="bar image" x="712.1" y="0" width="1.2"  height="30"/>
+          <rect class="bar free"  x="713.3" y="0" width="200"  height="30"/>
+          <text class="small" x="0" y="46">0: S3IMAGE (kernel, 77B pages)</text>
+          <text class="small" x="22" y="60">100: S3SDPIT save of data page</text>
+          <text class="small" x="150" y="46">163-414: save RPIT, MPIT, IPIT, 5PIT</text>
+          <text class="small" x="244" y="60">521, 561: ND-110 / ND-120 micro code (save)</text>
+          <text class="small" x="300" y="46">621: file system, 706: command segment (save)</text>
+          <text class="small" x="368" y="74">1773: S3IDPIT image of data page, then every image area in the same order</text>
+          <text class="small" x="713" y="46">3664: first free page; user segments follow</text>
+        </g>
+        <rect class="bar code" x="20" y="300" width="14" height="12"/><text class="small" x="40" y="310">kernel image</text>
+        <rect class="bar save" x="140" y="300" width="14" height="12"/><text class="small" x="160" y="310">save copies (cold start reads these)</text>
+        <rect class="bar image" x="400" y="300" width="14" height="12"/><text class="small" x="420" y="310">image copies (warm start reads these; the running system swaps against them)</text>
+      </svg>
+    </div>
+    <p class="note">The order and sizes come from section 29.6 of the generation listing (<code>MSSLE</code> / <code>MISLE</code> macros), and the measured segment table of the L packs has the save data page at 100B = page 64 and the image at 1773B = page 1019, exactly as listed. On K the save copies of the data page, system segment and error program are in <code>SINTRAN:DATA</code> instead.</p>
+  </section>
+
+  <!-- 4 -->
+  <section id="c4">
+    <div class="chapter-no">4</div>
+    <h2>The boot, stage by stage</h2>
+    <div class="stages">
+      <div class="stage">
+        <div class="n">1</div>
+        <div>
+          <h3>Firmware loads one page <span class="tag v">verified</span></h3>
+          <p>Pressing LOAD (RetroCore: <code>boot bd0</code>; nd100x: <code>--boot=smd0</code>) runs the ND-100's mass-storage load: the firmware reads <strong>disk page 0</strong>, 1024 words, into memory at address 0 and starts the CPU at address 0. That is everything the hardware knows how to do.</p>
+          <div class="where">The CPU trace of the K pack starts at address 0 with <code>PIOF</code>, the first word of that program. ND-06.014.2A §4.2.5.2.</div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="n">2</div>
+        <div>
+          <h3>The page-0 program loads the kernel <span class="tag d">source</span></h3>
+          <p>Those 1024 words are the loader <code>RELOA</code> plus a disk driver. It reads <strong>segment 2 <code>S3IMAGE</code></strong>, page 0 of <code>SEGFIL0:DATA</code>, 77B pages of "common / start / restart code", into memory, then jumps to <code>SINTR</code>. SINTRAN itself rewrites page 0 with the current loader at every start, so the bootstrap on a pack is always its own kernel's.</p>
+          <div class="where"><code>PH-P2-OPPSTART.NPL</code> 3712-3766 (RELOA), 850-876 (the cells it fills and the rewrite). Its untouched copy is segment 52 <code>S3SAVE</code> at disk page 1; on the K pack the two are byte-identical.</div>
+        </div>
+      </div>
+      <div class="stage k">
+        <div class="n">3</div>
+        <div>
+          <h3>SINTR sets the system up, paging off <span class="tag d">source</span></h3>
+          <p>Entry at <code>SINTR</code>. It turns interrupts off, probes the CPU (SYSEVAL: NORD-10 / ND-100 / ND-110 / ND-120, floating point, instruction set), on an ND-110/120 reads the identity PROM (GCPUNR) and if the signature 52652B is there overwrites SYSNO, FCPUN and the CPU type in memory, scans memory, <strong>reads the resident data page from disk into bank 1 at 4000B</strong>, builds the page tables, finds the devices, sets up buffers and interrupt vectors. On a <strong>cold start</strong> it first copies every save segment over its image segment.</p>
+          <div class="where">Data page from the save copy S3SDPIT when <code>HENTFLAG=0</code>, from the image copy S3IDPIT otherwise (lines 262, 283-284); the 32 save-to-image copies at 771-841; GCPUNR only when SYSEVAL found an ND-110 or later (313).</div>
+          <div class="halt"><strong>SINTRAN K stops here on a programmed PROM.</strong> <span class="tag v">verified</span> The K start-up code reads PROM bytes 6-7 and jumps to <code>IOF; WAIT</code> at address 2 when they read 52652B. Nothing is printed. RetroCore and nd100x present no signature until an identity key is set, so K and L packs both boot.</div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="n">4</div>
+        <div>
+          <h3>Paging on, interrupts on, the monitor runs <span class="tag d">source</span></h3>
+          <p><code>SETPTABL</code> loads or checks the ND-110/ND-120 control store from the micro code segment, maps the resident segments into their page tables and sets the page-table register on every level. Interrupts come on, the monitor starts on level 3 and the idle program on level 1. From now on the data page in memory is the live segment 23 <code>S3DPIT</code>.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="n">5</div>
+        <div>
+          <h3>Initial commands, banner, mode files <span class="tag v">verified</span></h3>
+          <p>The start program runs the commands stored in the kernel buffer <code>INIBU</code>: <code>ENTER-DIRECTORY</code> of the system disk first, where the file system compares the directory's page-0 stamp with SYSNO and refuses with <strong>3203 DIRECTORY ENTERED BY ANOTHER SYSTEM</strong> if they differ; then <code>SET-AVAILABLE</code> and the mode files. The banner (<code>SINTRAN III - VSX/500 K</code>, CPU TYPE, CPU NUMBER) is printed from the data page. XMSG, the network servers and COSMOS start, and the <code>@</code> prompt appears.</p>
+        </div>
+      </div>
+    </div>
+    <div class="diagram" style="margin-top:14px">
+      <svg viewBox="0 0 960 190" role="img" aria-label="Cold start and warm start paths">
+        <rect class="box blue" x="20" y="30" width="160" height="50" rx="4"/><text class="b" x="32" y="52">cold start</text><text class="small" x="32" y="70">@COLD-START, MACM )HENT + 22!</text>
+        <rect class="box blue" x="20" y="110" width="160" height="50" rx="4"/><text class="b" x="32" y="132">warm start</text><text class="small" x="32" y="150">HENTFLAG set; where: open</text>
+        <rect class="box" x="240" y="30" width="220" height="50" rx="4"/><text class="small" x="252" y="52">HENTFLAG = 0</text><text class="small" x="252" y="70">copy every save copy over its image copy</text>
+        <rect class="box" x="240" y="110" width="220" height="50" rx="4"/><text class="small" x="252" y="132">HENTFLAG &lt;&gt; 0</text><text class="small" x="252" y="150">skip the copies</text>
+        <rect class="box mem" x="520" y="70" width="200" height="50" rx="4"/><text class="small" x="532" y="92">load the image copies into memory</text><text class="small" x="532" y="110">(data page, tables, RPIT, MPIT, IPIT ...)</text>
+        <rect class="box mem" x="780" y="70" width="160" height="50" rx="4"/><text class="small" x="792" y="92">SETPTABL, page tables on,</text><text class="small" x="792" y="110">monitor up, @ prompt</text>
+        <path class="arrow blue" d="M180,55 L240,55"/><path class="arrow blue" d="M180,135 L240,135"/>
+        <path class="arrow" d="M460,55 C490,55 490,95 520,95"/><path class="arrow" d="M460,135 C490,135 490,95 520,95"/>
+        <path class="arrow" d="M720,95 L780,95"/>
+        <text class="small" x="20" y="182">MACM's )HENT is "GET SINTRAN FROM SAVE-AREA": despite the name it is the cold path. There is no third "HENT snapshot" area on disk.</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section id="c5">
+    <div class="chapter-no">5</div>
+    <h2>Memory after boot: the page tables and what runs in them</h2>
+    <p>Every table carries the small common code (pages 0-12B) so the kernel's shared routines are reachable whatever table is active, and every system code path uses DPIT (table 7) as its alternative table for data. From the K, M and N release information <span class="tag d">source</span>.</p>
+    <div class="pits">
+      <div class="pit user"><h4>PIT 1 UPITN <span>user, normal</span></h4><ul><li>the background or RT program's own segments</li><li>on disk, "UPITN" in the generation marks copies that are not mapped at run time</li></ul></div>
+      <div class="pit user"><h4>PIT 2 UPITA <span>user, alternate</span></h4><ul><li>the program's second table (data, or a 128 KW program)</li><li>XMSG kernel and XROUT run here (L and later)</li></ul></div>
+      <div class="pit"><h4>PIT 3 FUPIT <span>remote file user</span></h4><ul><li>common code</li><li>page 13: remote file access segment 22</li></ul></div>
+      <div class="pit"><h4>PIT 4 FPIT <span>file system</span></h4><ul><li>common code</li><li>page 13: the file system, segment 6 S3FS</li></ul></div>
+      <div class="pit"><h4>PIT 5 5PIT <span>ND-500</span></h4><ul><li>common code</li><li>13: MON 60, segment 51</li><li>20: ND-500 system monitor, segment 30</li></ul></div>
+      <div class="pit"><h4>PIT 6 XPIT <span>XMSG</span></h4><ul><li>common code</li><li>13: XMSG (K layout)</li></ul></div>
+      <div class="pit data"><h4>PIT 7 DPIT <span>the data table</span></h4><ul><li>2: resident common data, 37 K: RT descriptions, datafields, SYSNO, segment-file tables (segment 23)</li><li>57: windows to background, ND-500, levels 10/12, 1/4</li><li>62: system segment window, 72: data segment</li><li>101: device name table (L and later)</li></ul></div>
+      <div class="pit"><h4>PIT 10 RPIT <span>resident code</span></h4><ul><li>common code, 13: extended common (64)</li><li>15: monitor calls, B-level (level 4): segment 47</li><li>generation 500 and later: segment administration</li></ul></div>
+      <div class="pit"><h4>PIT 11 SPIT <span>SINTRAN programs</span></h4><ul><li>13: edit routines (42), always</li><li>14: one of: command processor (3), RT-loader (4), DMAC (7), error program (14), service/mail (71), TADADM (36), servers (105-127)</li></ul></div>
+      <div class="pit"><h4>PIT 12 MPIT <span>monitor</span></h4><ul><li>common code, 13: extended common</li><li>15: monitor level, level 14, drivers for levels 10-13, MPERF: segment 35</li></ul></div>
+      <div class="pit"><h4>PIT 13 / 14 X5DP1, X5DP2 <span>ND-500</span></h4><ul><li>ND-500 name tables (21) and standard domains (20)</li><li>last page: ND-500 monitor stack window</li></ul></div>
+      <div class="pit"><h4>PIT 15 IPIT <span>I/O (L and later)</span></h4><ul><li>common code, 13: extended common</li><li>15: level 3 and the mass-storage level 11: segment 67</li></ul></div>
+      <div class="pit"><h4>PIT 17 DTPIT <span>direct tasks</span></h4><ul><li>direct tasks</li><li>maps DPIT during start-up</li></ul></div>
+      <div class="pit"><h4>Not in any table</h4><ul><li>segment table, memory map</li><li>RT register blocks and bitmaps</li><li>big terminal datafields, ND-500 mailboxes, logical device tables</li></ul></div>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section id="c6">
+    <div class="chapter-no">6</div>
+    <h2>The three copies of the data page, and who writes which</h2>
+    <div class="diagram">
+      <svg viewBox="0 0 960 420" role="img" aria-label="Disk files on the left, memory on the right, arrows for cold start, warm start, PROM override and the tools">
+        <rect class="grp" x="20" y="40" width="520" height="350" rx="6"/>
+        <text class="grp-label" x="32" y="30">disk pack (NDFS files)</text>
+        <rect class="box" x="40" y="60" width="200" height="54" rx="4"/>
+        <text class="b" x="52" y="82">page 0</text>
+        <text class="small" x="52" y="100">boot program + directory label + stamp "entered by system N"</text>
+        <rect class="box" x="40" y="130" width="200" height="54" rx="4"/>
+        <text class="b" x="52" y="152">SYMBOL-1/2-LIST:SYMB</text>
+        <text class="small" x="52" y="170">SYSNO=4051 FCPUN=... 33CPN=...</text>
+        <rect class="box" x="40" y="200" width="200" height="54" rx="4"/>
+        <text class="b" x="52" y="222">RTFIL:DATA</text>
+        <text class="small" x="52" y="240">segment names: S3IDPIT=44 S3SDPIT=53</text>
+        <rect class="box" x="40" y="270" width="200" height="54" rx="4"/>
+        <text class="b" x="52" y="292">SINTRAN:DATA</text>
+        <text class="small" x="52" y="310">K only: holds S3SDPIT (segment file 4)</text>
+        <rect class="box" x="270" y="60" width="250" height="310" rx="4"/>
+        <text class="b" x="282" y="82">SEGFIL0:DATA</text>
+        <text class="small" x="282" y="100">segment table page: MADR, length, flags</text>
+        <rect class="box" x="282" y="112" width="226" height="40" rx="3"/>
+        <text x="292" y="130" style="font-weight:500">S3SAVE</text><text class="small" x="292" y="145">kernel image, untouched</text>
+        <rect class="box" x="282" y="158" width="226" height="40" rx="3"/>
+        <text x="292" y="176" style="font-weight:500">S3IMAGE</text><text class="small" x="292" y="191">kernel image, working copy</text>
+        <rect class="box dpit" x="282" y="214" width="226" height="48" rx="3"/>
+        <text class="b" x="292" y="234">S3SDPIT</text><text class="small" x="292" y="251">data page, save copy (cold start reads it)</text>
+        <rect class="box dpit" x="282" y="270" width="226" height="48" rx="3"/>
+        <text class="b" x="292" y="290">S3IDPIT</text><text class="small" x="292" y="307">data page, image copy (warm start reads it)</text>
+        <text class="small" x="282" y="345">L and M: both copies here. K: the save copy is in SINTRAN:DATA.</text>
+        <rect class="grp" x="600" y="40" width="340" height="350" rx="6"/>
+        <text class="grp-label" x="612" y="30">memory while SINTRAN runs</text>
+        <rect class="box mem" x="620" y="60" width="300" height="80" rx="4"/>
+        <text class="b" x="632" y="84">resident kernel</text>
+        <text class="small" x="632" y="102">code: SINTR, drivers, monitor</text>
+        <text class="small" x="632" y="120">loaded from S3IMAGE</text>
+        <rect class="box mem" x="620" y="220" width="300" height="98" rx="4"/>
+        <text class="b" x="632" y="244">S3DPIT = the live data page</text>
+        <text class="mono" x="632" y="266">4051B SYSNO   4054B CPU type</text>
+        <text class="mono" x="632" y="284">FCPUN (per build)   4057B REVLE</text>
+        <text class="small" x="632" y="304">bank 1 at 4000B; banner, COSMOS and CHDSI read it</text>
+        <rect class="box prom" x="620" y="340" width="300" height="40" rx="4"/>
+        <text class="b" x="632" y="358">identity PROM (ND-110 / ND-120)</text>
+        <text class="small" x="632" y="373">SINTRAN L+: overwrites the live page at every start if signed</text>
+        <path class="arrow" d="M395,152 L395,158"/>
+        <text class="small" x="402" y="157">cold start: save copied over image</text>
+        <path class="arrow" d="M508,178 C560,178 580,100 620,100"/>
+        <text class="small" x="530" y="60">kernel into memory</text>
+        <path class="arrow" d="M508,238 C560,238 580,250 620,250"/>
+        <text class="small" x="522" y="232">cold</text>
+        <path class="arrow warm" d="M508,294 C560,294 580,290 620,290"/>
+        <text class="small" x="522" y="312">warm</text>
+        <path class="arrow prom" d="M770,340 L770,320"/>
+        <path class="arrow tool" d="M140,400 L395,400 L395,320"/>
+        <text class="small" x="150" y="415">ndtool --set-cpu and ND's own patch run write the disk copies; DMAC on a running system also writes S3DPIT in memory</text>
+      </svg>
+    </div>
+    <p class="note">Why both disk copies: a cold start copies S3SDPIT over S3IDPIT and loads it, a warm start loads S3IDPIT as it is. A value in only one of them survives only one kind of start. ND's own install run patches S3SDPIT and then demands a cold start; the tool writes both so either start sees it.</p>
+  </section>
+
+  <!-- 7 -->
+  <section id="c7">
+    <div class="chapter-no">7</div>
+    <h2>Finding any segment from the pack alone, with no fixed numbers</h2>
+    <p>Three things on every system pack are enough to find any kernel word on disk, whatever the SINTRAN generation: the symbol lists give the address, the RT-loader name records give the segment number, the segment table gives the page and the file. Nothing is hard-coded, because the numbers move between builds (FCPUN is 105034B on the K pack and 004414B on the L packs).</p>
+    <div class="diagram">
+      <svg viewBox="0 0 960 300" role="img" aria-label="Lookup chain from symbol lists, name records and segment table to a byte in a file">
+        <rect class="box" x="20" y="30" width="200" height="100" rx="4"/>
+        <text class="b" x="32" y="52">SYMBOL-1/2-LIST:SYMB</text>
+        <text class="mono" x="32" y="74">SYSNO=004051</text>
+        <text class="mono" x="32" y="92">FCPUN=105034 (K)</text>
+        <text class="mono" x="32" y="110">FCPUN=004414 (L)</text>
+        <text class="small" x="20" y="150">word addresses, per build</text>
+        <rect class="box" x="260" y="30" width="200" height="100" rx="4"/>
+        <text class="b" x="272" y="52">RTFIL:DATA</text>
+        <text class="mono" x="272" y="74">S3IDPIT -&gt; 44</text>
+        <text class="mono" x="272" y="92">S3SDPIT -&gt; 53</text>
+        <text class="small" x="272" y="110">type-25 name records, SIXBIT</text>
+        <text class="small" x="260" y="150">segment numbers, by name</text>
+        <rect class="box" x="500" y="30" width="200" height="100" rx="4"/>
+        <text class="b" x="512" y="52">segment table</text>
+        <text class="mono" x="512" y="74">entry 53: LOGAD SEGLE</text>
+        <text class="mono" x="512" y="92">MADR=64  FLAG=000111</text>
+        <text class="small" x="512" y="110">inside SEGFIL0:DATA</text>
+        <text class="small" x="500" y="150">page, length, segment file</text>
+        <rect class="box dpit" x="740" y="30" width="200" height="100" rx="4"/>
+        <text class="b" x="752" y="52">one byte offset</text>
+        <text class="mono" x="752" y="74">MADR*2048 +</text>
+        <text class="mono" x="752" y="92">2*(addr - base)</text>
+        <text class="small" x="752" y="110">file from FLAG&gt;&gt;13: 0 or 4</text>
+        <text class="small" x="740" y="150">checked against file length</text>
+        <path class="arrow" d="M220,80 L260,80"/>
+        <path class="arrow" d="M460,80 L500,80"/>
+        <path class="arrow" d="M700,80 L740,80"/>
+        <text class="b" x="20" y="195">The segment-table entry, 8 words</text>
+        <text class="mono" x="20" y="218">0 SEGLI link   1 PRESE link   2 LOGAD base page (low 6 bits)   3 SEGLE length in pages</text>
+        <text class="mono" x="20" y="238">4 MADR page in its file   5 FLAG (bits 13-15 segment file, bit 0 = 5OK)   6 SGSTA ring   7 BPAGL core map</text>
+        <text class="small" x="20" y="268">The table page itself is found by shape: entry 0 all zero, 40 or more plausible entries, one entry whose MADR is the page it sits on.</text>
+        <text class="small" x="20" y="286">Proven 2026-10-29: copies of the K and L packs set to CPU number 21238 this way boot with CPU NUMBER 21238 on the banner.</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section id="c8">
+    <div class="chapter-no">8</div>
+    <h2>The system segments, by job</h2>
+    <p>Numbers are octal. The names are the ones the RT-loader records give on the K and L packs; the jobs are the manuals' descriptions in plain words. Save and image copies are named with an S or an I after S3 (S3SDPIT, S3IDPIT). The full table with J to N differences is in chapter 30.</p>
+    <div class="cat">
+      <div class="grp"><h4>The kernel itself</h4><table>
+        <tr><td class="mono">2</td><td>S3IMAGE</td><td>the resident kernel image the bootstrap loads; 52 S3SAVE is its untouched copy</td></tr>
+        <tr><td class="mono">23</td><td>S3DPIT</td><td>the live data page; 44 image, 53 save</td></tr>
+        <tr><td class="mono">47</td><td>S3RPIT</td><td>resident code: most monitor calls; 25 image, 16 save</td></tr>
+        <tr><td class="mono">35</td><td>S3MPIT</td><td>monitor level, level 14, drivers 10-13; 26, 17</td></tr>
+        <tr><td class="mono">67</td><td>S3IPIT</td><td>level 3 and level 11 code (L and later); 66, 65</td></tr>
+        <tr><td class="mono">64</td><td>S3ECOM</td><td>extended common data (L and later); 61, 60</td></tr>
+        <tr><td class="mono">27</td><td>S3ISGT</td><td>the segment table on disk; 24 save</td></tr>
+        <tr><td class="mono">45</td><td>S3ISYS</td><td>system segment template; 54 save</td></tr>
+        <tr><td class="mono">111, 113</td><td>S3IU110, S3IU120</td><td>ND-110 and ND-120 micro code; 110, 112 save</td></tr>
+      </table></div>
+      <div class="grp"><h4>Programs SINTRAN runs in SPIT and FPIT</h4><table>
+        <tr><td class="mono">3</td><td>S3CP (K: S3COM)</td><td>the command processor; holds INIBU; 13 save</td></tr>
+        <tr><td class="mono">6</td><td>S3FS</td><td>the file system; 12 save</td></tr>
+        <tr><td class="mono">4, 37</td><td>S3RTL, S3RTD</td><td>RT-loader code and data; 56, 57 save</td></tr>
+        <tr><td class="mono">10</td><td>S3RTFIL</td><td>RT-loader file image with the name records</td></tr>
+        <tr><td class="mono">7</td><td>S3DMAC</td><td>DMAC, the patching assembler</td></tr>
+        <tr><td class="mono">14, 5, 11</td><td>S3ERRP, S3ERRS, S3ERRL</td><td>error program, its system segment, error log; 55 save</td></tr>
+        <tr><td class="mono">42</td><td>S3ED</td><td>command-line edit routines, always on SPIT page 13; 41 image</td></tr>
+        <tr><td class="mono">71</td><td>S3SM</td><td>SINTRAN-SERVICE-PROGRAM and MAIL; 70 save</td></tr>
+        <tr><td class="mono">36</td><td>S3TAD</td><td>TAD administration (COSMOS remote terminals)</td></tr>
+        <tr><td class="mono">22</td><td>S3RFAC</td><td>remote file access</td></tr>
+        <tr><td class="mono">101</td><td>S3DNAM</td><td>device name table (L and later); 100 save</td></tr>
+      </table></div>
+      <div class="grp"><h4>ND-500 / ND-5000, XMSG, servers</h4><table>
+        <tr><td class="mono">30</td><td>S3SM5</td><td>ND-500 system monitor; 62 save</td></tr>
+        <tr><td class="mono">51</td><td>S35PIT</td><td>MON 60 code; 50, 46</td></tr>
+        <tr><td class="mono">20, 21</td><td>S3SDT5, S3NMS5</td><td>ND-500 standard domains, name tables</td></tr>
+        <tr><td class="mono">76, 77</td><td>S3XMK, S3XROU</td><td>XMSG kernel and router; 74, 75 save (K: 33, 34)</td></tr>
+        <tr><td class="mono">103</td><td>S3XMFI</td><td>XMSG watchdog; 102 save</td></tr>
+        <tr><td class="mono">105, 107</td><td>S3INKSE, S3INKNA</td><td>NUCLEUS server and name server</td></tr>
+        <tr><td class="mono">115, 117</td><td>S3IERWC, S3IERWD</td><td>ERS watchdog code and data</td></tr>
+        <tr><td class="mono">121-127</td><td>S3IPRMA, S3IEVMS/S3IPWRS, S3IBOPC, S3IMTSE</td><td>processor manager, event message / PFTCON, BOPCOM, MT servers</td></tr>
+        <tr><td class="mono">43</td><td>S3PATCH</td><td>the addresses the patch mode file deposits into</td></tr>
+        <tr><td class="mono">63</td><td>S3MEMTF</td><td>memory-to-floppy dump</td></tr>
+      </table></div>
+    </div>
+    <p class="note">Above 127 the numbers belong to the generation and the RT-loader: two segments per background program, one per spooling queue, two per ND-500 process, and products loaded later (on the packs: COSPOOL, the Ethernet server ENCOSE0 with its buffers, XFTRAD, SNA3270, and some whose purpose is still open).</p>
+  </section>
+
+  <!-- 9 -->
+  <section id="c9">
+    <div class="chapter-no">9</div>
+    <h2>Where the CPU number sits, in one table</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Place</th><th>What</th><th>Read when</th><th>Written by</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">S3DPIT (memory)</td><td>the live data page: SYSNO, FCPUN, HWINFO(2)</td><td>all the time: banner, COSMOS local/remote test, CHDSI directory check</td><td>loaded at start; GCPUNR from the PROM on ND-110/120 (L and later); DMAC <code>)CLOAD S3DPIT</code></td></tr>
+          <tr><td class="mono">S3IDPIT (disk)</td><td>image copy of the data page</td><td>warm start</td><td>cold start (copied from save); DMAC; ndtool</td></tr>
+          <tr><td class="mono">S3SDPIT (disk)</td><td>save copy of the data page</td><td>cold start</td><td>ND's install/patch run (<code>SYSNO/ 33CPN</code>); DMAC; ndtool</td></tr>
+          <tr><td class="mono">SYMBOL-2-LIST 33CPN/33CPU</td><td>the answers NEW-SYSTEM was given</td><td>the ND patch run, which deposits them into S3SDPIT</td><td>NEW-SYSTEM CPU-UPDATE; ndtool</td></tr>
+          <tr><td class="mono">page 0, ext-info word 5</td><td>system number that last entered the directory</td><td>ENTER-DIRECTORY: refused with 3203 if it differs from SYSNO</td><td>SINTRAN at enter/release; <code>ndtool --release</code> / <code>--set-cpu</code></td></tr>
+          <tr><td class="mono">identity PROM</td><td>CPU number, type, legal users, signature 52652B</td><td>every start on an ND-110/120, SINTRAN L and later; K stops on it</td><td>the factory; emulator config (<code>cpu_number</code> and friends)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section id="c10">
+    <div class="chapter-no">10</div>
+    <h2>Looking at a pack yourself</h2>
+    <p>Always work on a copy of a disk image. <code>ndtool</code> (repository norskdata-ndfs, folder <code>ndfs-c</code>) reads and changes all of the above from the pack's own files:</p>
+<pre>ndtool -i -v disk.IMG              directory label, extended info (system number, entered flag)
+ndtool -t disk.IMG                 the files: SEGFIL0:DATA, SINTRAN:DATA, RTFIL:DATA, SYMBOL-1/2-LIST ...
+ndtool --segments disk.IMG         every segment: number, name, page table, range, length, disk page, file
+ndtool --export-segment 53 disk.IMG out.bin      copy one segment out (for carving or comparing)
+ndtool --cpu-identity disk.IMG     SYSNO / FCPUN / CPU type / patch level in both copies, 33CPN, the stamp
+ndtool -n --set-cpu 21238:9883 disk.IMG          preview a CPU number and type change
+ndtool --set-cpu 21238:9883 disk.IMG             write both copies, 33CPN/33CPU, clear the stamp, read back
+ndtool --release disk.IMG          clear only the "entered by system N" stamp</pre>
+    <p class="note">In RetroCore, <code>cpu config --cpu=ND120CX</code> boots a K or L pack unchanged; <code>Config cpu_number N</code> makes the emulated PROM override what the pack says, as a real programmed ND-120 would under SINTRAN L. DMAC on a running system does the same patch as <code>--set-cpu</code>, segment by segment.</p>
+  </section>
+
+  <!-- 11 -->
+  <section id="c11">
+    <div class="chapter-no">11</div>
+    <h2>Where to read on (NDInsight, folder SINTRAN/OS)</h2>
+    <div class="tablewrap">
+      <table>
+        <tbody>
+          <tr><td class="mono">01-BOOT-SEQUENCE.md</td><td>the five stages with every source line, then the SINTR code step by step</td></tr>
+          <tr><td class="mono">11-RT-SEGMENTS-AND-SEGFIL.md</td><td>what a segment and a segment file are, the table entry, save / image / running</td></tr>
+          <tr><td class="mono">29-SEGMENT-MAP-FROM-THE-GENERATION.md</td><td>the generation listing decoded: which NPL file is in which segment, on which disk page</td></tr>
+          <tr><td class="mono">30-SYSTEM-SEGMENTS-AND-PAGE-TABLES-BY-RELEASE.md</td><td>every system segment and page table, J to N, with the manuals' descriptions</td></tr>
+          <tr><td class="mono">28-CPU-NUMBER-AND-TYPE-ON-DISK.md</td><td>the CPU number and type: measurements, the DMAC patch, the directory stamp, the tool spec</td></tr>
+          <tr><td class="mono">22-READING-RT-AND-SEGMENT-TABLES-FROM-MEMORY.md</td><td>the tables in memory and the name records (§6.5)</td></tr>
+          <tr><td class="mono">26-INITIAL-COMMAND-BUFFER-ON-DISK.md</td><td>the initial commands and the segment-table locator</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body></html>
