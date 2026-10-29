@@ -1,13 +1,21 @@
 # Prompt for the nd100x LLM — read RT + segment listings from memory (glass web)
 
 Copy everything below the line to the Claude working on the nd100x emulator
-(`/home/ronny/repos/nd100x`). Goal: the glass WASM web UI should show the SINTRAN
+(the sibling repository `nd100x`). Goal: the glass WASM web UI should show the SINTRAN
 RT-program list and segment table by reading them **live from emulated memory**,
 version-aware, instead of relying on hardcoded/AI-derived JSON name data.
 
+> **Corrections 2026-10-29.** Three things in this prompt were superseded by measurements on
+> real K and L packs (chapter 22 §3.6, §6.4, §6.5; chapter 28 §4): the name records are
+> **8 words**, not 6, and their packing is decoded (SIXBIT, base 64, chapter 22 §6.5); the same
+> records are on disk in `(SYSTEM)RTFIL:DATA`, so names can be read offline too; and a
+> segment's disk location is `DBLST(N)/ABLPAGE(N) + MADR + P` with `MADR` in 1024-word pages
+> (`DBLST(0) = 256` blocks, `ABLPAGE(0) = 2` measured, so `SEGFIL0` starts at disk page 128) -
+> the older `CBLST + MADR` / `×512` model in the glass tests is wrong. Notes at the places below.
+
 ---
 
-You are working in `/home/ronny/repos/nd100x` (ND-100/CX emulator, C→WASM, with a
+You are working in the `nd100x` repository (ND-100/CX emulator, C→WASM, with a
 browser "glass" frontend under `template-glass/`). Make the SINTRAN inspectors
 source their data from **emulated memory**, not from static JSON/JS name tables.
 
@@ -70,7 +78,7 @@ Per segment (join to the UI row by segment number = entry index):
 | 1 | `PRESE` | present/reserve flag |
 | 2 | `LOGAD` | load **page**; **load word address = `LOGAD × 1024`** |
 | 3 | `SEGLE` | length in **pages** (1 page = 1024 words = 2048 bytes; size = `SEGLE × 1024` words) |
-| 4 | `MADR`  | page offset in SEGFIL0 (byte offset = `MADR × 2048`); `0` = memory-resident, no disk image |
+| 4 | `MADR`  | page offset inside its segment file `N = FLAG >> 13` (for file 0: byte offset `MADR × 2048` in `SEGFIL0:DATA`; disk page `DBLST(N)/ABLPAGE(N) + MADR`); `0` = memory-resident, no disk image |
 | 5 | `FLAG`  | SEGFIL number = `(FLAG>>13)&7`; low bits = attribute flags (`5OK/5INHB/5SREE/5FIXC` per `SYMBOL-2-LIST`) |
 | 6 | `SGSTA` | status word (in-core / on-disk / in-transfer …) |
 | 7 | `BPAGL` | base physical page when resident |
@@ -96,6 +104,11 @@ is absent from this table.
   `tools/sintran-segment-carver/versions/L-VSX-500/inputs/list-segment.txt`.
   (Optional advanced path: decode the live `PSGNA` packed-name table for
   fully-dynamic names — needs RE of the ND name packing.)
+  **Corrections 2026-10-29:** the records are **8 words** (words 0-2 packed name, 3 = segment
+  number, 4 = 0, 5 = 25B "DEFINED SEGMENT NAME", 6 = segment number, 7 = 0), the packing is
+  SIXBIT = ASCII & 0x3F right-justified base 64 (decoded, chapter 22 §6.5), and the records are
+  also in the plain file `(SYSTEM)RTFIL:DATA` on disk - 74 on the K pack, 98 on the L packs, so
+  the set is per pack, not only per version. The "advanced path" is therefore the normal path.
 - Select the right symbol set / segment-name map by the memory-detected version
   letter (§ version detection). This replaces the AI-derived JSON.
 

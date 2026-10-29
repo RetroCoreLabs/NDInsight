@@ -705,6 +705,20 @@ Global segment = (SEGFIL_number * 256) + Local_segment_number
 Example: Segment 10 in SEGFIL 1 = Global segment 266
 ```
 
+> **Corrections 2026-10-29** (same corrections as in
+> [11-RT-SEGMENTS-AND-SEGFIL.md](11-RT-SEGMENTS-AND-SEGFIL.md) §2.2-2.3 and
+> [SEGMENTS-INTRO-AND-DEEP-DIVE.md](SEGMENTS-INTRO-AND-DEEP-DIVE.md) §8.1):
+> - The purpose table is **UNVERIFIED** and "3 = ND-500 domains" is wrong. The manuals allow at
+>   most **four** segment files, numbers 0-3 (`ND-60.133.02A SINTRAN III Real Time Guide.md`
+>   lines 2597, 2605), chosen per load with `*SET-SEGMENT-FILE`; no manual gives a file a
+>   purpose. ND-500 domains are `:PSEG`/`:DSEG` files
+>   ([09-ND500-CODE-LOADING.md](09-ND500-CODE-LOADING.md) lines 183-186), not SINTRAN segments.
+>   "Segment file 4" is the kernel's absolute-save area (`SGFI4`, FLAG bit 15;
+>   `PH-P2-OPPSTART.NPL` 749-751), which on K packs is `SINTRAN:DATA`/`MACM-AREA:DATA`.
+> - The `× 256` formula is withdrawn: there is **one** segment table (up to `SGMAX` entries, 1713
+>   on the live L07 system) and the segment file is bits 13-15 of each entry's `FLAG`
+>   (`IP-P2-SEGADM.NPL:1532-1533`). Measured on K and L packs: `DBLST(1..3) = 0`, no second file.
+
 ### 8.2 The Three Areas: MEMORY, SAVE, HENT
 
 **The confusion explained:**
@@ -737,6 +751,23 @@ File System, RT-Loader, Error Program, Command Segment,
 System Monitor, 5PIT, XMSG Kernel, ND-500 Monitor, etc.
 ```
 
+> **Corrections 2026-10-29.**
+> - **HENT is the cold start, not the warm start.** The MACM command `)HENT` is "GET SINTRAN
+>   FROM SAVE-AREA" (`ND-30.003.007 EN SINTRAN III System Supervisor.md` line 4920; line 3982
+>   `)HENTJ` "Fetch SINTRAN from save-area"). In the kernel that is the `HENTFLAG=0` path:
+>   `PH-P2-OPPSTART.NPL` 283-284 read the resident data page from the **save** copy when
+>   `HENTFLAG=0` and from the **image** copy otherwise, and line 771 `IF HENTFLAG><0 GO FAR OVCO`
+>   **skips** the save-to-image copies. So `HENTFLAG><0` is the warm start (image only, no
+>   copies), and no "HENT area" exists as a third disk region - the save copies are ordinary
+>   segments (chapter 11 §3 notes). Where `HENTFLAG` is set was **not found**: the available NPL
+>   only reads it (OPPSTART 283, 766, 771, 1376-1577), never assigns it.
+> - **Not 44 but 32 copies.** OPPSTART lines 772-841 hold 32 `CALL FAR CRWDISC` save-to-image
+>   copies (counted; the last one, the ND-500 system monitor at 840-841, is inside the `*"8N500`
+>   conditional). The names in the list above are right as far as they go.
+> - The "disk layout" drawing above is a sketch: measured on K and L packs, disk pages 1-63 are
+>   `(SYSTEM)SINTRAN:DATA` (the save copies), 64-127 `MACM-AREA:DATA`, and `SEGFIL0:DATA` starts
+>   at disk page 128 (`DBLST(0) = 256` blocks, `ABLPAGE(0) = 2`).
+
 ### 8.3 Segment Table
 
 **Each segment has an entry:**
@@ -751,6 +782,12 @@ Segment Table Entry:
   - Flags (reentrant, system, etc.)
 ```
 
+> **Corrections 2026-10-29:** the real entry is 8 words - `SEGLI, PRESE, LOGAD, SEGLE, MADR,
+> FLAG, SGSTA, BPAGL` (`SYMBOL-1-LIST` K03 lines 349-356); there is no reference count or
+> physical-page word, the segment file number is in `FLAG` bits 13-15, and `MADR`/`SEGLE` are in
+> 1024-word pages. See chapter 11 §2.4 note and
+> [22-READING-RT-AND-SEGMENT-TABLES-FROM-MEMORY.md](22-READING-RT-AND-SEGMENT-TABLES-FROM-MEMORY.md) §3.3.
+
 ### 8.4 How RT Programs Reference Segments
 
 **RT-Description fields:**
@@ -759,6 +796,12 @@ SEGM  (offset 10): Program segment number (0-255)
 SEGM2 (offset 11): Data segment number (0-255)
 RSEGM (offset 23): Bitmap of additional segments (16 more)
 ```
+
+> **Corrections 2026-10-29:** the offsets are octal words from the symbol lists - `SEGM1 = 011`,
+> `SEGM2 = 012`, `RSEGM = 021` (`SINTRAN-STRUCTURES.md` lines 115-116; `SYMBOL-1-LIST`
+> `SEGM1=000011`, `SEGM2=000012`). The numbers are segment-table indexes, not limited to 0-255
+> (see the 8.1 note), and `RSEGM` is the reentrant segment **number**, not a bitmap
+> ([SEGMENTS-INTRO-AND-DEEP-DIVE.md](SEGMENTS-INTRO-AND-DEEP-DIVE.md) §5 and §10.1).
 
 **Loading process:**
 1. RT program starts

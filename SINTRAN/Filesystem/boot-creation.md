@@ -387,6 +387,24 @@ gets onto the disk as part of **installing the system image**:
   manuals on hand. What is fully VERIFIED is the **consumer contract** (§2) and the
   **real bytes** (§3), which is what an emitter needs.
 
+> **Corrections 2026-10-29 - the author is SINTRAN itself.** The question above is answered by
+> the kernel source: `PH-P2-OPPSTART.NPL` lines 867-876 ("READ PAGE #0 AND INSERT BOOTS-STRAP
+> AND "SWAP-DRIVER", AND THEN WRITE THE PAGE BACK") read page 0 with `CRDISC`, copy the
+> bootstrap `RELOA`..`LDEND` (the MAC program at lines 3729-3766, assembled into the kernel) into
+> it, append the swap driver (`ZBDIS` for SMD, `ZWDIS` for ST-506, `SCSWD` for SCSI, chosen from
+> the `MDISCS` table at lines 22-31; size `SWDSIZE`) and write the page back. This runs after
+> label `OVCO` (line 843), i.e. on **both** the cold (`HENTFLAG=0`) and the warm start, so every
+> SINTRAN start rewrites the pack's page-0 bootstrap from the running kernel's own copy. Lines
+> 845-865 fill the bootstrap's cells first: `NOBLK = CDABLPAGE*77` blocks (63 pages),
+> `DYBLS = DBLST(0)` (start of `SEGFIL0`, 256 blocks on the measured K and L packs),
+> `LDRAD = SWPDRIVER`, `YSWTY` = disk type. The program ends with `IDENT PL11; JMP I (SINTR`
+> (3766). A pack-to-pack copy therefore only has to deliver a page 0 good enough for one boot;
+> after that SINTRAN maintains it. **Caveat kept:** the first words of SMD0.IMG page 0 (§3.3,
+> lines 147-156: `PIOF; TRA STS; SAA 12; TRR PCR ...`) are not byte-identical to s3vs-4's
+> `RELOA` (`PIOF; TRA STS; BSKP ONE 140 DA; JMP *+5 ...`, line 3729), so the L07 `RELOA` may
+> differ from this K-source listing - **UNVERIFIED** until an L07 listing or a live L07 page-0
+> read-back is compared.
+
 The `@DUMP` / `@DUMP-REENTRANT` commands referenced in ND-10022S (e.g.
 `@DUMP "DUMPFL-2327A" ...`) produce **BPUN files with bootstrap + checksum** (the
 NRL/loader "octal-coded bootstrap", 44 octal locations - ND-60.066.04 Relocating
@@ -488,6 +506,8 @@ Address(2, big-endian)  Count(2)  Data(Count*2)  Checksum(2)  Action(2)
 | Winchester uses `IOX 50x`, otherwise SMD-shaped bootstrap | **INFERRED** | ALD 20500 + detector window; no real image |
 | Hard-disk page-0 blob is copied pack-to-pack when the system is installed | **INFERRED** | ND-10022S `COP-VERIFY`; no explicit "author" utility found |
 | The utility/MODE file that originally *authored* the SMD page-0 program | **OPEN** | not pinned in manuals on hand |
+| SINTRAN rewrites page 0 (bootstrap `RELOA`..`LDEND` + swap driver) at every start, cold and warm (corrected 2026-10-29) | **VERIFIED (source)** | `PH-P2-OPPSTART.NPL` 843, 867-876; §7.2 note |
+| The L07 `RELOA` equals the s3vs-4 (K) listing | **UNVERIFIED** | SMD0.IMG page-0 words (§3.3) differ from OPPSTART 3729 |
 | SCSI normal boot path (floppy-first vs page-0 mass-storage) | **OPEN** | nd100x note + ALD table |
 
 **What is still missing to close Winchester / SCSI:**

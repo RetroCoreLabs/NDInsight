@@ -24,10 +24,27 @@ segments are paged into overlapping virtual-address windows, so you also cannot
 just dump memory and get them all. The tool therefore combines four fact sources
 (in strict precedence):
 
+> **Corrections 2026-10-29: "only in the in-memory Segment Table" is no longer true.** Both
+> fact sources are on the disk and can be read **offline**, measured on BIGDISK0-K-100,
+> BIGDISK0-L2-100, BIGDISK0-L-SEMICS and nd100x SMD0:
+> - The segment table is itself a segment inside `SEGFIL0:DATA` (`S3ISGT` image, `S3SSGT`
+>   save) and is found with the self-validating scan of
+>   `SINTRAN/OS/26-INITIAL-COMMAND-BUFFER-ON-DISK.md` §3.2 (entry 0 all zero, one entry whose
+>   `MADR` equals the page's own number): page **461** of `SEGFIL0:DATA` on K, **1275** on L.
+> - The names are the RT-loader's "DEFINED SEGMENT NAME" records (type 25B, 8 words, SIXBIT
+>   name; `SINTRAN/OS/22-READING-RT-AND-SEGMENT-TABLES-FROM-MEMORY.md` §6.5) and sit in the
+>   plain file `(SYSTEM)RTFIL:DATA` as well as in the S3RTFIL segment: 74 records on K, 98 on L.
+> - The kernel's segment-file tables (`DBLST`, `ABLPAGE`, `MASSNO`) are read from the S3IDPIT
+>   copy (segment 44) in `SEGFIL0:DATA`; measured `DBLST(0) = 256` blocks, `ABLPAGE(0) = 2`.
+>
+> `ndtool --segments` / `--export-segment` / `--import-segment` in the sibling repository
+> `norskdata-ndfs` (`ndfs-c/src/sintran_segments.c`) does the whole job from the image alone; the
+> live DAP path in section 5 remains as option A.
+
 | Fact | Authoritative source |
 |------|----------------------|
-| Segment number + **name** | live `@RT-LOADER` -> `LIST-SEGMENT` (or the S3RTFIL type-25 name records, see resident doc) |
-| **MADR** (page offset in SEGFIL0) + **SEGLE** (length in pages) | live in-memory Segment Table (bank 3, offset 0o124000) |
+| Segment number + **name** | live `@RT-LOADER` -> `LIST-SEGMENT`, or the type-25 name records in `(SYSTEM)RTFIL:DATA` / the S3RTFIL segment (offline, 2026-10-29) |
+| **MADR** (page offset in SEGFIL0) + **SEGLE** (length in pages) | live in-memory Segment Table (bank 3, offset 0o124000), or the S3ISGT segment-table page inside `SEGFIL0:DATA` (offline, 2026-10-29) |
 | **Load address** / range / PIT / description | release manual section 8.3 |
 | (cross-checked, not trusted) | `SINTRAN Structures/sintran-system-segments.json` (AI-derived) |
 
@@ -76,6 +93,26 @@ segment (the extraction is confirmed against the raw disk via the NDFS directory
 itself); the full S3FS is coherent ND-100 code across *both* halves (12234 lower /
 11946 upper control-flow instructions, near-equal density); and the next segment
 begins exactly `SEGLE` pages later, so nothing overshoots.
+
+**Corrections 2026-10-29 - the kernel's own numbers agree, and give the general rule.**
+The "NDFS block 128" above is disk **page** 128 (1024 words). The kernel reaches it as
+`DBLST(0) = 256` disk **blocks** of 512 words with `ABLPAGE(0) = 2` blocks per page
+(`IP-P2-SEGADM.NPL` RWSEGM lines 1532-1540: "DISK ADDRESS FOR THIS SEGMENT FILE (DOUBLE
+WORD)", "NUMBER OF DISK BLOCKS PER PAGE"), read from the resident data page (`BLST=004023`,
+`ABLPA=004461` L07 / `004451` K03) in the S3IDPIT copy. Measured identical on the K pack and
+all three L packs. So in general:
+
+```
+disk page of page P of a segment = DBLST(N) / ABLPAGE(N) + MADR + P      N = FLAG >> 13
+```
+
+Segment file 4 (`FLAG` bit 15, the absolute-save set) has base `ABLPAGE(0) + XXSWTYPE`
+blocks = disk page 1 (`PH-P2-OPPSTART.NPL:751`); on the K pack its segments 52-60 and 63 are
+therefore inside `(SYSTEM)SINTRAN:DATA` (disk pages 1-63) and `MACM-AREA:DATA` (64-127), not
+in `SEGFIL0:DATA` - e.g. S3SDPIT (53, MADR 27) at disk page 28. `carve.py` with
+`--cblst 0` on the extracted `SEGFIL0.DATA` is right for file-0 segments only; a file-4
+segment needs the other file. On the L packs every system segment, save copies included, is
+in file 0.
 
 ---
 
@@ -135,6 +172,14 @@ EXIT
 ```
 This gives names/numbers but **not** MADR/SEGLE, so Option A (or a supplied
 `segment-table-bank3.bin`) is still required to know the file offsets.
+
+**Option C — offline, from the image alone (2026-10-29):** the segment table is the
+`S3ISGT` page inside `SEGFIL0:DATA` (found by the self-validating scan of
+`SINTRAN/OS/26-INITIAL-COMMAND-BUFFER-ON-DISK.md` §3.2; page 461 on the K pack, 1275 on
+the L packs), and the names are the type-25 records in `(SYSTEM)RTFIL:DATA`.
+`ndtool --segments <image>` (sibling repository `norskdata-ndfs`,
+`ndfs-c/src/sintran_segments.c`) lists number, name, LOGAD, SEGLE, MADR, segment file
+and disk page for every segment; `--export-segment` writes one `.bin`. No boot, no DAP.
 
 ---
 

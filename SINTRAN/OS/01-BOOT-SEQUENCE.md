@@ -109,6 +109,34 @@ The bootstrap loader is stored in ROM or disk block 0. Its sole purpose is to lo
 | 1-63 | SINTRAN resident image |
 | 64+ | System segments, data files |
 
+> **Corrections 2026-10-29 - the table above has no source and the measured packs disagree
+> with it.** Measured on BIGDISK0-K-100, BIGDISK0-L2-100, BIGDISK0-L-SEMICS and nd100x SMD0
+> (disk pages of 1024 words = 2048 bytes):
+>
+> | Disk page | Content | Source |
+> |---|---|---|
+> | 0 | page-0 bootstrap (`RELOA`..`LDEND` + swap driver), rewritten by SINTRAN at every start (below) | `PH-P2-OPPSTART.NPL` 867-876 |
+> | 1-63 | `(SYSTEM)SINTRAN:DATA` = the **SAVE** copies, "segment file 4": segment 52 `S3SAVE` (save of common/start code) at disk page 1, 27 pages on K; `S3SDPIT` (53) at page 28; error program and RT-loader saves at absolute pages 100B and 137B | `s3vs-4.symb` 79848-79849 (`MERRP=100`, `MRTLO=137`); System Supervisor App. D lines 15285-15293; `PH-P2-OPPSTART.NPL:751` (file-4 base = disk page 1) |
+> | 64-127 | `(SYSTEM)MACM-AREA:DATA` | measured; K release information line 7941 |
+> | 128.. | `(SYSTEM)SEGFIL0:DATA` (`DBLST(0) = 256` blocks / `ABLPAGE(0) = 2`); its page 0 is segment 2 `S3IMAGE` = **the image the bootstrap loads** | `s3vs-4.symb` 79729-79730 `MIMAG=0, LIMAG=77` "IMAGE OF COMMON/START/RESTART CODE"; `S3IMAGE` and `S3SAVE` are byte-identical on the K pack (measured) |
+>
+> So "blocks 1-63 = resident image" is wrong on both counts: the bootstrap does not read disk
+> pages 1-63, and what it reads is the **image** copy in `SEGFIL0`, not the save copy. The
+> page-0 program (`RELOA`, OPPSTART 3729-3766) reads `NOBLK` blocks from the double-word disk
+> address `DYBLS` (3752-3754, 3759-3761) and ends with `IDENT PL11; JMP I (SINTR` (3766).
+> SINTRAN fills those cells at start-up: `NOBLK = CDABLPAGE*77` (= `ABLPAGE` × 63 pages, line
+> 850) and `DYBLS = DBLST(0)` = the start of `SEGFIL0` (line 853), plus the driver entry
+> `LDRAD = SWPDRIVER` and the disk type (854-865).
+>
+> **SINTRAN rewrites the page-0 bootstrap itself at every start.** After label `OVCO` (line
+> 843, reached on both the cold and the warm path) lines 867-876 read page 0 (`CRDISC`), copy
+> `RELOA`..`LDEND` into it, append the swap driver (`ZBDIS` SMD / `ZWDIS` ST-506 / `SCSWD` SCSI,
+> picked from the `MDISCS` table at lines 22-31) and write the page back. So the bootstrap on a
+> running system's pack is always the one from that kernel's own `RELOA`. The first words of
+> SMD0.IMG page 0 (`boot-creation.md` lines 147-156: `PIOF; TRA STS; SAA 12; TRR PCR ...`) are
+> not byte-identical to s3vs-4's `RELOA` (`PIOF; TRA STS; BSKP ONE 140 DA; ...`, line 3729), so
+> the L07 `RELOA` may differ from this K-source listing: **UNVERIFIED**.
+
 ### 2.2 Main Swapping Disk Table
 
 The system needs to know which disk device to use for swapping. This is defined in the **MDISCS** table:

@@ -502,7 +502,7 @@ All offsets from K03/SYMBOL-1-LIST lines 349-356. Each field is one 16-bit word.
 | 001 | 1 | 16-bit | PRESE | Previous segment pointer (back-link) | 350 |
 | 002 | 2 | 16-bit | LOGAD | Logical address (base page number in virtual address space) | 351 |
 | 003 | 3 | 16-bit | SEGLE | Segment length (number of pages) | 352 |
-| 004 | 4 | 16-bit | MADR | Mass storage address (disk location for swap) | 353 |
+| 004 | 4 | 16-bit | MADR | Mass storage address: page offset of the segment inside its segment file, in 1024-word pages (corrected 2026-10-29; disk page = `DBLST(N)/ABLPAGE(N) + MADR + P`, `N = FLAG >> 13`, `IP-P2-SEGADM.NPL` RWSEGM lines 1532-1540; measured `DBLST(0) = 256` blocks, `ABLPAGE(0) = 2` on K and L packs, so `SEGFIL0` starts at disk page 128) | 353 |
 | 005 | 5 | 16-bit | FLAG | Segment flags (bit field, see below) | 354 |
 | 006 | 6 | 16-bit | SGSTA | Segment status word (bit field, see below) | 355 |
 | 007 | 7 | 16-bit | BPAGL | Begin page link (address of first page descriptor in core map) | 356 |
@@ -1637,8 +1637,8 @@ contains a 16-bit pointer (address) to the head of a structure or queue.
 | 004020 | 2064 | 16-bit | RTSTA | 012071₈ | RT-Description table start (base address) | K03:3154, L07:2125, M06:2205 |
 | 004021 | 2065 | 16-bit | CORMS | 000000₈ | Core map start offset (within CORMB bank) | L07:2350 |
 | 004022 | 2066 | 16-bit | CORAD | 000000₈ | Core map address | L07:3178 |
-| 004023 | 2067 | 16-bit | BLST | 000000₈ | Segment list head (also SBLST, DBLST) | L07:3179 |
-| 004024 | 2068 | 16-bit | — | 000400₈ | Unknown (256 decimal) | — |
+| 004023 | 2067 | 16-bit | BLST | 000000₈ | **Corrected 2026-10-29:** not a segment list head. `BLST` is the table of segment-file start addresses in 512-word disk blocks, one double word per segment file (`DBLST(X)` "DISK ADDRESS FOR THIS SEGMENT FILE (DOUBLE WORD)", `IP-P2-SEGADM.NPL:1539`). This word is the high half of `DBLST(0)`. | L07:3179 |
+| 004024 | 2068 | 16-bit | BLST+1 | 000400₈ | **Corrected 2026-10-29:** the low half of `DBLST(0)` = 256 blocks = start of `SEGFIL0` (`PH-P2-OPPSTART.NPL:746` `A*200+XXSWTYPE=:BLST(1)`, "SET START OF SEGFIL0 IN SECTORS"). With `ABLPAGE(0) = 2` blocks per page (`ABLPA=004461`, L07) that is disk page 128, the first page of `(SYSTEM)SEGFIL0:DATA`; measured identical on four K and L packs. | L07:3179 |
 | 004034 | 2076 | 16-bit | — | 000002₈ | Unknown | — |
 | 004043 | 2083 | 16-bit | BGFPA | 000000₈ | Background first page address | L07:2126 |
 | 004044 | 2084 | 16-bit | BGLPA | 000077₈ | Background last page address (63 decimal) | L07:2127 |
@@ -2952,6 +2952,14 @@ WPM RPM FPM RING1
 | MASS. ADR | Segment entry | MADR | 004 |
 | Protection line (WPM RPM FPM RING) | Segment entry | SGSTA | 006 |
 | Status line (DEMAND PROTECT OK) | Segment entry | FLAG | 005 |
+
+> **Corrections 2026-10-29:** `SEGMENT FILE` is bits 13-15 of `FLAG` (bit 15 alone = `SGFI4`, the
+> absolute-save set); `MASS. ADR` is in 1024-word pages, counted from the start of that segment
+> file (see the `MADR` row in 6.3). The Real Time Guide's statement that "MADR contains the page
+> number within the segment file in the lower 14 bits and the segment file number in the upper 2
+> bits" (`ND-60.133.02A SINTRAN III Real Time Guide.md:3564`) describes the RT-loader's own record
+> of an older version, not the kernel entry measured on the K and L packs, where the file number
+> is in `FLAG` (segment 53 on K: FLAG `100111`, MADR 27).
 
 All values displayed with "B" octal suffix. The protection and status lines
 are decoded from bit fields — see [Section 6.4](#64-segment-status-and-flag-fields)

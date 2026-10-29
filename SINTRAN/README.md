@@ -287,6 +287,8 @@ Unnumbered references in the same folder:
 | [OS/SINTRAN-DEVICE-DRIVER-IOX-EXR-COMPLETE.md](OS/SINTRAN-DEVICE-DRIVER-IOX-EXR-COMPLETE.md) | Driver IOX/EXR reference |
 | [OS/N500DF-STRUCTURE-COMPLETE-REFERENCE.md](OS/N500DF-STRUCTURE-COMPLETE-REFERENCE.md) | The N500DF structure |
 | [OS/SEGMENTS-INTRO-AND-DEEP-DIVE.md](OS/SEGMENTS-INTRO-AND-DEEP-DIVE.md) | Segments, introduction and deep dive |
+| [OS/28-CPU-NUMBER-AND-TYPE-ON-DISK.md](OS/28-CPU-NUMBER-AND-TYPE-ON-DISK.md) | Where a pack holds its CPU number and type (SYSNO, FCPUN, HWINF+2), the DPIT segments, the DMAC patch, the directory stamp, and the offline tool spec |
+| [SINTRAN-SOURCE-RECOVERY-PLAN.md](SINTRAN-SOURCE-RECOVERY-PLAN.md) | Boot flow from the page-0 bootstrap to the background programs, which segment holds what and which NPL module it came from, the tool chain state, and the phases to rebuild SINTRAN from source |
 | [OS/BUS-EXPANDER-BUSC-REGISTER-REFERENCE.md](OS/BUS-EXPANDER-BUSC-REGISTER-REFERENCE.md) | Bus expander BUSC registers |
 | [OS/MEMORY-TYPE-DETECTION.md](OS/MEMORY-TYPE-DETECTION.md), [OS/HOW-TO-DETECT-FIRST-2MB-AS-LOCAL-MEMORY.md](OS/HOW-TO-DETECT-FIRST-2MB-AS-LOCAL-MEMORY.md), [OS/MPM5-MEMORY-DETECTION-AND-IDENTIFICATION.md](OS/MPM5-MEMORY-DETECTION-AND-IDENTIFICATION.md) | Memory detection and identification |
 | [OS/KERNEL-DOCUMENTATION-SUMMARY.md](OS/KERNEL-DOCUMENTATION-SUMMARY.md) | Summary of the kernel documentation set |

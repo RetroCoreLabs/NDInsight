@@ -28,6 +28,16 @@ A SINTRAN page is **1024 words = 2048 bytes**; a segment occupies
 `(LOGAD*1024) & 0xFFFF`. Full detail and the verification behind it are in
 [EXTRACTING-SEGMENTS.md](EXTRACTING-SEGMENTS.md).
 
+**Corrections 2026-10-29:** the pipeline no longer needs a running system. The segment table
+(`S3ISGT`, inside `SEGFIL0:DATA`) and the segment names (type-25 records in
+`(SYSTEM)RTFIL:DATA`) are both readable offline, and the kernel's segment-file tables
+(`DBLST(0) = 256` blocks, `ABLPAGE(0) = 2` blocks per page, measured on K and L packs) place
+`SEGFIL0` at disk page 128. `ndtool --segments / --export-segment / --import-segment` in the
+sibling repository `norskdata-ndfs` (`ndfs-c/src/sintran_segments.c`) does it from the image
+alone; see [EXTRACTING-SEGMENTS.md](EXTRACTING-SEGMENTS.md) sections 1, 2 and 5 (option C).
+Mind that on K packs the save segments 52-60 and 63 are in "segment file 4" =
+`SINTRAN:DATA`/`MACM-AREA:DATA`, not in `SEGFIL0:DATA`.
+
 ## Carved sets (per version)
 
 | Version | Catalog |

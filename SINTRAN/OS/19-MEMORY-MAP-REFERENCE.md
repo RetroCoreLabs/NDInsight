@@ -461,6 +461,19 @@ ND-500 Segment 4 (example):
 
 ### 6.1 Segment Table
 
+> **Corrections 2026-10-29.** The entry layout, size and base address in this section are a
+> model, not SINTRAN's. The real entry is **8 words** - `SEGLI, PRESE, LOGAD, SEGLE, MADR, FLAG,
+> SGSTA, BPAGL` (`SYMBOL-1-LIST` K03 lines 349-356, same in L07/M06); there is no "SGMEMADDR"
+> word (residency is the core-map chain at `BPAGL`), the segment file number is bits 13-15 of
+> `FLAG`, and `MADR` is the segment's page offset inside its segment file in 1024-word pages. The
+> table is not at a fixed `0x001000`: it sits in extended memory at `(SEGTB << 16) + SEGST`
+> (root cells `004320B`/`004321B`; `(3 << 16) + 124000B` on the live L07 system) and holds up
+> to `SGMAX` entries (`004015B`; 1713 on L07, not 255). On disk it is a segment inside
+> `(SYSTEM)SEGFIL0:DATA` (page 461 on the K pack, 1275 on the L packs, measured). The pseudo-NPL
+> in 6.1 and 6.3 is illustration, not SINTRAN source. Authoritative text:
+> [22-READING-RT-AND-SEGMENT-TABLES-FROM-MEMORY.md](22-READING-RT-AND-SEGMENT-TABLES-FROM-MEMORY.md)
+> §3 and [SEGMENTS-INTRO-AND-DEEP-DIVE.md](SEGMENTS-INTRO-AND-DEEP-DIVE.md) §2 and §8.3.
+
 SINTRAN maintains a **segment table** with one entry per segment (0-255):
 
 ```npl
@@ -677,7 +690,8 @@ A =: NEW_TASK.ACTPRI    % ACTPRI has same format as PCR
         │  - One per I/O device            │
 0x0800: ├──────────────────────────────────┤
         │ Segment Table                    │
-        │  - 256 segments × 5 words        │
+        │  - 256 segments × 5 words        │  (model only; real: SGMAX+1 entries × 8 words
+        │                                  │   in extended memory, see 6.1 note, 2026-10-29)
 0x0C00: ├──────────────────────────────────┤
         │ RT-Descriptions                  │
         │  - One per RT program            │
@@ -720,6 +734,13 @@ D =: PHYSPAGE SH 2 \/ PERMIT    % Build PIT entry (Read/Write)
 **Purpose:** Store paged-out segments and programs
 
 **Location:** Dedicated disk area (SEGFIL 0 or separate disk)
+
+> **Corrections 2026-10-29.** The "swap map bitmap" drawing below is a model; it has no source.
+> What is verified: swapping goes to the segment files themselves - `MASSNO(0)` is the "LOGICAL
+> DEV.NO. OF MAIN-SWAP-DEVICE" (`PH-P2-OPPSTART.NPL:741`) and page `P` of a segment is written to
+> disk page `DBLST(N)/ABLPAGE(N) + MADR + P` of segment file `N` (`IP-P2-SEGADM.NPL` RWSEGM
+> lines 1532-1540, 1576-1583; measured `DBLST(0) = 256` blocks, `ABLPAGE(0) = 2`, so
+> `SEGFIL0:DATA` starts at disk page 128 on the K and L packs). See chapter 22 §3.6.
 
 ```
 Swap File Structure:
@@ -1035,7 +1056,7 @@ namespace RetroCore.Emulated.SINTRAN.Memory
 
 | Symbol | Address | Purpose |
 |--------|---------|---------|
-| **SEGSTART** | 0x001000 | Segment table base |
+| **SEGSTART** | 0x001000 | Segment table base (model value; the real table is at `(SEGTB << 16) + SEGST`, see 6.1 note, 2026-10-29) |
 | **RTCOMMON** | 0x002000 | Shared RT area |
 | **CURPROG** | 0x000100 | Current RT program |
 | **BEXEQU** | 0x000110 | Execution queue head |

@@ -15,6 +15,10 @@ RT-loader's packed per-segment table (`PSGNA`, 8-word records keyed by segment n
 only while the RT-loader is active — record layout AND name packing fully decoded, §6.5), so the
 practical sources for segment names are the per-version `@RT-LOADER LIST-SEGMENT` name↔number map
 (fixed per SINTRAN version) or a direct PSGNA decode from the `S3RTFIL` segment.
+**Corrections 2026-10-29:** the same records are also on disk in the plain file
+`(SYSTEM)RTFIL:DATA` (and again inside `SEGFIL0:DATA` as the S3RTFIL segment), so they can be
+read **offline** from a disk image without booting - measured on four K and L packs, §6.4. The
+disk formula in §3.6 was wrong and is corrected there (MADR and SEGLE count 1024-word pages).
 
 Cross-references (relative links):
 - [SINTRAN-STRUCTURES.md](../SINTRAN%20Structures/SINTRAN-STRUCTURES.md) — data-structure reference
@@ -37,7 +41,7 @@ or symbol tables) or **UNCERTAIN**.
 | Are the field offsets version-stable? | Yes — RT stride `5RTSI=26₈`, segment stride 8 words, and every field offset match across the three versions. | VERIFIED |
 | Can the RT list be read from memory? | Yes — count, priority, status, assigned/active segments, start address, P-register are all in memory. | VERIFIED |
 | Can the segment table be read from memory? | Yes — LOGAD, SEGLE, MADR, FLAG (incl. SEGFIL number), SGSTA, BPAGL, LRU links are all in memory. | VERIFIED |
-| What still needs a static label file? | Only the **names**. RT names come from the linker symbol table (address→symbol join, incl. `BAK01`-`BK121`/`BCH01`-`BCH10`). Segment names are NOT symbols — ship a per-version `LIST-SEGMENT` capture (§6.4). | VERIFIED |
+| What still needs a static label file? | Only the **names**. RT names come from the linker symbol table (address→symbol join, incl. `BAK01`-`BK121`/`BCH01`-`BCH10`). Segment names are NOT symbols — ship a per-version `LIST-SEGMENT` capture (§6.4), or decode the name records from `(SYSTEM)RTFIL:DATA` / the S3RTFIL segment, which works offline too (corrected 2026-10-29, §6.4). | VERIFIED |
 | Does it all hold on a live system? | Yes — every root cell, the DUMMY RT entry, and the segment table were read back correctly from a booted L07 over DAP; the live `LIST-SEGMENT` output matches the shipped capture. | VERIFIED (§8) |
 
 ---
@@ -288,6 +292,16 @@ Multiply `LOGAD` by 1024 to recover the word address. **VERIFIED (from glass cod
 > disk formula (§3.6) count **512-word SINTRAN/disk pages** (`CABLPAGE=1`, 1 sector = 512 words).
 > Do not mix the two units. VERIFIED that the glass uses `<<10` for LOGAD and `×512` for SEGLE
 > disk sizing (`sintran-segments.js:257, 415-417`).
+>
+> **Corrections 2026-10-29: the caution above is wrong.** `LOGAD`, `SEGLE` and `MADR` all count
+> the same **1024-word (2048-byte) page**. Measured on BIGDISK0-K-100, BIGDISK0-L2-100,
+> BIGDISK0-L-SEMICS and nd100x SMD0: S3IDPIT (segment 44) on the L packs has MADR 1019 and its
+> words (`SYSNO` at 004051B etc.) are at byte `1019 * 2048` of `(SYSTEM)SEGFIL0:DATA`; the manual's
+> load ranges equal `SEGLE * 1024` words exactly (`tools/sintran-segment-carver/EXTRACTING-SEGMENTS.md`
+> §2, which had already found the `×512` model gives half of every segment). The 512-word unit is
+> the **disk block**: the kernel converts pages to blocks with `ABLPAGE(N)` = "NUMBER OF DISK
+> BLOCKS PER PAGE" (`IP-P2-SEGADM.NPL:1536`), which is **2** on these packs, not 1. What the
+> glass did with `×512` is not what the kernel does; see §3.6.
 
 ### 3.5 FLAG, SGSTA, SEGLE decoding
 
@@ -311,6 +325,50 @@ validated in `test_segment_disk_layout.py:173-187, 315-367, 502-513` (e.g. `5OPS
 REECOMT at page 6 → LBA 3084, signature `0x4E52`). `CBLST` (start of SEGFIL 0) is discovered at
 runtime, not from memory root pointers (`sintran-reentrant.js:82-136`, `test_find_cblst.py`).
 **VERIFIED (L07 image).**
+
+> **Corrections 2026-10-29: the model above is wrong on three counts and is withdrawn.** It is
+> the "half-length" model that `EXTRACTING-SEGMENTS.md` §2 later disproved against the raw disk
+> (`CBLST = 1670` in 1024-byte sectors lands about 60 KB away from the real file, and `×512`
+> gives half of every segment; the LBA 3084 hit was coherent-looking but unrelated code). What
+> the kernel does, from `IP-P2-SEGADM.NPL` RWSEGM lines 1532-1540 and 1576-1583, and what the
+> packs show:
+>
+> ```
+> N          = FLAG >> 13                        segment file number ("SEGMENT FILE NO. IS IN TOP OF FLAG")
+> DBLST(N)   = start of segment file N, in 512-word DISK BLOCKS (double word, "DISK ADDRESS FOR THIS SEGMENT FILE")
+> ABLPAGE(N) = blocks per 1024-word page          ("NUMBER OF DISK BLOCKS PER PAGE")
+> MASSNO(N)  = logical device of the disk holding segment file N                     (line 1555)
+> block of page P of the segment = DBLST(N) + (MADR + P) * ABLPAGE(N)
+> disk page  of page P           = DBLST(N) / ABLPAGE(N) + MADR + P
+> ```
+>
+> (`A+D*CABLPAGE` at line 1581 is NPL, which evaluates left to right, so it is
+> `(MADR + relpage) * CABLPAGE`; INFERRED from the NPL rule, and the only reading that matches
+> the measured MADR unit.) The tables are in the resident data page: `BLST=004023`,
+> `ABLPA=004461` (L07/M06) / `004451` (K03), `MASSN=004441` (L07/M06) / `004431` (K03)
+> (`SYMBOL-1-LIST`); offline they are read from the S3IDPIT copy in `SEGFIL0:DATA`.
+>
+> **Measured, K and L packs:** `DBLST(0) = 256` blocks and `ABLPAGE(0) = 2`, so `SEGFIL0`
+> starts at **disk page 128** = the first page of the contiguous file `(SYSTEM)SEGFIL0:DATA`,
+> and page `P` of a segment-file-0 segment is simply page `MADR + P` **of that file**.
+> `DBLST(1..3) = 0`: no other segment file is defined on these packs (`PH-P2-OPPSTART.NPL:746`
+> sets `BLST(1)` from `ABLPAGE(0)*200B + XXSWTYPE`, i.e. 256 blocks when the Phoenix flag
+> `XXSWTYPE` is 0).
+>
+> **Segment file 4 ("absolute save", `SGFI4`) is not at LBA 0.** Its base is set at start-up,
+> not stored: `PH-P2-OPPSTART.NPL:751` `ABLPAGE(0)=:ABLPAGE(4)+"SBFIELD".XXSWTYPE=:BLST(11)`,
+> i.e. `ABLPAGE(0) + XXSWTYPE` blocks = **one page** = disk page 1 when `XXSWTYPE` is 0
+> (`XXSWTYPE` = "FLAG FOR FIXED 30/60/90 MB DISC (PHOENIX)", `PH-P2-START-BASE.NPL:226`).
+> Measured on the K pack: S3SDPIT (segment 53, FLAG `100111`, MADR 27) is at disk page
+> `1 + 27 = 28`, which is page 27 of `(SYSTEM)SINTRAN:DATA` (disk pages 1-63; `MACM-AREA:DATA`
+> is 64-127), as the K release information says (`ND-60230-5-EN ... K-version.md` line 7941:
+> segments 52-60 and 63 are on `SINTRAN:DATA` and `MACM-AREA:DATA`). On the L packs segment 53 is
+> in file 0 (FLAG `000111`, MADR 64).
+>
+> Whether any ND disk type has `ABLPAGE = 1` (1024-word blocks) is **UNVERIFIED**; the four
+> packs measured are all SMD-type images with 512-word blocks. The tool that implements the
+> corrected model is `ndtool --segments / --export-segment / --import-segment` in the sibling
+> repository `norskdata-ndfs` (`ndfs-c/src/sintran_segments.c`).
 
 ### 3.7 Read recipe (pseudocode)
 
@@ -372,6 +430,9 @@ dump has no live page table to consult. The **glass code derives it live** from
 `emu.getPageTableMap(7)` (`sintran-symbols.js:336-347, 377-385`), so it works on any image without
 a hardcoded page number. A dump analyzer that wants the same portability should read the saved DPIT
 (system segment `S3DPIT`, segment 19) rather than assume 66. **VERIFIED.**
+(**Corrections 2026-10-29:** `S3DPIT` (23B = 19) is the live, memory-only copy - its MADR is 0.
+The on-disk copies are `S3IDPIT` (44B, image, read at a warm start) and `S3SDPIT` (53B, save,
+read at a cold start), `PH-P2-OPPSTART.NPL` lines 262, 283-284, 771-776; chapter 28 §4.1.)
 
 Live observation (booted L07, 2026-07-09): the resident kernel-data DPIT pages map **linearly,
 `vpn n → physical page 64+n`** — page 2 → 66 (root cells) and page 5 → 69 (RT table at
@@ -465,7 +526,8 @@ name maps differ. (If a future version moved a cell, the safe fallback is to rea
   (via `RTDLG`), and the table extent/count (`RTSTA`/`RTEND`) — §2.
 - **Segment table, per entry:** LRU links (`SEGLI/PRESE`), logical base page (`LOGAD`), length
   (`SEGLE`), disk address (`MADR`), SEGFIL number + flags (`FLAG`), protection (`SGSTA`), core-map
-  head (`BPAGL`), in-RAM state, computed disk LBA (`CBLST + MADR + page`), core-map chain — §3.
+  head (`BPAGL`), in-RAM state, computed disk page (`DBLST(N)/ABLPAGE(N) + MADR + page`,
+  corrected 2026-10-29, §3.6), core-map chain — §3.
 
 All of the above is *numeric/structural* and comes straight out of memory.
 
@@ -519,6 +581,19 @@ can be read from "segment metadata":
   `NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/inputs/list-segment.txt`, shipped
   in the glass at `template-glass/data/segment-names/L07/list-segment.txt`. The live run this
   session reproduced it exactly. Names are fixed per SINTRAN version. **VERIFIED (L07).**
+- **Corrections 2026-10-29 - the records are also a plain file on disk.** "Mapped only while
+  the RT-loader runs" is true of memory, but the same 8-word records are stored in
+  `(SYSTEM)RTFIL:DATA` (the RT-loader's file; "the RT-Loader saves it on the RTFIL",
+  `ND-30.003.007 EN SINTRAN III System Supervisor.md:4123`) and again inside `SEGFIL0:DATA` as
+  the S3RTFIL segment (10B). Both can be read **offline** from a disk image, so a
+  `LIST-SEGMENT` capture is a convenience, not a requirement, and the "not plain ASCII on
+  disk" finding above is explained: the names are there, SIXBIT-packed. **Measured on
+  BIGDISK0-K-100, BIGDISK0-L2-100, BIGDISK0-L-SEMICS and nd100x SMD0:** 74 name records on K,
+  98 on L; on every pack S3IMAGE 2, S3RTFIL 10, S3DPIT 23, S3SSGT 24, S3ISGT 27, S3PATCH 43,
+  S3IDPIT 44, S3SDPIT 53 (octal). The count differs between packs (74 on K, 98 on L), so the
+  record set is per pack, not only per version; INFERRED cause: the RT-loader adds a record for
+  every segment a user names after generation. Implemented as
+  `ndtool --segments` in the sibling repository `norskdata-ndfs` (`ndfs-c/src/sintran_segments.c`).
 - Corrections this surfaced vs the old hardcoded glass array: `S3NMS5` (not `S3NM5`),
   `S3RTACC = 32₈` (was missing), `S3SPRMA` (not `S3SPPRMA`), `S3SEVMS/S3IEVMS`, and the
   duplicate numbers `76₈/77₈` above.
@@ -576,7 +651,8 @@ differ by exactly 1 (last char weight 64⁰), `S3MPIT`/`S3RPIT` by `5·64²` for
 
 **Locating the table:** the records live in the `S3RTFIL` segment (`10₈`; on live L07:
 `LOGAD=0x80`, 64 pages, `MADR=0x7EF`, SEGFIL 0). Read its pages from RAM via the core-map
-chain (`BPAGL`, §3.3) or from disk at `LBA = CBLST + MADR + page` (§3.6) — the disk path gives
+chain (`BPAGL`, §3.3) or from disk at page `MADR + page` of `SEGFIL0:DATA` (corrected
+2026-10-29, §3.6; or simply read `(SYSTEM)RTFIL:DATA`, §6.4) — the disk path gives
 the pages in logical order. The observed core head page began mid-table (first record was
 segment `27₈`), so scan for well-formed records rather than assuming a start offset:
 `word5 == 25₈ && word3 == word6 && word4 == word7 == 0 && name decodes to 1-8 clean chars`.
@@ -588,7 +664,7 @@ same 8-word/packed-name format with different type codes — **UNCERTAIN, untest
 
 ## 7. Evidence index (file:line)
 
-Glass / WASM sources (`/home/ronny/repos/nd100x/template-glass/js/`, post-2026-07-09 rewrite):
+Glass / WASM sources (the sibling repository `nd100x`, folder `template-glass/js/`, post-2026-07-09 rewrite):
 - Version detect / SYSEVAL: `sintran.js` (`SYSEVAL` table, `extractVersionLetter/extractOsType`,
   `sintranOnDetected` triggers both name-data loads)
 - Root pointers & field offsets: `sintran-symbols.js` (`FIXED` incl. `SINVER: 0x82D`, `RT_DESC`,
@@ -605,7 +681,7 @@ Glass / WASM sources (`/home/ronny/repos/nd100x/template-glass/js/`, post-2026-0
   (`loadSegmentNames`/`parseListSegment`)
 - REECOMT / CBLST discovery: `sintran-reentrant.js:10-136`
 
-Shipped data (`/home/ronny/repos/nd100x/template-glass/data/`):
+Shipped data (`nd100x` repository, folder `template-glass/data/`):
 - `symbols/{K03,L07,M06}/SYMBOL-2-LIST.SYMB.TXT` — verbatim linker symbol tables (RT names)
 - `segment-names/L07/list-segment.txt` — L07 `LIST-SEGMENT` capture (K03/M06: capture pending;
   loader degrades to empty names)
@@ -614,7 +690,8 @@ Tests:
 - Version detect + symbol/segment-name resolution (65 checks, runs the production modules):
   `template-glass/js/tests/test_symbol_tables.js` (`cd template-glass && node js/tests/test_symbol_tables.js`)
 - Segment table + disk model: `template-glass/js/tests/test_segment_disk_layout.py:99-107, 173-233, 315-367, 502-513`
-- CBLST determination: `template-glass/js/tests/test_find_cblst.py`
+  (the disk-model part of these tests encodes the withdrawn `CBLST=1670` / `CABLPAGE=1` model, §3.6 note)
+- CBLST determination: `template-glass/js/tests/test_find_cblst.py` (same caveat)
 
 Symbol tables (`SINTRAN/NPL-SOURCE/SYMBOLS/{K03,L07,M06}/`):
 - `SYMBOL-1-LIST.SYMB.TXT`: `RTSTA=004020`, `RTEND=004323`, `SGMAX=004015`, `SEGTB=004320`,

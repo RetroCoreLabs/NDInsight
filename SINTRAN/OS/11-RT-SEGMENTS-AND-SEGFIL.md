@@ -76,9 +76,19 @@ flowchart TB
 
 **CRITICAL INSIGHT:**
 - **SEGFIL** = Files on disk containing segments (like a "segment library")
-- **Segments** = 64KB blocks of code/data loaded into memory
-- **RT Programs** = Reference segments by number (0-255)
+- **Segments** = blocks of code/data of up to 64KW (128KB) loaded into memory
+- **RT Programs** = Reference segments by number (one global number space, see the correction in 2.3)
 - **Areas** = Different regions on disk for different purposes
+
+> **Corrections 2026-10-29.** Measured on four real packs (BIGDISK0-K-100, BIGDISK0-L2-100,
+> BIGDISK0-L-SEMICS, nd100x SMD0; SINTRAN K and L), written up in
+> [28-CPU-NUMBER-AND-TYPE-ON-DISK.md](28-CPU-NUMBER-AND-TYPE-ON-DISK.md) §4. Sections 2.2, 2.3,
+> 2.4, 3, 4.3 and 9 of this chapter were written before those measurements and each carries a
+> dated note where the measurement showed something else. The units in those notes: a **page** is
+> 1024 words = 2048 bytes; a **disk block** is 512 words = 1024 bytes (`ABLPAGE` = 2 blocks per
+> page on these packs). The tool that implements the corrected model is `ndtool --segments /
+> --export-segment / --import-segment` in the sibling repository `norskdata-ndfs`
+> (`ndfs-c/src/sintran_segments.c`).
 
 ---
 
@@ -133,6 +143,30 @@ SINTRAN supports **multiple SEGFIL files** (typically 0-4):
 MASSNO(0)=:MASSNO(4)      % INITIALIZE "SEGMENT FILE" #4
 ```
 
+> **Corrections 2026-10-29 (the purpose table above is UNVERIFIED and partly wrong).** No manual
+> assigns a purpose to a segment file number. What the manuals say:
+> - A system has **at most four** segment files, numbers **0 to 3**, named `SEGFIL0:DATA` to
+>   `SEGFIL3:DATA` by convention; each is one contiguous file (`ND-60.133.02A SINTRAN III Real
+>   Time Guide.md` lines 2597, 2605; `ND-30.003.007 EN SINTRAN III System Supervisor.md` line 4108).
+> - Which file a new segment lands in is chosen by the RT-loader command `*SET-SEGMENT-FILE`
+>   and is only fixed at `*END-LOAD` (Real Time Guide lines 2599-2601). The advice is simply
+>   "Load onto SEGFIL0 until it becomes full. Then switch to SEGFIL1" (System Supervisor line
+>   4137). So "1 = users, 2 = libraries" is an invention, not a rule.
+> - **"3 = ND-500 domains" is wrong.** ND-500 domains are the files `:PSEG`, `:DSEG`, `:LINK`,
+>   `:DESC` made by the ND-500 linkage loader ([09-ND500-CODE-LOADING.md](09-ND500-CODE-LOADING.md)
+>   lines 183-186); they are not SINTRAN segments and are not in any segment file.
+> - **Segment file 4 is not a user file.** It is the kernel's name for the "absolute save" area
+>   (`SGFI4=100000`, FLAG bit 15, `SYMBOL-2-LIST`): `PH-P2-OPPSTART.NPL` lines 749-751 copy
+>   `MASSNO(0)`/`MASSUNIT(0)` to entry 4 and set its start `BLST(11)` to
+>   `ABLPAGE(0) + XXSWTYPE` blocks = **disk page 1** when `XXSWTYPE` (the Phoenix fixed-disk
+>   flag, `PH-P2-START-BASE.NPL:226`) is 0. On the K pack the save copy S3SDPIT (segment 53,
+>   FLAG `100111`, MADR 27) is at disk page 28 = page 27 of `(SYSTEM)SINTRAN:DATA`, which
+>   occupies disk pages 1-63; `MACM-AREA:DATA` is disk pages 64-127. The K release information
+>   says it: segments 52-60 and 63 are "placed on the files SINTRAN:DATA and MACM-AREA:DATA"
+>   (`ND-60230-5-EN ... K-version.md` line 7941).
+> - Measured on all four packs: `DBLST(1..3) = 0`, so no second, third or fourth segment file was
+>   defined on any of them.
+
 ### 2.3 Segment Numbering
 
 **Segments are numbered 0-255 within a SEGFIL.**
@@ -146,6 +180,18 @@ Examples:
   Segment 10 in SEGFIL 1 = Global segment 266 (256 + 10)
   Segment 0 in SEGFIL 2  = Global segment 512 (256*2 + 0)
 ```
+
+> **Corrections 2026-10-29 (the formula above is wrong; no source was found for it).** A
+> segment number is an index into **one** segment table; there is no per-file numbering. The
+> segment file a segment lives in is stored **per segment** in bits 13-15 of its FLAG word
+> (`IP-P2-SEGADM.NPL` RWSEGM line 1532 "SEGMENT FILE NO. IS IN TOP OF FLAG", line 1533
+> `A SHZ -15`). The manual gives the number range as 0-376B (`Real Time Guide` line 2327, an
+> older limit); the live L07 system has `SGMAX = 3261B` = 1713 slots
+> ([22-READING-RT-AND-SEGMENT-TABLES-FROM-MEMORY.md](22-READING-RT-AND-SEGMENT-TABLES-FROM-MEMORY.md)
+> §3.1), and the system-included segments 2-127B are all in segment file 0 except the K save
+> set in file 4 (section 2.2 note). None of that fits "256 per file". The same formula is
+> repeated in `SINTRAN/OS/README.md` line 704 and in
+> [SEGMENTS-INTRO-AND-DEEP-DIVE.md](SEGMENTS-INTRO-AND-DEEP-DIVE.md) §8.1 (corrected there too).
 
 ### 2.4 Segment Table
 
@@ -170,6 +216,49 @@ X:=CBLST; T:="MSSGT"+X; A:="MISGT"+X
 X:="LSSGT"; CALL FAR CRWDISC    % COPY SEGMENT TABLE
 ```
 
+> **Corrections 2026-10-29 (the entry drawing above is wrong).** The real entry is **8 words**,
+> with these symbols and units (`SYMBOL-1-LIST` K03 lines 349-356, identical in L07 and M06;
+> chapter 22 §3.3; read off the packs in chapter 28 §4.1):
+>
+> | Word | Symbol | Meaning | Unit |
+> |---|---|---|---|
+> | 0 | `SEGLI` | forward LRU link | segment-table address |
+> | 1 | `PRESE` | backward LRU link | segment-table address |
+> | 2 | `LOGAD` | logical base page; low 6 bits = page within the 64KW bank | 1024-word pages |
+> | 3 | `SEGLE` | length, low 10 bits | 1024-word pages |
+> | 4 | `MADR` | offset of the segment inside its segment file | 1024-word pages |
+> | 5 | `FLAG` | bits 13-15 = segment file number; bit 0 = `5OK`; bit 15 alone = `SGFI4` | - |
+> | 6 | `SGSTA` | protection / ring | - |
+> | 7 | `BPAGL` | core-map head (0 = not in memory) | core-map address |
+>
+> There is no "SEGFIL number" word, no "physical page" word and no "reference count" word.
+>
+> **Where the table is.** In memory at `(SEGTB << 16) + SEGST` (chapter 22 §3.2). On disk it is
+> itself a segment inside `(SYSTEM)SEGFIL0:DATA` (`S3ISGT` image, `S3SSGT` save), found offline
+> with the self-validating scan of [26-INITIAL-COMMAND-BUFFER-ON-DISK.md](26-INITIAL-COMMAND-BUFFER-ON-DISK.md)
+> §3.2: page **461** of `SEGFIL0:DATA` on the K pack, **1275** on the L packs (measured).
+>
+> **Where a segment's page is on disk.** From `IP-P2-SEGADM.NPL` RWSEGM lines 1532-1540 and
+> 1576-1583: segment file `N = FLAG >> 13`; `DBLST(N)` is the file's start address in **disk
+> blocks** (a double word, "DISK ADDRESS FOR THIS SEGMENT FILE"); `ABLPAGE(N)` is "NUMBER OF
+> DISK BLOCKS PER PAGE"; `MASSNO(N)` is the logical device of the disk holding the file (line
+> 1555). The block address of page `P` of the segment is `DBLST(N) + (MADR + P) * ABLPAGE(N)`, so
+> in pages:
+>
+> ```
+> disk page = DBLST(N) / ABLPAGE(N) + MADR + P
+> ```
+>
+> The three tables live in the resident data page (`BLST=004023`, `ABLPA=004461` L07/M06 and
+> `004451` K03, `MASSN=004441` L07/M06 and `004431` K03, from the `SYMBOL-1-LIST` files) and are
+> read offline from the S3IDPIT copy (segment 44) in `SEGFIL0:DATA`. **Measured on the K and L
+> packs:** `DBLST(0) = 256` blocks, `ABLPAGE(0) = 2` blocks per page, so `SEGFIL0` starts at
+> **disk page 128**, which is exactly the first page of the contiguous file
+> `(SYSTEM)SEGFIL0:DATA` on every pack. `PH-P2-OPPSTART.NPL` line 746 computes the same:
+> `A*200+XXSWTYPE=:BLST(1)` with `A = ABLPAGE(0)`, "SET START OF SEGFIL0 IN SECTORS".
+> Cross-check: S3IDPIT on the L packs has MADR 1019 and its words `SYSNO` etc. are found at byte
+> `1019 * 2048` of `SEGFIL0:DATA`, so MADR counts 1024-word pages, not 512-word blocks.
+
 ---
 
 ## 3. The Three Areas: MEMORY, SAVE, HENT
@@ -190,6 +279,16 @@ Disk Layout:
 │ Pages S-T:  Swap area                   │
 └─────────────────────────────────────────┘
 ```
+
+> **Corrections 2026-10-29 (the layout above is a sketch, not a measurement).** The measured
+> layout of the K and L packs (disk pages of 1024 words): page 0 = directory page 0 / boot;
+> pages **1-63** `(SYSTEM)SINTRAN:DATA`; pages **64-127** `(SYSTEM)MACM-AREA:DATA`; page **128**
+> onwards `(SYSTEM)SEGFIL0:DATA` (`DBLST(0) = 256` blocks / 2 blocks per page). There is no
+> separate "SAVE area" and no separate "HENT area" as disk regions: the save copies are ordinary
+> segments (S3SDPIT 53, S3SSGT 24, ...) that sit in `SEGFIL0:DATA` on the L packs and, for
+> segments 52-60 and 63 on K, in `SINTRAN:DATA` / `MACM-AREA:DATA` as "segment file 4" (section
+> 2.2 note). The "swap area" is the segment files themselves (`MASSNO(0)` is "LOGICAL DEV.NO.
+> OF MAIN-SWAP-DEVICE", `PH-P2-OPPSTART.NPL:741`).
 
 ### 3.2 IMAGE Area (MEMORY)
 
@@ -254,6 +353,22 @@ X:="LSECO"; CALL FAR CRWDISC    % COPY EXT. COMMON
 ```npl
 IF HENTFLAG><0 GO FAR OVCO    % HENT restart - skip SAVE copy
 ```
+
+> **Corrections 2026-10-29 (the "HENT area = complete memory snapshot" claim is UNVERIFIED;
+> the code read shows something simpler).** `PH-P2-OPPSTART.NPL` line 262 defines
+> `DPSA:=MSDPT, DPIM:=MIDPT` (disk addresses of the **save** and **image** copies of the resident
+> data page) and lines 283-284 read the data page from the **save** copy when `HENTFLAG=0` and
+> from the **image** copy otherwise; lines 771-776 copy save → image only when `HENTFLAG=0`. So
+> a warm start (`HENTFLAG><0`) reads the **image** segments, which are the normal running
+> copies in `SEGFIL0:DATA`; no third "HENT area" appears in this code. The three copies of the
+> resident data page are the segments **23 S3DPIT** (live, memory only: MADR 0), **44 S3IDPIT**
+> (image, warm start) and **53 S3SDPIT** (save, cold start) - listed in
+> `ND-820023-1-EN SINTRAN III-VSX System Documentation.md` lines 837, 854 (misprinted
+> "S3DIPIT") and 861; measured on every pack in chapter 28 §4.1. **Also the naming:** the MACM
+> command `)HENT` is "GET SINTRAN FROM SAVE-AREA" (`ND-30.003.007 EN SINTRAN III System
+> Supervisor.md` lines 3982, 4920), so HENT is the **cold** start (`HENTFLAG=0`), not a warm
+> "HENT restart" as this section says. Where `HENTFLAG` is set was not found; the available NPL
+> only reads it.
 
 ### 3.5 The Complete Picture
 
@@ -341,6 +456,20 @@ sequenceDiagram
 - Name stored in Segment Table
 - Maps name → segment number
 - Example: "RT-LOADER" = segment 4
+
+> **Corrections 2026-10-29 (names are NOT in the segment table).** The 8-word entry has no
+> name field (section 2.4 note), and the names are in no symbol list either (chapter 22 §6.4).
+> A segment name is a **"DEFINED SEGMENT NAME" record of the RT-loader** (symbol type 25B),
+> 8 words: words 0-2 the packed name (SIXBIT = ASCII & 0x3F, right-justified base 64, up to 8
+> characters), word 3 = segment number, word 4 = 0, word 5 = 25B, word 6 = segment number,
+> word 7 = 0 (decoded in chapter 22 §6.5). The records are on disk in the plain file
+> `(SYSTEM)RTFIL:DATA` and again inside `SEGFIL0:DATA` (the S3RTFIL segment, 10B), so they can
+> be read offline without booting. **Measured 2026-10-29:** 74 names on the K pack, 98 on the L
+> packs; on every pack they decode to S3IMAGE 2, S3RTFIL 10, S3DPIT 23, S3SSGT 24, S3ISGT 27,
+> S3PATCH 43, S3IDPIT 44, S3SDPIT 53 (octal). The real names are of the form `S3xxxx`; "RT-LOADER
+> = segment 4" is the manual's description of segment 4 (`S3RTL`), not its name, and the table
+> below pairs MACM disk-address symbols (`S04MA`, `MICOM`, ...) with invented names - treat its
+> name column as UNVERIFIED.
 
 **From code (lines 787-841), system segments:**
 ```
@@ -705,6 +834,14 @@ Step 5: RT Program executes
 
 ## 9. C# Implementation
 
+> **Corrections 2026-10-29.** The classes below are a design sketch written before the
+> on-disk layout was measured, and they disagree with it in four places: the entry is 8 words
+> (not "12 bytes, estimated"), there is no reference count or physical-page word, blocks per
+> page come from the kernel table `ABLPAGE(N)` (2 on the measured packs, not 8), and the file
+> base comes from `DBLST(N)` in blocks (256 for `SEGFIL0` on the measured packs). Use the
+> formula in the section 2.4 note; a working implementation is `ndfs-c/src/sintran_segments.c`
+> in the sibling repository `norskdata-ndfs`. The code is kept as the author wrote it.
+
 ### 9.1 Segment Table Entry
 
 ```csharp
@@ -1005,11 +1142,11 @@ public class RtProgramSegmentLoader
 
 **The complete picture:**
 
-1. **SEGFIL** = Container files on disk holding multiple segments
-2. **SAVE area** = Pristine backup of system segments
+1. **SEGFIL** = Container files on disk holding multiple segments (at most four, 0-3; "file 4" is the kernel's absolute-save area - section 2.2 note)
+2. **SAVE area** = Pristine backup of system segments (ordinary segments: in `SEGFIL0:DATA` on L, in `SINTRAN:DATA`/`MACM-AREA:DATA` on K - section 3 notes)
 3. **IMAGE area** = Live SEGFIL 0 used during operation
-4. **HENT area** = Complete memory snapshot for fast restart
-5. **Segment Table** = Maps segment numbers → SEGFIL locations
+4. **HENT area** = Complete memory snapshot for fast restart (UNVERIFIED; the code reads the image copies on a warm start - section 3.4 note)
+5. **Segment Table** = Maps segment numbers → SEGFIL locations (8-word entries, MADR in 1024-word pages - section 2.4 note)
 6. **RT Programs** = Reference segments by number (SEGM, SEGM2, RSEGM)
 7. **RTCOMMON** = Shared memory area for all RT programs and ND-500
 8. **ND-500 segments** = Can be mapped to RT segments or RTCOMMON for communication

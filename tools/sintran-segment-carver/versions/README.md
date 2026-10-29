@@ -21,4 +21,10 @@ Create `<VER>/inputs/` with `list-segment.txt`, `list-rt-programs.txt`, and `seg
 `carve.py` per `../EXTRACTING-SEGMENTS.md` section 6. Match the binary to its OWN symbol version
 (K binary <-> K03 symbols, L07 <-> L07, ...); never mix revisions.
 
+**Corrections 2026-10-29:** the live captures are no longer the only way in. The segment table
+and the segment names are both on the disk image (`S3ISGT` page inside `SEGFIL0:DATA`; type-25
+name records in `(SYSTEM)RTFIL:DATA`) and `ndtool --segments` in the sibling repository
+`norskdata-ndfs` reads them offline - `../EXTRACTING-SEGMENTS.md` section 5, option C. A
+`list-segment.txt` is still useful as a cross-check of the decoded names.
+
 **Parent:** `../README.md`
