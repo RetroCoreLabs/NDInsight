@@ -492,10 +492,31 @@ Done on 2026-10-29:
   Unit tests (synthetic K and L shaped packs, name-driven segment numbers, a K save copy in
   `SINTRAN:DATA`, refusal cases): `ndfs-c/tests/test_sintran_identity.c`.
 
+- **Boot-side proofs (2026-10-29, evening), RetroCore 1.9.26.9 as ND120CX, SINTRAN K05 copies,
+  driven through RetroTerm on the console port:**
+  - `@LIST-TITLE` on a copy changed with `--set-cpu 21238:9883`: `CPU TYPE: 9883`,
+    `CPU NUMBER: 21238` (the pack had 110 / 100 before). After the boot the stamp on the copy reads
+    "entered, system number 21238" (ndtool): the kernel wrote its SYSNO into word 1755B at enter.
+  - **Import proven by boot:** `--export-segment S3SDPIT` and `S3IDPIT` from a fresh K copy, SYSNO
+    and FCPUN set to 21300 in both dumps, `--import-segment` of both, boot: `CPU NUMBER: 21300`.
+  - **The stamp refuses at boot.** That imported copy still said "entered by system 100" (import
+    does not touch the stamp). The kernel printed `DIRECTORY ENTERED BY ANOTHER SYSTEM`, then
+    `INPUT FILE ERROR` / `NO MAIN DIRECTORY`, and every terminal said SYSTEM UNAVAILABLE. After
+    `ndtool --release` the same copy booted cleanly (no message, COSMOS started). This is why
+    `--set-cpu` clears the stamp by default.
+  - **The stamp refuses at `@ENTER-DIRECTORY` too.** A second L pack renamed PACK-THREE, stamped
+    "entered by system 100", on unit 2 of the same SMD controller: `@ENTER-DIRECTORY
+    PACK-THREE,DISC-75MB-1,2` answered `DIRECTORY ENTERED BY ANOTHER SYSTEM`. A directory whose
+    name is already entered answers `DIRECTORY ENTERED` without touching the pack (seen first,
+    before the renames), so the test needs distinct directory names.
+  - Not concluded: `@ENTER-DIRECTORY PACK-TWO,DISC-75MB-1,1` of the released L copy on unit 1 did
+    not return within six minutes (no message, emulator alive, ESC ignored). That is an emulator
+    or multi-unit question, not a verdict on the stamp; the clean boot of the released K copy
+    above already shows a released pack is accepted.
+
 Not done:
 
-- `@LIST-TITLE` and an explicit `@ENTER-DIRECTORY` of a second pack were not typed on the booted
-  patched packs; the banner and the absence of the 3203 message at boot are the evidence so far.
+- A segment on segment file 1 to 3 (`*DEFINE-SEGMENT-FILE`), see the ndfs plan file.
 - The DMAC write timing (deposit vs `)9EXIT`) and the name-to-number resolution of `)CLOAD` were not
   observed.
 
