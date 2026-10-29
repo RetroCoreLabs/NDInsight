@@ -438,6 +438,26 @@ release, and still uses the disproved XOR checksum (OPEN, to fix before it ever 
 5. Leave REVLE alone.
 6. Verify by re-running 8.1 and comparing every word written.
 
+### 8.2a Where this specification is implemented (2026-10-29)
+
+Six implementations follow §8.1 and §8.2 step for step; the C one is the lead, the others are
+ports and give byte-identical images for the same input (checked on copies of BIGDISK0-K-100 and
+BIGDISK0-L2-100, both changed to 21238):
+
+| Where | Read | Write | Segments (§4, list / export / import) |
+|---|---|---|---|
+| norskdata-ndfs `ndfs-c` + `ndtool` | `ndfs_read_cpu_identity`, `--cpu-identity` | `ndfs_write_cpu_identity`, `--set-cpu N[:T] [--keep-stamp]` | `ndfs_list_segments` …, `--segments` / `--export-segment` / `--import-segment` |
+| norskdata-ndfs `ndfs-py` | `ndfs.sintran_identity.read_cpu_identity` | `write_cpu_identity` | `ndfs.sintran_segments` |
+| norskdata-ndfs `ndfs-ts` | `readCpuIdentity` | `writeCpuIdentity` | `listSegments` … |
+| nd100x web (`template-glass`) | "CPU Identity (disk)" window | the same window's form (ejects unit 0, patches, remounts) | segment table in the same window |
+| RetroIO.Storage.Ndfs (C#) | `ReadSintranCpuIdentity` | `WriteSintranCpuIdentity`, `ReleaseDirectory` | `ListSintranSegments` … |
+| RetroCommander (Avalonia) | NDFS disk info, "CPU Identity" tab | the tab's form | - |
+
+The tests in every port build the same synthetic K- and L-shaped packs (symbol lists with parity,
+RT-loader name records, a segment table, the K save copy inside `SINTRAN:DATA`), and one case uses
+segment numbers that are not 44B/53B so the name lookup is proven. RetroCore's legacy NDFS reader
+(`Emulated.Utilities`) only had its Extended Info checksum corrected to the additive sum (§7).
+
 ### 8.3 What the tool cannot do
 
 - Change the value a real or emulated ND-110/ND-120 reports when its PROM carries the signature:
