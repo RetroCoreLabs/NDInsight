@@ -73,6 +73,8 @@ then a line number, for example (K-REL 13105).
 | NPL-MAGTP | `SINTRAN/NPL-SOURCE/NPL/IP-P2-SCSI-MAGTP.NPL` |
 | NPL-OPDI | `SINTRAN/NPL-SOURCE/NPL/IP-P2-SCSI-OPDI.NPL` |
 | RUN | A run on the nd100x emulator, 2026-10-31: DISK-MM-B00 and SCSI-TV-B00 from floppy 210523G02-XX-02D. Measured, but not written down anywhere else in this repository. |
+| TRACE | DISK-MM-B00 FORMAT-INITIALIZE traced on the nd100x emulator under its DAP debugger, 2026-10-31, with the SCSI command log on. DISK-MM is loaded at file word + 065400; the numbers given are its memory addresses (octal), read with nd100-dis. |
+| MICROP | Micropolis 1370 Series product description, document 101689 rev D (not in this repository; a scan is on the bitsavers mirrors). Appendix A: formatted capacity. Appendix B: MODE SENSE pages and their default values. It refers to Micropolis document 110011 (SCSI implementation) for the details; 110011 is **not found**. |
 
 Numbers ending in `B` or written with a subscript 8 are octal. The release notes
 were scanned and OCR'd; where the OCR is plainly broken, that is said.
@@ -463,6 +465,13 @@ What the manuals say about partitions:
 
 The names Control, Formatting, Mirroring and Testdata do **not** appear in any
 manual in NDInsight. They come from the program's own output (RUN).
+
+The Scratch partition's length is not a fixed number. FORMAT-INITIALIZE works it out
+from the drive: (heads + 1) x sectors per track, both read from MODE SENSE (TRACE;
+section 13.3). On the emulator, with 8 heads and 18 sectors per track, it is 162. The
+171 above is 9 x 19, which fits a 1375 formatted with 19 sectors of 1024 bytes per
+track, the example in MICROP Appendix A. **Inferred**: that the RUN disk was
+formatted that way is reasoning from the number, not read from the disk.
 
 ### 6.2 The control record (last block)
 
@@ -1131,6 +1140,95 @@ The LD 1200 install guide's check is: `LIST-DEVICES`, then `SELECT-DEVICE <adapt
 bus, a missing terminator at either end, and two devices on the same ID
 (LD-INST 472-482).
 
+### 13.3 What FORMAT-INITIALIZE expects of the drive: mode pages and skew
+
+The manual says only: "Special for Micropolis 1375: Before format starts, MODE-SENSE
+default page 3 and 4 is set to current, and cylinder skew and track skew is
+optimized." (TP-G 1112-1116). What that means in commands and numbers was traced
+(TRACE).
+
+**Skew does not move any data.** Track skew and cylinder skew only say where sector
+0 of the next track starts, so the head finds it sooner after a head or cylinder
+switch. A block number still maps to the same place. DISK-MM never works anything out
+from the skew; it sets it before the format and reads it back afterwards to decide
+whether the disk was formatted.
+
+**What it sends**, in order (TRACE, DISK-MM-B00 on a 1375 at SCSI ID 3):
+
+1. INQUIRY, TEST UNIT READY, READ CAPACITY, RESERVE, then READ(6) of the last block
+   (129311, the control record).
+2. MODE SENSE page 3 with page control 2 (default values; CDB byte 2 = 83h).
+3. MODE SELECT of 37 bytes: the mode header, an 8-byte block descriptor (129311
+   blocks of 1024 bytes as the drive reported them), and the default page 3 with
+   track skew set to 0 and cylinder skew set to ceil(sectors per track / 3). For 18
+   sectors per track:
+   `00 00 00 08 00 01 F9 1F 00 00 04 00 03 16 1C 10 00 00 00 00 00 00 00 12 04 00 00 00 00 00 00 06 00 00 00 00 00`
+   (sectors per track 0012h, bytes per sector 0400h, track skew 0000h, cylinder skew
+   0006h).
+4. MODE SENSE page 4 with page control 2, then MODE SELECT of 33 bytes with page 4
+   as it came.
+5. FORMAT UNIT with CDB byte 1 = 10h (FmtData), followed by a 4-byte defect list
+   header of all zeros (no defects given).
+6. INQUIRY, TEST UNIT READY, READ CAPACITY, then MODE SENSE of pages 3 and 4, each
+   with page control 2 (default) and 3 (saved).
+7. MODE SENSE page 3Fh (all pages, current values), then WRITE(6) of the blocks at
+   the top of the disk: the partition table and the control area.
+
+**The check after the format** (TRACE, DISK-MM 124516-124565 and 124175-124236).
+DISK-MM compares the saved page with the default page:
+
+| Page | Field (page bytes) | Must be |
+|---|---|---|
+| 3 | track skew (16-17) | 0 (124130 returns a constant 0) |
+| 3 | cylinder skew (18-19) | ceil(sectors per track / 3), worked out at 124077 |
+| 3 | alternate sectors per zone, alternate tracks per zone, alternate tracks per volume, sectors per track, bytes per physical sector | the same in the default and the saved page |
+| 4 | cylinders (2-4), heads (5) | the same in the default and the saved page |
+
+If any of these fails it prints "(DF) Must be formatted" and stops. So a drive that
+does not keep what MODE SELECT set, as saved values, through FORMAT UNIT, can never
+be formatted by DISK-MM. **Inferred**: that the 1375 keeps the current values as the
+saved values when it formats comes from this check; MICROP does not say it, and
+110011, which would, is not found.
+
+Cylinder skew for some formats, by that rule:
+
+| Sectors per track | Bytes per sector | Cylinder skew | Track skew |
+|---|---|---|---|
+| 18 | 1024 | 6 | 0 |
+| 19 | 1024 | 7 | 0 |
+| 36 | 512 | 12 | 0 |
+
+The drive's own default cylinder skew is 12 and its default format 36 sectors of 512
+bytes (MICROP Appendix B), which fits the same rule. **Inferred**: Micropolis and ND
+may have used the same rule; nothing found says so.
+
+**The Scratch partition from the drive** (TRACE, DISK-MM 125076-125146 and
+133034-133072). After the format DISK-MM sends MODE SENSE page 3Fh and reads two
+fields at fixed byte offsets in the reply: sectors per track from bytes 42-43 and the
+heads from byte 61. The Scratch partition (entry 7) gets (heads + 1) x sectors per
+track blocks, placed just below the Testdata partition. Those offsets are only right
+when the drive sends the 4-byte header, one 8-byte block descriptor, and then its
+four pages in ascending order with the lengths of MICROP Appendix B:
+
+| Page | Name | Page length byte | Bytes in the reply | Starts at byte |
+|---|---|---|---|---|
+| 1 | error recovery | 06h | 8 | 12 |
+| 2 | disconnect/reconnect | 0Ah | 12 | 20 |
+| 3 | format parameters | 16h | 24 | 32 |
+| 4 | drive geometry | 12h | 20 | 56 |
+
+Byte 42 is then page 3 byte 10 (sectors per track) and byte 61 is page 4 byte 5
+(heads). A drive that sends other pages, or the pages in another order, gives DISK-MM
+the wrong numbers: on the emulator, before this was fixed, both read 0, the Scratch
+partition got length 0, and DISK-MM stopped with "(CS) Error in consistency of
+partition block (not INITIALIZED ?)" (message code 050261; the check at
+131044-131047 refuses a Scratch entry of length 0).
+
+**Where a real drive keeps the saved values.** MODE SENSE page control 3 reports
+them and they are expected to outlive power-off. MICROP Appendix A says "3 cylinders,
+used by the drive, are not user accessible". **Inferred**: those reserved cylinders
+are where the 1375 keeps its saved pages; MICROP does not say what they hold.
+
 ---
 
 ## 14. Errors and status words
@@ -1229,6 +1327,10 @@ The DOMINO hardware list (DOMINO 349-356) names the same device families:
 - Disk models and sizes listed in section 5. Block 1024 bytes, page 2048 bytes.
   No size table in SINTRAN.
 - The disk's top-of-disk partition table and control record (section 6).
+- What DISK-MM FORMAT-INITIALIZE sends to a 1375 and checks: the skew rule (track
+  skew 0, cylinder skew ceil(sectors per track / 3)), the saved-against-default
+  check, and the fixed offsets it reads in the all-pages MODE SENSE reply (section
+  13.3).
 - Backup with BACKUP-SYSTEM (version I or later for SCSI streamers) and the Backup
   Manager; restore with COPY-USERS-FILES or Disk Restore (section 10).
 - Optical is read-only from SINTRAN and written whole with DEVICE-COPY (section 11).
