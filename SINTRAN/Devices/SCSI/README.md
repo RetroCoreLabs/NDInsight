@@ -14,6 +14,11 @@ Documentation for SCSI (Small Computer System Interface) disk and optical drive 
 
 **Start here:** [SCSI-Master-Index.md](SCSI-Master-Index.md) - Complete index of all SCSI documentation
 
+**Using SCSI under SINTRAN:** [SCSI-STORAGE-UNDER-SINTRAN.md](SCSI-STORAGE-UNDER-SINTRAN.md) -
+everything about SCSI storage for an operator: device names and logical device numbers, IDs,
+supported disks and tapes, partitions and the control record, setting devices up, directories,
+tapes, backup and restore, the optical disk, CD-ROM, DISK-MM and SCSI-TV. Every fact has a source.
+
 ---
 
 ## Quick Reference

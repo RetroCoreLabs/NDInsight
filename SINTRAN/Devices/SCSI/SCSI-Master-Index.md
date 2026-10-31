@@ -10,6 +10,7 @@
 
 | Topic | Document | Key Information |
 |-------|----------|-----------------|
+| **Using SCSI storage** | [SCSI-STORAGE-UNDER-SINTRAN.md](SCSI-STORAGE-UNDER-SINTRAN.md) | Operator guide: names, IDs, sizes, setup, tapes, backup, optical, CD-ROM |
 | **Commands Overview** | [SCSI-Commands-Analysis.md](#scsi-commands-analysismd) | All 27 SCSI commands used |
 | **Optical Disks** | [SCSI-Optical-Commands-Addendum.md](#scsi-optical-commands-addendummd) | CCRWO recovery, WORM handling |
 | **Vendor Support** | [SCSI-INQUIRY-Analysis.md](#scsi-inquiry-analysismd) | No vendor restrictions! |
