@@ -15,7 +15,9 @@ marked **not found** was searched for here and is not there.
 7. [Setting up SCSI devices in SINTRAN](#7-setting-up-scsi-devices-in-sintran)
 8. [Using disks: create, enter, subunits, directory size](#8-using-disks-create-enter-subunits-directory-size)
 9. [Using tapes: streamer and magtape](#9-using-tapes-streamer-and-magtape)
+   - [9.0 Getting a SCSI streamer going - the short version](#90-getting-a-scsi-streamer-going---the-short-version-measured)
 10. [Backup to tape and restore](#10-backup-to-tape-and-restore)
+    - [Quick procedure: whole-disk backup and restore on a SCSI streamer](#quick-procedure-whole-disk-backup-and-restore-on-a-scsi-streamer-measured)
 11. [Optical disk (LD 1200 WORM)](#11-optical-disk-ld-1200-worm)
 12. [CD-ROM](#12-cd-rom)
 13. [Maintenance programs: DISK-MM and SCSI-TV](#13-maintenance-programs-disk-mm-and-scsi-tv)
@@ -73,6 +75,11 @@ then a line number, for example (K-REL 13105).
 | NPL-MAGTP | `SINTRAN/NPL-SOURCE/NPL/IP-P2-SCSI-MAGTP.NPL` |
 | NPL-OPDI | `SINTRAN/NPL-SOURCE/NPL/IP-P2-SCSI-OPDI.NPL` |
 | RUN | A run on the nd100x emulator, 2026-10-31: DISK-MM-B00 and SCSI-TV-B00 from floppy 210523G02-XX-02D. Measured, but not written down anywhere else in this repository. |
+| RUN-TV | Runs on the nd100x emulator, 2026-11-01: SCSI-TV-B00 (floppy 210523G02-XX-02D) and SCSI-TV-C04 (floppy 210523I01-XX-02D) against an emulated Tandberg TDC 3600 at SCSI ID 1, with the SCSI command log on. |
+| RUN-BK | Runs on the nd100x emulator, 2026-11-01, on copies of the nd100x `SMD0.IMG` pack (SINTRAN III VSX/500 L, system disk `DISC-75MB-1` unit 0) with an emulated Tandberg TDC 3600 at SCSI ID 1 and the SCSI command log on: S3-CONFIG, `@DEVICE-FUNCTION`, BACKUP-SYSTEM I02. |
+| BASY-INST | `Installation/INSTALL-ND-LINKAGE-LOADER-AND-BACKUP-SYSTEM.md` (Backup System I04 install, verified live 2026-07-19) |
+| TV-REL | `Installation/Installation-Description/ND-895560-1-EN.md` (ND-5000 basic platform install, Disk Restore from `STREAMER-1`) |
+| TPS | `Installation/Installation-Description/ND-896058-4-EN.md` (Backup Manager restore from `STREAMER-1`) |
 | TRACE | DISK-MM-B00 FORMAT-INITIALIZE traced on the nd100x emulator under its DAP debugger, 2026-10-31, with the SCSI command log on. DISK-MM is loaded at file word + 065400; the numbers given are its memory addresses (octal), read with nd100-dis. |
 | MICROP | Micropolis 1370 Series product description, document 101689 rev D (not in this repository; a scan is on the bitsavers mirrors). Appendix A: formatted capacity. Appendix B: MODE SENSE pages and their default values. It refers to Micropolis document 110011 (SCSI implementation) for the details; 110011 is **not found**. |
 
@@ -675,6 +682,45 @@ These are about two ND-100s on one bus (inferred from the wording).
 
 ## 9. Using tapes: streamer and magtape
 
+### 9.0 Getting a SCSI streamer going - the short version (measured)
+
+Done on SINTRAN L with the streamer at adaptor 1, SCSI ID 1 (RUN-BK). Three steps,
+in this order:
+
+| Step | What to do | What goes wrong if you skip it |
+|---|---|---|
+| 1 | In **S3-CONFIG**, menu `SCSI`, set **SCSI streamer 1** to `1.1` (adaptor 1, ID 1). Boot again. | Every `@DEVICE-FUNCTION STREAMER-1 ...` answers `ILLEGAL PARAMETER`, and **no SCSI command reaches the drive at all**. `READ-LAST-STATUS` still answers, so the file looks alive. |
+| 2 | `@SET-PERIPHERAL-FILE "STREAMER-1" 2226B` (and `@SET-FILE-ACCESS STREAMER-1 RWACD RWACD RWACD`). | `NO SUCH FILE NAME` on every tape command. Use 2226B, not 2206B: 2206B gives `NO SUCH LOGICAL UNIT`. |
+| 3 | Test: `@DEVICE-FUNCTION STREAMER-1 LOAD`, then `... REWIND`. Both return straight to `@` with no message. | - |
+
+Step 1 is the trap. The pack used for RUN-BK came with **SCSI streamer 1 = 0.0**,
+which means "not configured", while SCSI disk 1 was `1.0`.
+
+What the drive saw on the first LOAD after the fix, in order (RUN-BK, SCSI log):
+INQUIRY (12h), TEST UNIT READY (00h), which got a UNIT ATTENTION, REQUEST SENSE (03h),
+INQUIRY, TEST UNIT READY, MODE SENSE (1Ah, 12 bytes), MODE SELECT (15h, 12 bytes,
+buffered mode 1, density 0), LOAD (1Bh, load bit set). REWIND then sent REWIND (01h).
+
+**Driving S3-CONFIG from a plain terminal** (RUN-BK). S3-CONFIG is a full-screen
+program:
+
+1. `@S3-CONFIG`, then answer the terminal type question (36 = Tandberg TDV 2215).
+2. Type `SCSI` and Return. The cursor lands on SCSI disk 1.
+3. Each Return moves one half field: adaptor, then ID, for disk 1, 2, ... 8. The
+   empty rows (disks 9-14) are skipped. **15 Returns** reach the adaptor field of
+   SCSI streamer 1.
+4. Type `1`, Return, `1`, Return.
+5. Type `.` **without** Return. This leaves the form. A Return here would pick the
+   SCSI menu again.
+6. Type `E` **without** Return (it highlights EXIT), then Return. The program
+   answers `- EXIT from SINTRAN III configuration program -`. Typing the whole word
+   `EXIT` does not work: the menu jumps on every letter (E = EXIT, X = XMSG,
+   I = IO-COMM), so Return then opens IO-COMM.
+7. Boot again. The new value was in force after a fresh boot from the disk.
+
+The sources disagree on whether a warm or a cold start is needed (section 7.2). RUN-BK
+only shows that a new boot from the disk is enough.
+
 ### 9.1 Peripheral file
 
 To use a tape with `@DEVICE-FUNCTION` or a tape monitor call, you need a peripheral
@@ -763,14 +809,110 @@ SCSI magtape and on STC (K-REL 1941-1951):
 
 ## 10. Backup to tape and restore
 
-There are four tools. Only the first two handle SCSI tape.
+### Quick procedure: whole-disk backup and restore on a SCSI streamer (measured)
 
-| Tool | Handles SCSI tape? | Source |
+Proven end to end on SINTRAN L, BACKUP-SYSTEM I02, a Tandberg TDC 3600 at adaptor 1,
+SCSI ID 1 (RUN-BK). Details and the errors you get when a step is missing: 9.0, 10.0a,
+10.2.
+
+```
+-- once: S3-CONFIG, menu SCSI, "SCSI streamer 1" = 1.1, then boot again (9.0)
+@SET-PERIPHERAL-FILE "STREAMER-1" 2226B
+@DEFINE-MASS-STORAGE-UNIT STREAMER-1 0
+@SINTRAN-SERVICE
+START-XMSG
+EXIT
+@MODE (UTILITY)BACKUP-LOAD-I00:MODE TERMINAL
+@RT DMASRV
+@DUMP-PROGRAM-REENTRANT BACKUP-SYSTEM-I, (UTILITY)BACKUP-SYS-I02:PROG
+@BACKUP-SYSTEM
+Ba-sy: DEVICE-COPY STREAMER-1 0 DISC-75MB-1 0 COPY      <- backup  (disk to tape)
+Ba-sy: DEVICE-COPY DISC-75MB-1 0 STREAMER-1 0 COPY      <- restore (tape to disk)
+```
+
+In RUN-BK each name and the word COPY were typed as answers to the prompts, one per
+line. Whether the program also takes them on one line was not tested. Replace
+`DISC-75MB-1 0` with your own disk name and unit (`@LIST-DIRECTORIES-ENTERED`).
+
+What does **not** work with this streamer and BACKUP-SYSTEM I02: file backup to a
+volume (`CREATE-VOLUME` refuses the device, 10.1). For files, use the Backup Manager
+(10.3).
+
+### 10.0 Which tool does what with a SCSI streamer
+
+| Tool | Backup to `STREAMER-1` | Restore from `STREAMER-1` | Source |
+|---|---|---|---|
+| **BACKUP-SYSTEM** (ND 210337), `@BACKUP-SYSTEM`, prompt `Ba-sy:` | **Whole disk unit only**, with `DEVICE-COPY`. Single files (`CREATE-VOLUME` + `COPY-USERS-FILES`) are refused for the streamer in I02 (measured, 10.1). | `DEVICE-COPY` the other way round, source `STREAMER-1` | L-REL 3572; BACKUP-UG 4252-4500; RUN-BK |
+| **Backup Manager** (ND 211226), `@BM-OPERATOR` | Files or whole directories, to a `VOLUME` or `TAR` on `STREAMER-1` | `COPY` with `From VOLUME ... STREAMER-1 0`, `To DIRECTORY` | BM-INST 607-616; ES-INST 350-415; TPS 184-189 |
+| **Disk Restore** (ND 211187B), stand-alone | - | A whole-disk image from `STREAMER-1` to a SCSI disk | TV-REL 225-275; ES-INST 453-499 |
+| DIR-BACKUP (stand-alone, SINTRAN stopped) | Not for SCSI. It asks for a "STREAMER system (1-2)" and handles disks up to 75 MB. Inferred: the 3106/3112 streamer. | same | BACKUP-UG 3266-3555 |
+| MCOPY (stand-alone) | No: "Cipher, Tandberg, Pertec and STC Mag-tape drives" | - | BACKUP-UG 3016 |
+
+Versions (L-REL 3571-3573; N-REL 2353-2354): BACKUP-SYSTEM version H is needed for
+more than 256 files per user. **Version I is needed for SCSI streamers.** Revision I05,
+with DMA server I05, is needed for SCSI optical disks and SCSI magtapes. K-REL 14032
+gives "revision I03 / DMA server I02" for the same optical and magtape support; the two
+release notes do not agree.
+
+### 10.0a Putting BACKUP-SYSTEM I on a pack (measured)
+
+The official way is the installer on floppy 210337I04-XX-01S/02S/03S (or I05-XX-01D).
+It copies the files and then does the steps below (BASY-INST §3). The steps, as run by
+hand in RUN-BK:
+
+```
+@DUMP-PROGRAM-REENTRANT BACKUP-SYSTEM-I, (UTILITY)BACKUP-SYS-I02:PROG
+@BACKUP-SYSTEM
+BACKUP-SYSTEM / I02  870827
+Ba-sy:
+```
+
+What each piece is, and what happens without it (RUN-BK):
+
+| File | Where | Without it |
 |---|---|---|
-| **BACKUP-SYSTEM** (ND 210337), prompt `Ba-sy:` | Yes, from version I for SCSI streamers; revision I05 (with DMA server I05) for SCSI optical disks and SCSI magtapes | N-REL 2353-2354; L-REL 3573 |
-| **Backup Manager** (ND 211226), `@BM-OPERATOR` | Yes (`STREAMER-1`, `Mag-Tape-1..4`) | BM-INST 607-616; ES-INST 350-415 |
-| DIR-BACKUP (stand-alone, SINTRAN stopped) | Not stated; uses "STREAMER system (1-2)" and disks up to 75 MB; inferred to be the 3106/3112 streamer | BACKUP-UG 3266-3555 |
-| MCOPY (stand-alone) | No - "Cipher, Tandberg, Pertec and STC Mag-tape drives" | BACKUP-UG 3016 |
+| `BACKUP-SYS-I02:PROG` | UTILITY | - |
+| `UE-ERMSG-EN-C05:ERR` (error texts; the program opens `UE-ERMSG-EN-C`) | SYSTEM | `@BACKUP-SYSTEM` prints `NO SUCH FILE NAME` and then hangs, with no prompt. An older `UE-ERMSG-EN-B03` on the pack does not match. |
+| `BACKUP-SERV-I02:PROG` (the DMA server) and `BACKUP-LOAD-I00:MODE`, which loads it onto segment `DMASEG` with the RT-loader | UTILITY | BACKUP-SYSTEM still runs. For DEVICE-COPY its own text says "Unable to start DMA-server. Copy will be done using File-system". |
+| XMSG running | - | `@RT DMASRV` stops at once: `(050003) Communication initial error / (041700) XMSG is not running`. |
+
+The dump is lost at a cold start. The installer says to append the
+`@DUMP-PROGRAM-REENTRANT` line to the DUMP-REENTRANT file on SYSTEM, and
+`BACKUP-LOAD-I:MODE` to HENT-MODE (BASY-INST 102-109).
+
+Two things that look like faults and are not:
+
+- Running the program file directly (`@(UTILITY)BACKUP-SYS-I02`) prints `WARNING; NO
+  SUCH PAGE IN DATA BANK, PROGRAM STARTS AS 1-BANK` and then `NO SUCH FILE NAME`.
+  Use the reentrant dump above.
+- `BAK01` in a SINTRAN error report is the console's own background program, not a
+  backup program.
+
+**A damaged copy of the program on the RUN-BK pack.** The `(UTILITY)BACKUP-SYS-I02:PROG`
+on nd100x `SMD0.IMG` has 97 pages where the original has 120. Pages 85, 96-104 and
+106-118 are holes. The dump fails with `NO SUCH PAGE / ERROR IN ACCESSING THE PROG-FILE
+/ ERROR DETECTED BY RT-LOADER IN BUILDING SEGMENT`. In the original (floppy
+210337I04-XX-02S) those pages are real pages holding zeros. Twelve more pages (0, 64,
+65, 86, 87, 90-92, 94, 95, 105, 119) have different contents; why is not known. The
+copy from the floppy works.
+
+### 10.0b How BACKUP-SYSTEM writes a device copy to a tape (from the manual)
+
+When DEVICE-COPY writes to a streamer or a magtape, the tape becomes a normal
+**volume** holding one volume file (BACKUP-UG 4733-4760):
+
+- Volume name (VOL1 field 3): always `BACKUP`, picked by the program. Owner: `SYSTEM`.
+- File name (HDR1 field 3): the source device name, for example `DISC-75MB-1`.
+- File type (HDR1 field 4): the unit, for example `1`, or `1-2` for subunit 2.
+- Labels follow ANSI X3.27-1969 with ND changes: 80-character labels, data in blocks
+  of 1 to 8 pages of 2048 bytes, and a `HOLE` label in front of a block that does not
+  follow on from the one before (BACKUP-UG 4485-4530).
+- On disk and streamer volumes all labels sit in one sector at fixed places
+  (BACKUP-UG 4865-4880).
+
+The program itself decides between a volume and a plain directory copy: "The device
+should contain a volume if it is a streamer or magnetic tape, or if the source and
+destination devices have different sizes" (BACKUP-UG 4735).
 
 The LD 1200 / filestore guide asks for SINTRAN K and "BACKUP-SYSTEM: Version 1I03 or
 later" (LD-INST 94-95; "1I03" is as printed, probably I03).
@@ -818,6 +960,14 @@ flowchart LR
    The volume name is at most 6 characters and can never be abbreviated. The manual
    lists "FLOPPY-DISC-1, FLOPPY-DISC-2 or MAG-TAPE-1 to MAG-TAPE-4" as standard names
    and units 0-3 (BACKUP-UG 996-998). It does not show a SCSI streamer here.
+
+   **Measured with I02: a SCSI streamer cannot hold a BACKUP-SYSTEM file volume.**
+   `CREATE-VOLUME TEST01 STREAMER-1 0` and `CREATE-VOLUME TEST01 STREAMER-SCSI-1 0`
+   both answer `* Illegal device name` (RUN-BK). The program's own help text for this
+   field names only `FLOPPY-DISC-1, FLOPPY-DISC-2, or MAG-TAPE-1 to MAG-TAPE-4`. Not
+   tried: whether a streamer set up in S3-CONFIG as "Mag. tape no. 1" is accepted, and
+   whether I05 behaves differently. For files on a SCSI streamer, use the Backup
+   Manager (10.3).
 
 2. Copy files (BACKUP-UG 1013-1027):
 
@@ -886,9 +1036,102 @@ Mounted (YES/NO, you can push ESC): Y
 - The cartridge size differs between sources: "60MB" (SYS-SUP 11533) and "45MB"
   (HANDBOK 13599). Both are the 3112 streamer.
 
-For a **SCSI streamer**, the device name to give DEVICE-COPY is not shown in any
-BACKUP-SYSTEM example in NDInsight. Inferred: it is `STREAMER-1`, the SINTRAN device
-name (K-REL 13124). Disk Restore uses exactly that name (10.4 below).
+**DEVICE-COPY to a SCSI streamer, measured (RUN-BK).** No BACKUP-SYSTEM example with a
+SCSI streamer exists in NDInsight. This one ran on SINTRAN L, BACKUP-SYSTEM I02 and DMA
+server C00, with the streamer set up as in section 9.0.
+
+Everything that must be in place first, each step with the message you get without it:
+
+| # | Command | Without it |
+|---|---|---|
+| 1 | S3-CONFIG: SCSI streamer 1 = `1.1`; peripheral file `STREAMER-1` = 2226B (section 9.0) | tape functions refused |
+| 2 | `@DEFINE-MASS-STORAGE-UNIT STREAMER-1 0` | DEVICE-COPY asks for all four names, then answers `NO SUCH DEVICE NAME` |
+| 3 | XMSG started: `@SINTRAN-SERVICE`, `START-XMSG`, `EXIT` | `COPY` answers `* RR: XMSG is not running` / `* Last command aborted` |
+| 4 | DMA server loaded and started: `@MODE (UTILITY)BACKUP-LOAD-I00:MODE TERMINAL`, then `@RT DMASRV`. It answers `(050100) Ready, Version : C00 JULY 16, 1987`. | not tried without it |
+| 5 | `@DUMP-PROGRAM-REENTRANT BACKUP-SYSTEM-I, (UTILITY)BACKUP-SYS-I02:PROG` (section 10.0a) | `@BACKUP-SYSTEM` is not a command |
+
+Steps 2-5 do not survive a new boot. On a real system they belong in LOAD-MODE (step
+2, section 7.3) and in the start-up mode files (steps 3-5). On the RUN-BK pack, XMSG is
+not started at boot because LOAD-MODE calls `XMSG-START:MODE`, which is not on the pack.
+
+Also learned from the program, without a manual saying so: `NO SUCH LOGICAL UNIT` for
+a source unit means that unit does not exist in this SINTRAN (SMD unit 1 on the RUN-BK
+generation).
+
+The dialogue. The system pack itself, unit 0, is the source. The manual says to run
+`RESERVE-SYSTEM:MODE` first on a real system, to stop all other work (BACKUP-UG 4268);
+RUN-BK had no other users.
+
+```
+@BACKUP-SYSTEM
+BACKUP-SYSTEM / I02  870827
+Ba-sy: DEVICE-COPY
+   Destination device name: STREAMER-1
+   Destination device unit and optional subunit: 0
+   Source device name: DISC-75MB-1
+   Source device unit and optional subunit: 0
+   Function: COPY
+Operation starts at : 88.12.16 - 09:39:46
+Pages to copy: 36945
+----------
+Copying   >>>>>>>>>>
+Comparing >>>>>>>>>>
+Operation completed : 88.12.16 - 09:46:47
+  - OK
+Ba-sy:
+```
+
+36945 pages (75.6 MB) took 7 minutes of guest time to copy and compare. No question is
+asked when the destination is a tape.
+
+What the drive saw, in order (RUN-BK, SCSI log):
+
+| Phase | SCSI commands |
+|---|---|
+| Start | MODE SENSE (1Ah), INQUIRY (12h, 36 bytes), MODE SENSE |
+| Labels | WRITE (0Ah) 2 blocks: VOL1 / HDR1 / HDR2 / UHL1 in one sector |
+| Data | 279 × WRITE 528 blocks + 1 × WRITE 468 blocks = 147780 blocks of 512 bytes = 36945 pages. 528 blocks = 132 pages per command. |
+| End | WRITE 2 blocks (end labels), WRITE FILEMARKS (10h) 1, REWIND (01h) |
+| Compare | MODE SENSE, SPACE (11h) 2 blocks past the labels, 279 × READ (08h) 528 blocks + 1 × READ 468 blocks |
+| Finish | REWIND, then UNLOAD (1Bh with the load bit clear) |
+
+The tape starts with the labels described in 10.0b, read straight off the tape image:
+`VOL1BACKUP ... SYSTEM`, then `HDR1DISC-75MB-1 ... 0`. The end label reads
+`EOF1DISC-75MB-1 ... 036945SINTRAN III L`, which holds the page count.
+
+**Restore from the streamer, measured (RUN-BK).** Same set-up (steps 1-5 above), then
+DEVICE-COPY with the names swapped. The system pack itself was restored while
+SINTRAN ran from it, as the manual allows (BACKUP-UG 4480-4490):
+
+```
+Ba-sy: DEVICE-COPY
+   Destination device name: DISC-75MB-1
+   Destination device unit and optional subunit: 0
+   Source device name: STREAMER-1
+   Source device unit and optional subunit: 0
+   Function: COPY
+   Operation starts at : 88.12.16 - 09:39:46
+   Pages to copy: 36945
+   Copying   >>>>>>>>>>
+   Comparing >>>>>>>>>>
+   Operation completed : 88.12.16 - 09:55:21
+     - OK
+   You should now restart the system.
+```
+
+- No `Copy to directory. OK?` question came, although the manual shows one when the
+  destination is an entered directory (BACKUP-UG 4476).
+- After `You should now restart the system.` the machine stopped. Expected behaviour,
+  since the running system's own disk had just been overwritten.
+- What the drive saw: REWIND, MODE SENSE, SPACE 2 blocks past the labels, 279 × READ
+  528 + 1 × READ 468 (the copy), then the same again (the compare), REWIND, UNLOAD.
+- Checked from outside: before the restore, the disk differed from the tape data in
+  183 pages, and it carried a marker file that is not on the tape. After the restore,
+  **all 36945 pages are identical to the tape data**, the marker file is gone, the
+  file system check gives the same result as the original pack, and the pack boots,
+  takes the SYSTEM login and enters PACK-ONE. Right after the DMA server's `Ready` line, the console shows
+`ND-210337 Backup-System Version: I02 AUGUST 28, 1987` and `Special version for TDC 3640
+REV.Y1`. So this BACKUP-SERV-I02 build names the Tandberg TDC 3640 itself.
 
 Other CUF service commands (BACKUP-UG 1961, 1971, 2084-2090, 2151-2153):
 
@@ -1135,6 +1378,32 @@ Tests (TP-G 1689-1778; TP-ADD 1229-1230, 1343-1353):
 - **Streamer tests 30-32.**
 - **Optical tests 40-41** (C only).
 
+**SCSI-TV on a Tandberg TDC 3600 streamer** (RUN-TV, emulated drive at ID 1,
+`RUN-DEVICE-TESTS ALL-TESTS`):
+
+| Version | Passed | Failed |
+|---|---|---|
+| B00 (floppy 210523G02-XX-02D) | 1, 2, 4, 5, 30, 31, 32 | 3 |
+| C04 (floppy 210523I01-XX-02D) | 1, 2, 4, 5, 30, 31, 32 | 3 |
+
+- Test 3 sends SEND DIAGNOSTIC `1D 07` (self test 2). The emulated drive at first
+  refused it, because the Tandberg manual does not describe that self test. ND's test
+  description says test 3 "will perform no operation" on the TDC 3600 (TP-G, "3.5
+  Known but not Corrected Errors"), so the emulated drive now answers GOOD without
+  doing anything, and C04 test 3 then ends with no error. What a real drive answers is
+  not known.
+- Test 4 (bus data path) uses the standard SCSI-2 commands **READ BUFFER (3Ch)** and
+  **WRITE BUFFER (3Bh)**, mode 0. C04 first reads the 4-byte buffer header (3Ch,
+  length 4), then writes and reads back 24 blocks of 48 KB. B00 does 24 blocks of
+  65531 bytes. An emulator that swaps the two opcodes (as an OCR'd Tandberg manual
+  did) fails C04 test 4 with `177777` against `000000`, while B00 test 4 still
+  "passes" because nothing is compared.
+- C04's service commands all ran without error: `LIST-PRESENT-DEVICES` (shows
+  `Seq Rem TANDBERG TDC 3600`, block size 512), `PRINT-TAPE-STATISTICS`,
+  `TAPE-SERVICES` REWIND / UNLOAD / LOAD, `DUMP-SENSE-DATA`, `CLEAR-DEVICE`.
+  `LIST-DEFINED-DEVICES` prints `Not executable stand alone`, because it reads
+  SINTRAN's tables.
+
 The LD 1200 install guide's check is: `LIST-DEVICES`, then `SELECT-DEVICE <adaptor>
 <ID>`, then `RUN-DEVICE-TESTS,ALL-TESTS`. The most common faults it names are a broken
 bus, a missing terminator at either end, and two devices on the same ID
@@ -1333,15 +1602,22 @@ The DOMINO hardware list (DOMINO 349-356) names the same device families:
   13.3).
 - Backup with BACKUP-SYSTEM (version I or later for SCSI streamers) and the Backup
   Manager; restore with COPY-USERS-FILES or Disk Restore (section 10).
+- Measured (RUN-BK): a SCSI streamer works under SINTRAN L only after S3-CONFIG sets
+  "SCSI streamer 1" to `adaptor.ID`, plus the peripheral file `STREAMER-1` = 2226B
+  (section 9.0). BACKUP-SYSTEM I02 refuses the streamer for `CREATE-VOLUME` (10.1).
+- Measured (RUN-TV): SCSI-TV B00 and C04 pass tests 1, 2, 4, 5, 30, 31 and 32 on a TDC
+  3600; test 4 uses READ BUFFER 3Ch / WRITE BUFFER 3Bh (section 13.2).
 - Optical is read-only from SINTRAN and written whole with DEVICE-COPY (section 11).
 - No CD-ROM support anywhere (section 12).
 
 ### Not found in NDInsight
 
 1. **Any CD-ROM support** in SINTRAN or ND software.
-2. **A BACKUP-SYSTEM example with a SCSI streamer.** All examples use a floppy, a
-   magtape or the 3112 `STREAMER-TAPE-1`. The name `STREAMER-1` for DEVICE-COPY or
-   COPY-USERS-FILES is inferred, not shown.
+2. **A BACKUP-SYSTEM example with a SCSI streamer in a manual.** All manual examples
+   use a floppy, a magtape or the 3112 `STREAMER-TAPE-1`. `DEVICE-COPY` to and from
+   `STREAMER-1` is now measured (RUN-BK, section 10.2). Still not known: whether
+   BACKUP-SYSTEM I05 accepts a SCSI streamer for `CREATE-VOLUME` / `COPY-USERS-FILES`.
+   I02 does not.
 3. **Why MON 336 functions 300B-303B omit 2206B/2207B** (the streamers).
 4. **Which thumbwheel is TH1 and which is TH2**: BOARD and LD-INST disagree. Also
    PCB 350001 or 350004.
