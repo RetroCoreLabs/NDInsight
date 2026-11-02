@@ -964,10 +964,37 @@ flowchart LR
    **Measured with I02: a SCSI streamer cannot hold a BACKUP-SYSTEM file volume.**
    `CREATE-VOLUME TEST01 STREAMER-1 0` and `CREATE-VOLUME TEST01 STREAMER-SCSI-1 0`
    both answer `* Illegal device name` (RUN-BK). The program's own help text for this
-   field names only `FLOPPY-DISC-1, FLOPPY-DISC-2, or MAG-TAPE-1 to MAG-TAPE-4`. Not
-   tried: whether a streamer set up in S3-CONFIG as "Mag. tape no. 1" is accepted, and
-   whether I05 behaves differently. For files on a SCSI streamer, use the Backup
-   Manager (10.3).
+   field names only `FLOPPY-DISC-1, FLOPPY-DISC-2, or MAG-TAPE-1 to MAG-TAPE-4`.
+   The same answer comes back with the full set-up of 9.0 in place (streamer in
+   S3-CONFIG, peripheral file, `DEFINE-MASS-STORAGE-UNIT`, XMSG, DMA server).
+
+   **Why: ND switched the SCSI streamer off in the program's device table.** The table
+   in the `:PROG` file holds one group per device name the user can type: the name,
+   then up to four pairs of (logical device number, peripheral file name). Decoded from
+   the I02 floppy original (`210337I04-XX-02S`, `BACKUP-SYS-I02:PROG`):
+
+   | Name the user types | Logical number, peripheral file |
+   |---|---|
+   | `MAG-TAPE-1` .. `MAG-TAPE-4` | 4 classic mag tape units each (40B `MAG-TAPE-0`, 41B `MAG-TAPE-1`, ...) |
+   | `FLOPPY-DISC-1` | 1000B `FLOPPY-1`, 1001B `FLOPPY-2`, 1002B `FLOPPY-3` |
+   | `STREAMER-TAPE-1` | the same three floppy units (the old floppy streamer, not SCSI) |
+   | **`xTREAMER-1`** | **2206B `STREAMER-1`** (SCSI streamer tape drive 1) |
+   | **`xTREAMER-2`** | **2207B `STREAMER-2`** |
+
+   The SCSI entries exist and carry the right numbers, but the first letter of the
+   name is `x` instead of `S`, so no name the user types can match them. The other
+   versions confirm it is deliberate: BACKUP-H02 has no SCSI entries at all, and
+   BACKUP-SYS-I05 (`210337I05-XX-01D`) has dropped them again. I02 and I05 keep
+   `STREAMER-SCSI-` only for `DEVICE-COPY` through the DMA server (10.2).
+
+   The S3-CONFIG SCSI menu of this SINTRAN (VSX/500 L) offers SCSI disks 1-14 and
+   SCSI streamers 1-2, and no SCSI mag tape, so the streamer cannot be set up as a
+   `MAG-TAPE-n` either.
+
+   So no shipped ND-100 version of BACKUP-SYSTEM writes a file volume to a SCSI
+   streamer. ND's tool for files on a SCSI streamer is the Backup Manager (10.3). It
+   runs on the ND-500/5000, and only its file restore program (`BM-FILERE-B02:DOM`)
+   has been found.
 
 2. Copy files (BACKUP-UG 1013-1027):
 
