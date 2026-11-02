@@ -81,6 +81,7 @@ then a line number, for example (K-REL 13105).
 | TV-REL | `Installation/Installation-Description/ND-895560-1-EN.md` (ND-5000 basic platform install, Disk Restore from `STREAMER-1`) |
 | TPS | `Installation/Installation-Description/ND-896058-4-EN.md` (Backup Manager restore from `STREAMER-1`) |
 | TRACE | DISK-MM-B00 FORMAT-INITIALIZE traced on the nd100x emulator under its DAP debugger, 2026-10-31, with the SCSI command log on. DISK-MM is loaded at file word + 065400; the numbers given are its memory addresses (octal), read with nd100-dis. |
+| PCB-LIST | The ND board list (PCB number, part number, short description per board), entries for PCB 3112 and 3201-3207, supplied by the repository owner 2026-11-02. Not in this repository. |
 | MICROP | Micropolis 1370 Series product description, document 101689 rev D (not in this repository; a scan is on the bitsavers mirrors). Appendix A: formatted capacity. Appendix B: MODE SENSE pages and their default values. It refers to Micropolis document 110011 (SCSI implementation) for the details; 110011 is **not found**. |
 
 Numbers ending in `B` or written with a subscript 8 are octal. The release notes
@@ -178,8 +179,42 @@ In words:
 | Termination | "The complete SCSI bus ... MUST have a termination plug at BOTH ends." Part 517691 | LD-INST 84, 223-229 |
 | Cable | max 25 m from adaptor to disk (for the 310/630 MB drives) | PI-EMD 46 |
 
-PCB number: BOARD says 350001, LD-INST says 350004. I have not found which is right,
-or whether both exist.
+PCB number: BOARD says 350001, LD-INST says 350004. Both are right. The ND board
+list (PCB-LIST) gives one part number per board edition:
+
+| PCB | Name | Part number |
+|---|---|---|
+| 3201 | N-100 SCSI/Floppy Ctrl | 350001 |
+| 3204 | N-100 SCSI/Floppy Ctrl I | 350004 |
+| 3205 | N-100 SCSI/Floppy Ctrl II | 350005 |
+| 3206 | N-100 SCSI/Floppy Ctrl III | 350006 |
+| 3207 | N-100 SCSI/Floppy Ctrl IV | 350007 |
+
+The last edition, 3207, is described as "SCSI (DL or SE) and floppy interface" with
+one 8192 x 8 SRAM (8 KB). Every edition carries the SCSI adaptor **and** a floppy
+controller on the same card.
+
+#### The other streamer: PCB 3112, not used with SCSI
+
+| Fact | Value | Source |
+|---|---|---|
+| Board | N-100 8" + 5.25" Floppy & Streamer Ctrl, PCB 3112, part number 324012 | PCB-LIST |
+| Drives | up to 3 floppy drives (units 0, 1, 2) and one streamer (unit 0) | PCB-LIST |
+| Interrupt | level 11 | PCB-LIST |
+| Memory | two 2048 x 8 SRAM chips (4 KB) | PCB-LIST |
+| SINTRAN | "The streamer drive did not have it's own driver/data field in Sintran III, only accessible from the Backup-System." | PCB-LIST |
+| BACKUP-SYSTEM name | `STREAMER-TAPE-1` / `-2`. The I02 device table maps them to the floppy units: `STREAMER-TAPE-1` = 1000B `FLOPPY-1`, 1001B `FLOPPY-2`, 1002B `FLOPPY-3`; `STREAMER-TAPE-2` = 1003B-1005B `FLOPPY-4..6`. This fits the line above: the streamer is reached through the floppy controller's own units. | `BACKUP-SYS-I02:PROG` device table, decoded (10.1) |
+
+The 3112 is a machine **without** SCSI. A machine with SCSI has a 3201-3207 card,
+which already holds the floppy controller, so it does not also carry a 3112. That
+means the two streamers belong to different machines:
+
+- `STREAMER-TAPE-1` / `-2`: the 3112 streamer. BACKUP-SYSTEM file backup supports it,
+  and the manual's tape examples use it.
+- `STREAMER-1` / `-2`: the SCSI streamer on a 3201-3207 card (logical 2206B/2207B,
+  I/O data field 2226B/2227B).
+
+Text written for one of them does not hold for the other.
 
 ### 3.2 The four buses
 
@@ -323,7 +358,7 @@ Two warnings from the source:
 | Name | What it is | Source |
 |---|---|---|
 | `STREAMER-1` / `STREAMER-2` | SCSI streamer, SINTRAN device name and Backup Manager device name | K-REL 13124; BM-INST 611; ES-INST 359, 461 |
-| `STREAMER-TAPE-1` / `-2` | The streamer on the **3106/3112 floppy-streamer controller**, not SCSI (inferred: the test program offers it under "3112 Floppy streamer DMA") | TP-OLD 4001-4006; BACKUP-UG 4389; SYS-SUP 11496 |
+| `STREAMER-TAPE-1` / `-2` | The streamer on the **3112 floppy-and-streamer controller**, not SCSI. It has no SINTRAN data field of its own; BACKUP-SYSTEM reaches it through the floppy units 1000B-1005B (3.1). | PCB-LIST; TP-OLD 4001-4006; BACKUP-UG 4389; SYS-SUP 11496 |
 | `MAG-TAPE-1..4` | Used for both the old magtape controllers (Cipher, Pertec, STC) and SCSI magtapes | K-REL 937-938, 13130 |
 
 **Not found** anywhere in NDInsight: `SCSI-STREAMER`, `SCSI-MAGTAPE`, `SCSI-TAPE`,
@@ -990,6 +1025,23 @@ flowchart LR
    The S3-CONFIG SCSI menu of this SINTRAN (VSX/500 L) offers SCSI disks 1-14 and
    SCSI streamers 1-2, and no SCSI mag tape, so the streamer cannot be set up as a
    `MAG-TAPE-n` either.
+
+   **Test with the entry switched back on (measured, RUN-BK, 2026-11-02).** On a copy
+   of `BACKUP-SYS-I02:PROG`, the two `x` were changed back to `S`. This is not an ND
+   procedure, only a test of what the hidden entry does:
+
+   | Change to the copy | Peripheral file `STREAMER-1` | Result |
+   |---|---|---|
+   | `S` only (table still says 2206B) | 2226B | `CREATE-VOLUME`: `* Not standard log. dev. no. for: or SYSTEM's peripheral file should be named: STREAMER-1` - the program checks that the peripheral file has the number in its table |
+   | `S` only | 2206B | `CREATE-VOLUME`: `* Illegal device name` (SINTRAN L has no unit 2206B, 9.0) |
+   | `S`, and the table number 2206B -> 2226B | 2226B | `CREATE-VOLUME`: `* Illegal device name` after the unit, no SCSI command sent. `LIST-VOLUME STREAMER-1 0` **works**: INQUIRY, TEST UNIT READY, MODE SENSE, MODE SELECT, LOAD, REWIND, READ 2 fixed blocks; on a blank tape it gets BLANK CHECK and prints `* No data detected` |
+
+   So the program can read a SCSI streamer, but refuses to create a file volume on
+   it. The manual says why, in its section on label layout for disk and streamer
+   volumes: "... when normal file backup on disk or streamer volumes is implemented"
+   (BACKUP-UG 4867). **File backup to any streamer, the 3112 one or SCSI, was never
+   implemented in BACKUP-SYSTEM.** On a streamer the program writes only device
+   copies (10.2), and it names that volume `BACKUP` itself (BACKUP-UG 4733-4745).
 
    So no shipped ND-100 version of BACKUP-SYSTEM writes a file volume to a SCSI
    streamer. ND's tool for files on a SCSI streamer is the Backup Manager (10.3). It
