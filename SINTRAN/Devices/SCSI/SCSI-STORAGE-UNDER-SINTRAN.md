@@ -18,6 +18,8 @@ marked **not found** was searched for here and is not there.
    - [9.0 Getting a SCSI streamer going - the short version](#90-getting-a-scsi-streamer-going---the-short-version-measured)
 10. [Backup to tape and restore](#10-backup-to-tape-and-restore)
     - [Quick procedure: whole-disk backup and restore on a SCSI streamer](#quick-procedure-whole-disk-backup-and-restore-on-a-scsi-streamer-measured)
+    - [10.1 File backup with BACKUP-SYSTEM (not possible on a streamer)](#101-file-backup-with-backup-system)
+    - [10.3 Backup Manager: single files on a SCSI streamer](#103-backup-manager)
 11. [Optical disk (LD 1200 WORM)](#11-optical-disk-ld-1200-worm)
 12. [CD-ROM](#12-cd-rom)
 13. [Maintenance programs: DISK-MM and SCSI-TV](#13-maintenance-programs-disk-mm-and-scsi-tv)
@@ -51,6 +53,8 @@ then a line number, for example (K-REL 13105).
 | ES-INST | `Installation/Installation-Description/ND-895560-2-EN.md` (ND-5000 ES basic software install) |
 | APP-INST | `Installation/Installation-Description/ND-895496-1-EN.md` |
 | BM-INST | `Installation/Installation-Description/ND-895055-1A-EN.md` (Backup Manager) |
+| BM-UG | Backup Manager User Guide, ND-860276.2 EN (version B). A scan without a text layer, not in this repository (`ND-860276-2-EN.pdf` in the Oddene manual collection). Cited by the manual's own page numbers ("book page"). |
+| BM-FLOPPY | The RetroCore Labs software archive (`RetroCoreLabs/norskdata-software-archive`, folder `images/<md5>/`): the six 211226B02 floppy images, listed with `ndtool`, mode files read with the parity bit stripped, 2026-11-02. |
 | BM-SRC | `Installation/Installation-Description/ND-250351-3-EN.md` (Backup Manager source/C01) |
 | PATCH-L | `Installation/Installation-Description/ND-895230-1A-EN.md` (SINTRAN patch notes) |
 | PATCH-2 | `Installation/Installation-Description/ND-896058-2-EN.md` |
@@ -1045,8 +1049,7 @@ flowchart LR
 
    So no shipped ND-100 version of BACKUP-SYSTEM writes a file volume to a SCSI
    streamer. ND's tool for files on a SCSI streamer is the Backup Manager (10.3). It
-   runs on the ND-500/5000, and only its file restore program (`BM-FILERE-B02:DOM`)
-   has been found.
+   runs on the ND-500/5000. The full B02 floppy set is in the software archive (10.3.2).
 
 2. Copy files (BACKUP-UG 1013-1027):
 
@@ -1219,6 +1222,214 @@ Other CUF service commands (BACKUP-UG 1961, 1971, 2084-2090, 2151-2153):
 
 ### 10.3 Backup Manager
 
+The Backup Manager (ND 211226) is ND's tool for **single files** on a SCSI streamer.
+BACKUP-SYSTEM cannot do that (10.1). Nothing in this section has been run on an
+emulator yet. It is put together from the install papers, the user guide and the
+floppies themselves.
+
+#### 10.3.1 What it is and what it needs
+
+Four programs (BM-INST 9-16; BM-UG book page 5):
+
+| Program | Start with | Does |
+|---|---|---|
+| BM-Operator | `@BM-OPERATOR` | the main program: copy files, directories or SIBAS databases, run predefined sets, service commands |
+| BM-Definition | `@BM-DEFINITION` | define backup and restore sets (stored in the job database) |
+| BM-Scheduler | `@BM-SCHEDULER` | run sets or batch jobs at set times, through the RT program `BMSERV` |
+| BM-FileRestore | `@BM-FILERESTORE` | restore single files from an **image** backup on tape or disk |
+
+| Needs | Value | Source |
+|---|---|---|
+| CPU | ND-500 or ND-5000. The programs are ND-500 domains (`:DOM`). | BM-INST 66-68 |
+| Operating system | SINTRAN III VSX for ND-500/5000, 210576L | BM-INST 80 |
+| Other products | ND LINKER 211224B01; Backup System 210337I05 (used during install, and its DMA server does the image copies on the ND-100) | BM-INST 84-90 |
+| Disk space | SYSTEM 230 pages; ND-OPERATIONS 34 pages, 2 files; BACKUP-MANAGER 2900 pages, 25 files (B version) | BM-INST 1.3 |
+| ND-100 side | 1 segment, 1 RT description (for `BMSERV`) | BM-INST 1.3 |
+| Login | image copies, database copies and BM-FileRestore need user SYSTEM when User Environment is not running | BM-UG book page 15-16 |
+
+The papers are for B04 (BM-INST, 1990) and C (ND-895055-3A). The floppies that exist
+are **B02**. In the commands below, `<rev>` is the revision on the floppies, here `02`.
+
+#### 10.3.2 The floppies (B02)
+
+All six are in the RetroCore Labs software archive (BM-FLOPPY), each checked against
+its MD5 when downloaded:
+
+| Floppy | Archive image, MD5 | Files on it |
+|---|---|---|
+| `211226B02-XX-01D` | ND-disk-00032, `d91616fbc2dfb42c4cacd61141c2b529` | installer `IN-BCKMAN-XX-B02:PROG`, `:INIT`, `:XCOM`; `BM-JOBDB-B02:DATA` (job database with examples); `BM-PARAMETER-B02:DATA`; `BM-SIBDUM-B02:NRF` (no-SIBAS stub); `BM-OSIBAS-B02:NRF` (SIBAS/R link); `BM-SERVER-B02:PROG` (the scheduler server); mode files `BM-DRSIB-B02`, `BM-DNOSIB-B02`, `BM-SERVER-B02`, `BM-DUMP-B02`, `BM-START-B02`, `BM-DMAPTC` |
+| `211226B02-XX-02D` | ND-disk-00031, `b5b2c0e6c5265a212ff520dcae6b2a51` | `BM-FILERE-B02:DOM` (BM-FileRestore) |
+| `211226B02-XX-03D` | ND-disk-00030, `58bc43dc1c8e70664f6ddacbc80772a1` | `BM-OPERATOR-B02:DOM` (BM-Operator) |
+| `211226B02-XX-04D` | ND-disk-00035, `4e2d509bf12ca1fdcebe24acfc3f5679` | `BM-DEFINI-B02:DOM`, `BM-SCHED-B02:DOM`, `BM-OPERATOR-B02:DO02` (second part of BM-Operator) |
+| `211226B02-EN-01D` | ND-disk-00034, `9ceed9f8b02aaa1ad44df78f0ec39d48` | English screen texts `BM-FILERE-EN-B02:SEG`, `BM-OPERAT-EN-B02:SEG`, `BM-DEFINI-EN-B02:SEG`, `BM-SCHED-EN-B02:SEG`; `BM-LANG-EN-B02:MODE` |
+| `211226B02-EN-02D` | ND-disk-00033, `8216d1a692387f1cbd3371ca845007ca` | `BM-FILERE-EN-B02:DATA`, `BM-OPERAT-EN-B02:DATA`, `BM-DEFINI-EN-B02:DATA`, `BM-SCHED-EN-B02:DATA` |
+
+The B04 paper says the installer copies XX-01D to 04D and EN-01D (BM-INST 271-279). It
+does not name EN-02D. Whether the B02 installer asks for EN-02D is **not known** until
+it is run. The NDInsight catalogue entry for this set is
+`Installation/Software/ND-211226/ND-211226B02/README.md`.
+
+#### 10.3.3 Installing (BM-INST 4.1-4.2)
+
+1. Check the prerequisites (10.3.1). BACKUP-SYSTEM I05 must already be on the pack.
+2. Log in as SYSTEM.
+3. Put floppy `211226B02-XX-01D` in the drive and enter it:
+
+   ```
+   @ENTER-DIRECTORY 211226B02-XX-01D <device name> <device number>
+   ```
+
+4. Start the installer:
+
+   ```
+   @(211226B02-XX-01D:FLOPPY-USER)IN-BCKMAN-XX-B02:PROG
+   ```
+
+   It asks for the other floppies itself. It also asks whether BM-Operator gets a
+   SIBAS interface. Choose **no SIBAS** unless SIBAS/R-B is installed. The two choices
+   are the mode files `BM-DNOSIB-B02:MODE` (links the stub `BM-SIBDUM-B02:NRF` into
+   BM-Operator) and `BM-DRSIB-B02:MODE` (links `BM-OSIBAS-B02:NRF` and
+   `(SIBR-B)SIBR-LIBRARY`). The files go to user `BACKUP-MANAGER`; the job database
+   and parameter file go to `ND-OPERATIONS`. The names in the installer
+   (`BM-OPERAT-XX-<VERREV>:SEG`, `BM-LANG-<LANG>`) show that it also installs one
+   language as the default: `BM-LANG-EN-B02:MODE` creates `BM-OPERAT-XX-B02:SEG` and
+   so on, and copies the `-EN-` texts into them.
+5. Add these lines to `(SYSTEM)HENT-MODE:MODE` (run at cold start):
+
+   ```
+   @MODE (BACKUP-MANAGER)BM-SERVER-B02:MODE,,,
+   @MODE (BACKUP-MANAGER)BM-DUMP-B02:MODE,,,
+   ```
+
+   `BM-SERVER-B02:MODE` loads `BM-SERVER-B:PROG` onto a new segment `BMSERV` with
+   the RT loader, as RT program `BMSERV` at priority 32. `BM-DUMP-B02:MODE` defines
+   the four standard domains in the ND-500 monitor (`@ND`): `BM-OPERATOR`,
+   `BM-DEFINITION`, `BM-SCHEDULER`, `BM-FILERESTORE`. Those names are what makes
+   `@BM-OPERATOR` etc. work as commands.
+6. Add this line to `(SYSTEM)LOAD-MODE:MODE` (run at every warm start):
+
+   ```
+   @MODE (BACKUP-MANAGER)BM-START-B02:MODE,,,
+   ```
+
+   It only does `@RT BMSERV`, which starts the scheduler server.
+7. Add the DMA server patch to the DMA server's load file
+   `(UTILITY)BACKUP-LOAD-I00:MODE` (10.0a), after the DMA server is loaded:
+
+   ```
+   @MODE (BACKUP-MANAGER)BM-DMAPTC:MODE,,,
+   ```
+
+   The file holds two `@DMAC` patches to segment `DMASEG`:
+   - "Patch to set the block size in MON ABSTR for BDIO disk calls to 1000b words":
+     word `BIOnn+3` goes from 1 to 2 in each of the 16 routines `BIO01`..`BIO16`
+     (065110-065242), and word 41166 goes from 2000 to 1000.
+   - "Patch to disable write of FM and rewind on streamer in all error situations
+     and termination of dev. oper.", in three places: `Finish_Device` (045105),
+     `Retry`, so that no file mark is written after end of medium (047740), and
+     `Clear_Device`, which now returns at once (011072).
+
+   Both carry the header "Must only be execute on DMA-SERVER-C01, Nov. 5 1988".
+   Inferred from that header: the octal addresses fit only that build. The B04 paper
+   says the installer runs these patches itself (BM-INST 91); whether the B02
+   installer does is not known. Which DMA server version `BACKUP-SERV-I02` or `-I05`
+   holds has **not** been checked; the program file shows no version string. Check
+   that before running this patch.
+8. Make the peripheral files for the ND-100 tape drives. Backup Manager finds them
+   only through these files (BM-INST 605-616):
+
+   | Peripheral file | Number in the file | Name in Backup Manager |
+   |---|---|---|
+   | `STREAMER-1` | 2226B | `STREAMER-1` |
+   | `STREAMER-2` | 2227B | `STREAMER-2` |
+   | `MAG-TAPE-0` | 40B | `MAG-TAPE-1` |
+   | `MAG-TAPE-4` | 32B | `MAG-TAPE-2` |
+   | `MAG-TAPE-8` | 1232B | `MAG-TAPE-3` |
+   | `MAG-TAPE-12` | 1225B | `MAG-TAPE-4` |
+
+   For the SCSI streamer that is `@SET-PERIPHERAL-FILE "STREAMER-1" 2226B`, the same
+   file as in 9.0. Devices on a DOMINO SCSI controller need no peripheral file
+   (BM-INST 618-620); this machine has no DOMINO.
+
+#### 10.3.4 Using it
+
+All screens are forms. Fill a field, then press Return to go to the next one. EXIT
+leaves a program. SHIFT + EXIT leaves the Backup Manager altogether. `@` gives a
+SINTRAN command from inside a form (BM-UG book page 16).
+
+**File backup to the SCSI streamer** (directory to volume, BM-UG 2.8.2, book page
+52-53):
+
+```
+@BM-OPERATOR
+BmOp: Copy
+Object    Copy method   Incremental
+SINTRAN   FILE          NO
+From      Computer name   Directory name   User area   Control
+DIRECTORY                 PACK-4
+To        Volume name   Computer name   Device name   U  S  Mode   Devs
+VOLUME    MY-VOLUME                     STREAMER-1    0     Ap     1
+Selection File name                                     Selection date
+INCLUDE   (ANN):TEXT
+Select execution mode (Manual/Stop-on-error/Automatic): MANUAL
+```
+
+- *Volume name*: up to 16 letters, digits and hyphens, not starting with a hyphen.
+  It can be left empty, but a name is recommended.
+- *Device name*: up to three devices. When one tape is full, copying goes on to the
+  next. Press F2 in the field to add one.
+- *Mode*, for a volume: `Ap` append, `Ar` archive and delete the file, `Co` compare,
+  `Ov` overwrite the volume, `Re` retension, `Sm` shrinking mode, `Ul` unload after
+  the copy.
+- Execution mode: *Manual* asks before each file; *Stop-on-error* runs on its own and
+  stops at an error; *Automatic* runs on its own and marks failed items `Er`
+  (BM-UG book page 27).
+
+**Restoring files from a file backup** (volume to directory, BM-UG 2.8.3, book page
+54-55): the same `Copy` form with `From VOLUME`, the volume name and `STREAMER-1`, and
+`To DIRECTORY`. For example `From VOLUME MY-VOLUME ... STREAMER-1 0 Re`,
+`To DIRECTORY PACK-5 ANN Of`, `INCLUDE REPORT:TEXT`.
+
+**Restoring single files from a whole-disk (image) backup** with BM-FileRestore
+(BM-UG chapter 5, book page 139-146). This also reads **tapes written by
+BACKUP-SYSTEM `DEVICE-COPY`**: "Backup Manager can restore from a tape produced by
+Backup System" (BM-UG 1.15, book page 17). Such a volume shows the name `Backup`
+(BM-UG book page 143). So the DEVICE-COPY tapes of 10.2 are the input:
+
+```
+@BM-FILERESTORE
+BmFi: Restore-file   File-statistics   User-statistics   BM   Exit
+Define the device(s) where your backup volume is mounted.
+From     Device name   U  S  Devs
+VOLUME   STREAMER-1    0
+BmFi: Continue with defined device(s)? (Yes/No): Yes
+BmFi: Start   Next-medium   Wrong-medium
+Reel:01 Volume: TOTAL-BACKUP
+Index Directory name  Device name   U S Pages   Backed up Control
+00001 PACK-ONE        DISC-SCSI-1   0   61036   89-03-03  No
+```
+
+Give `Start` on the right entry, then `Restore-file`:
+
+```
+Source file name     : (MARLEEN)REPORT:TEXT
+Destination file name: (MARLEEN)REPORT:TEXT
+```
+
+- The source name must be unique, and its user area must be given; SYSTEM is the
+  default. Type and version can be added: `(MARLEEN):TEXT`, `(MARLEEN);2`.
+- The destination is overwritten if it exists, unless the name is in double quotes.
+  A new file without a type gets `:DATA`.
+- `File-statistics (MARLEEN)B` lists the files of a user area that start with `B`.
+  `User-statistics` lists the user areas on the image.
+- A backup spread over several tapes: start with the first; the program asks
+  "Mount medium number 2 on STREAMER-1 unit 0".
+
+The Backup Manager writes its own volume format, which differs from BACKUP-SYSTEM's.
+It can hold several devices and a mix of files and images on one volume (BM-UG 1.15).
+
+#### 10.3.5 Example from the ND-5000 ES upgrade guide
+
 Example from the ND-5000 ES upgrade guide (ES-INST 350-362):
 
 ```
@@ -1240,7 +1451,7 @@ Select execution mode (Manual/Stop-on-Error/Automatic): Stop-on-Err
 - The Backup Manager finds ND-100 tape drives only through the peripheral files in
   section 9.1 (BM-INST 607-616).
 - It needs DMA-SERVER patches "for handling DOMINO/SCSI-disks and the 155MB Archive
-  streamer" (BM-INST 91).
+  streamer" (BM-INST 91). Those are `BM-DMAPTC:MODE`, 10.3.3 step 7.
 
 ### 10.4 Whole-disk restore from a SCSI streamer (Disk Restore, ND 211187B)
 
