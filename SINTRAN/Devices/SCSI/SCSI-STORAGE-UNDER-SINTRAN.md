@@ -1453,6 +1453,159 @@ Select execution mode (Manual/Stop-on-Error/Automatic): Stop-on-Err
 - It needs DMA-SERVER patches "for handling DOMINO/SCSI-disks and the 155MB Archive
   streamer" (BM-INST 91). Those are `BM-DMAPTC:MODE`, 10.3.3 step 7.
 
+#### 10.3.6 Looking at the files on a backup tape: no ENTER-DIRECTORY
+
+A whole-disk backup on a streamer cannot be entered with `@ENTER-DIRECTORY` and listed
+with `@LIST-FILES`. On a tape, `DEVICE-COPY` writes a **volume**, not a SINTRAN
+directory. "The device should contain a volume if it is a streamer or magnetic tape",
+and the disk copy inside it is one volume file, in a volume that BACKUP-SYSTEM names
+`BACKUP` itself (BACKUP-UG 4733-4745). No ND document in this repository describes
+entering a directory on a streamer. Not tried on the emulator: what SINTRAN answers
+to `@ENTER-DIRECTORY ... STREAMER-1 0`.
+
+What can be used instead:
+
+| Way | Shows | Needs | State |
+|---|---|---|---|
+| BM-FileRestore (10.3.4, steps in 10.3.7) | `User-statistics`: the user areas inside the disk copy. `File-statistics (USER)`: the files of one user area, with type, access, dates, pages and bytes. `Restore-file`: copies single files back. Reads tapes written by BACKUP-SYSTEM `DEVICE-COPY` (volume name `Backup`). | Backup Manager on an ND-500/5000 | from BM-UG chapter 5; not yet run on a tape written here |
+| Restore the tape onto a spare disk (10.2), then `@ENTER-DIRECTORY` that disk and `@LIST-FILES` | everything, as on the original disk | BACKUP-SYSTEM only, and a second disk unit set up in SINTRAN | DEVICE-COPY restore measured (10.2); the spare-disk step not done |
+| `LIST-VOLUME STREAMER-1 0` in BACKUP-SYSTEM | the files of the volume. On a device-copy tape, by the label layout, that is the one disk-copy file, not the files inside it | `STREAMER-1` is switched off in every shipped BACKUP-SYSTEM version (10.1) | only tried on a blank tape, with the test copy of I02 that has the entry switched on: `* No data detected` |
+
+#### 10.3.7 Step by step: list the files on a tape, restore one or several
+
+**None of this has been run on the emulator yet.** It is taken from the Backup Manager
+User Guide, chapter 5 (BM-UG book page 139-152) and 2.8.3 (book page 54-58). Which
+procedure to use depends on how the tape was written:
+
+| The tape was written by | It holds | List and restore with |
+|---|---|---|
+| BACKUP-SYSTEM `DEVICE-COPY` (10.2), or BM-Operator with `Copy method IMAGE` | a copy of a whole disk | BM-FileRestore, A and B below |
+| BM-Operator with `Copy method FILE` or `SELECTION FILE` (10.3.4) | single files | BM-Operator `Copy` volume to directory, C below |
+
+The user must be logged in as SYSTEM when User Environment is not running
+(BM-UG book page 15-16).
+
+**A. List what is on a whole-disk tape (BM-FileRestore)**
+
+1. Put the tape in the streamer. If the backup fills more than one tape, all of them
+   must be at hand; start with the first.
+2. Start the program and name the drive (book page 142-143):
+
+   ```
+   @BM-FILERESTORE
+   BmFi: Restore-file   File-statistics   User-statistics   BM   Exit
+   From     Device name   U  S  Devs
+   VOLUME   STREAMER-1    0
+   BmFi: Continue with defined device(s)? (Yes/No): Yes
+   BmFi: Start   Next-medium   Wrong-medium
+   ```
+
+   Give `Start`. The program reads the tape and lists the disk copies on it: index,
+   directory name, device name, unit, pages, date backed up. Move the arrow to the one
+   wanted and press Return. A tape from BACKUP-SYSTEM shows the volume name `Backup`.
+3. **List the user areas** (5.7, book page 149-150):
+
+   ```
+   BmFi: User statistics: ⏎
+   Selection:
+   User area   Created  Entered  Publ. Fr. Own    Pages used  Pages reserv.  Max. files
+   ->SYSTEM    87-02-18 87-11-23 R     R   RWACD  21628       24184          1024
+     MARLEEN   87-02-18 87-11-23 R     R   RWACD    412         600           256
+   ```
+
+   Return alone lists every user area. `MARLEEN` lists one; `M` lists all starting
+   with M. Moving the arrow to a user area and pressing Return makes it the default for
+   the next `File-statistics` and `Restore-file`. EXIT goes back to the menu.
+4. **List the files of a user area** (5.6, book page 146-148):
+
+   ```
+   BmFi: File statistics: (MARLEEN)ADVERT ⏎
+   User area: MARLEEN                 Selection: ADVERT
+   File name          Type  V T Publ. Fr.   Own   Written  Read      Pages  Bytes
+   ->ADVERT-ART       TEXT  1 I       RWACD RWACD 87-10-06 87-10-07   10    19084
+     ADVERT-CINEMA    TEXT  1 I       RWACD RWACD 87-06-29 87-08-31    3     4844
+   ```
+
+   The selection works as in SINTRAN `@FILE-STATISTICS`: `(MARLEEN):TEXT` (all text
+   files), `(MARLEEN);2` (version 2), `(MARLEEN)ADV` (names starting with ADV), or
+   combined, `(MARLEEN)ADV:TEXT;1`. F6 jumps to the *Selection* field to narrow the list
+   further (FUNC G on Facit terminals). One file can be picked with the arrow keys and
+   Return; it then becomes the default name for `Restore-file`.
+
+**B. Restore one file, or several, from a whole-disk tape (BM-FileRestore)**
+
+1. Do A.1 and A.2 (the tape is named and the disk copy chosen).
+2. Give `Restore-file` (5.5, book page 144-145):
+
+   ```
+   BmFi: Restore-file
+   Source file name     : (MARLEEN)REPORT:TEXT
+   Destination file name: (MARLEEN)REPORT:TEXT
+   ```
+
+   - The source name must point at exactly one file. SYSTEM is the default user area,
+     version 1 the default version; `:TEXT` and `;2` pick type and version.
+   - The destination can be a different user area or name, for example
+     `"(CHARLES)HOLIDAY-RESTORE:TEXT"`.
+   - **An existing destination file is overwritten**, unless the name is written in
+     double quotes. Then a file of that name must not exist already. A new name without
+     a type gets `:DATA`.
+   - While copying, the status line shows "Page index".
+3. **Several files:** `Restore-file` takes one file at a time; the guide has no wildcard
+   restore and no way to pick more than one file from the list ("It is not possible to
+   select more than one file at a time", book page 147). Give `Restore-file` again for
+   each file, or put the commands in a mode or batch file (5.8, book page 151-152). The
+   file must start with `Device`; if the backup is on several tapes, all must be mounted
+   before `Device` runs:
+
+   ```
+   @ENTER,<user area>,<password>,[<project password>],[<maximum time>]
+   @BM-FILERESTORE
+   Device,STREAMER-1,0
+   User-statistics,MARLEEN
+   File-statistics,(MARLEEN)
+   Restore-file (MARLEEN)REPORT:TEXT,,
+   Restore-file (MARLEEN)HOLIDAY:TEXT,"(CHARLES)HOLIDAY-RESTORE:TEXT"
+   Exit
+   ```
+
+   The guide's own example uses `Device,mag-tape-1,0` and `Device,mag-tape-1,1` for a
+   backup split over two tape units; `STREAMER-1` is the name this document uses for
+   the SCSI streamer (9.1). The empty destination after `REPORT:TEXT,,` means "same
+   name as the source".
+4. EXIT leaves the program.
+
+**C. List and restore files from a file backup (BM-Operator)**
+
+A file backup is restored with the same `Copy` form that wrote it, run the other way
+(2.8.3, book page 54-55):
+
+```
+@BM-OPERATOR
+BmOp: Copy
+Object    Copy method   Incremental
+SINTRAN   FILE          NO
+From      Volume name   Computer name   Device name   U  S  Mode
+VOLUME    MY-VOLUME                     STREAMER-1    0     Re
+To        Computer name   Directory name   User area   Control
+DIRECTORY                 PACK-5           ANN         Of
+Selection File name                                     Selection date
+INCLUDE   REPORT:TEXT
+Select execution mode (Manual/Stop-on-error/Automatic): MANUAL
+```
+
+- **One file:** name it in the INCLUDE field.
+- **Several files:** a pattern in the INCLUDE field, or `Copy method SELECTION FILE`
+  with a text file that lists them, one per line, written as
+  `(DIRECTORY-NAME:USER-AREA)FILE-NAME:TYPE;VERSION`, with `INCLUDE` / `EXCLUDE` lines
+  and `%` for comments (book page 55-58). A selection file cannot be used to restore
+  from an image backup; that is what BM-FileRestore is for.
+- *Manual* execution mode asks before each file, which shows the file names on the
+  volume one by one.
+- Not checked yet: whether BM-Operator has a command that only lists the files of a
+  volume without copying them. The pages of the guide read so far (chapter 2.8 and
+  chapter 5) do not show one.
+
 ### 10.4 Whole-disk restore from a SCSI streamer (Disk Restore, ND 211187B)
 
 From the ND-5000 ES install guide (ES-INST 453-499):
