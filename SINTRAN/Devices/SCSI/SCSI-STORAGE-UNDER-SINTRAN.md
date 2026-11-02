@@ -1223,9 +1223,10 @@ Other CUF service commands (BACKUP-UG 1961, 1971, 2084-2090, 2151-2153):
 ### 10.3 Backup Manager
 
 The Backup Manager (ND 211226) is ND's tool for **single files** on a SCSI streamer.
-BACKUP-SYSTEM cannot do that (10.1). Nothing in this section has been run on an
-emulator yet. It is put together from the install papers, the user guide and the
-floppies themselves.
+BACKUP-SYSTEM cannot do that (10.1). The section is put together from the install
+papers, the user guide and the floppies themselves. The install (10.3.3) has been run on
+nd100x as an ND-5000 machine and works. A copy to the streamer does not work there yet
+(10.3.8).
 
 #### 10.3.1 What it is and what it needs
 
@@ -1313,6 +1314,13 @@ it is run. The NDInsight catalogue entry for this set is
    ```
 
    It only does `@RT BMSERV`, which starts the scheduler server.
+
+   The Backup Manager also needs NUCLEUS, ND's message system. Its servers are started
+   with `@START-SERVERS`, and the order in `LOAD-MODE:MODE` matters: XMSG first, then
+   `@START-SERVERS`, then the ND-5000 (ND-895061-1A: "after starting the XMSG ... and
+   before starting the ND-5000"). Starting the ND-5000 first lets its swapper take the
+   shared memory. NUCLEUS then has nowhere to put its memory areas (LAMUs), and MTSERV
+   and PROMAN stop with "No LAMU area big enough". Measured on nd100x, 2026-11-02.
 7. Add the DMA server patch to the DMA server's load file
    `(UTILITY)BACKUP-LOAD-I00:MODE` (10.0a), after the DMA server is loaded:
 
@@ -1332,9 +1340,9 @@ it is run. The NDInsight catalogue entry for this set is
    Both carry the header "Must only be execute on DMA-SERVER-C01, Nov. 5 1988".
    Inferred from that header: the octal addresses fit only that build. The B04 paper
    says the installer runs these patches itself (BM-INST 91); whether the B02
-   installer does is not known. Which DMA server version `BACKUP-SERV-I02` or `-I05`
-   holds has **not** been checked; the program file shows no version string. Check
-   that before running this patch.
+   installer does is not known. BACKUP-SYSTEM I05 starts the DMA server itself
+   (`@RT DMASRV`) during a DEVICE-COPY, and that server is **DMA-SERVER C01**, the
+   version the patch is for (measured on nd100x, 2026-11-02).
 8. Make the peripheral files for the ND-100 tape drives. Backup Manager finds them
    only through these files (BM-INST 605-616):
 
@@ -1605,6 +1613,25 @@ Select execution mode (Manual/Stop-on-error/Automatic): MANUAL
 - Not checked yet: whether BM-Operator has a command that only lists the files of a
   volume without copying them. The pages of the guide read so far (chapter 2.8 and
   chapter 5) do not show one.
+
+#### 10.3.8 State on nd100x (2026-11-02)
+
+Measured on a copy of an ND-5000 pack with BACKUP-SYSTEM I05, the ND-500 monitor, the
+Linkage-Loader H02, LINKER B01 and Backup Manager B02 installed by the nd100x
+`tools/installs/` scripts:
+
+| Step | Result |
+|---|---|
+| Install of all five products | works |
+| XMSG, `@START-SERVERS`, then the ND-5000, in that order | no errors; NUCLEUS gets two system LAMUs of 40B pages at multiport pages 4100B and 4140B |
+| BM-OPERATOR COPY of one user area to a volume on `STREAMER-1` | "No files copied". PROMAN reports `Nucleus not started` and `Error in Nucleus initialisation` |
+
+Error 101025B, which BM-OPERATOR prints in some runs, is `nke_NOTINITIALISED`, "Nucleus
+not started" (ND-820026). The NUCLEUS server NKSERV runs, then ends with `MON 0` and no
+message, so NUCLEUS is never marked started. Why it ends is not known yet. Also, the ND-5000
+emulator in nd100x does not have the four NUCLEUS instructions that ND put in the ND-5000
+microcode (`SEND`, `RECVE`, `GETINF`, hole move). The Backup Manager uses them, so it cannot
+work there until they exist. Both defects are written up in nd100x `BUGS.md` P2.
 
 ### 10.4 Whole-disk restore from a SCSI streamer (Disk Restore, ND 211187B)
 
