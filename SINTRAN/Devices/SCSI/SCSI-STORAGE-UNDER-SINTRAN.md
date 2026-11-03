@@ -1655,10 +1655,19 @@ example in 10.3.7 C does. With the local name typed in, B02 opens `D100.STREAMER
 remote file, and SINTRAN answers 260B "File-access reentrant segments are not loaded" (COSMOS
 remote file access, not on this pack).
 
-Still open (nd100x `BUGS.md` P2): during the restore, B02 printed "Error 33504 (octal). No
-message available" and still copied the file correctly. What 33504 means is not known; the
-message file `UE-ERMSG-EN-D06` has no texts for the Backup Manager's own 337xx codes. Error
-33626 at start-up names `(SYSTEM)SWAP-FILE-0:SWAP` from the parameter file's
+During the restore, B02 printed "Error 33504 (octal). No message available" and still copied
+the file correctly. Traced 2026-11-03 (nd100x `BUGS.md` P2): it is the Backup Manager's own
+"reached blank tape" report, not a drive fault. With `INCLUDE`, B02 keeps reading for more
+matching files after the volume: it reads the file's data, then meets both tape marks, then
+blank tape. SINTRAN answers those three reads 3B, 3B and 143B, and BM-OPERATOR turns 143B into
+33504 (code at 0x100636C9: 3B gives 33505, 143B gives 33504 when bit 10 of the device's flag
+bits is set, 100B/146B give 33503). The status line then shows 33504 in place of its progress
+text. The tape holds exactly what the backup wrote, and the drive answers are the ones the
+SCSI rules and the TDC 3600 manual give. The text is missing because the message file
+`UE-ERMSG-EN-D06` has no texts for the Backup Manager's own 337xx codes. Not checked on a real
+machine; a real drive gives SINTRAN the same status at the end of recorded data.
+
+Still open (nd100x `BUGS.md` P2): error 33626 at start-up names `(SYSTEM)SWAP-FILE-0:SWAP` from the parameter file's
 `IMAGE-NO-COMPARE-FILE` line; that file does not exist on this pack. The ND-5000 NUCLEUS
 instructions (`SEND`, `RECVE`, `GETINF`, hole move) are not in the emulator, but the backup and
 the restore never reached them.
