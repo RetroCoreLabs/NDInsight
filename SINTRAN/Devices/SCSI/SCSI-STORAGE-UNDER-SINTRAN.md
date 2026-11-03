@@ -1627,8 +1627,10 @@ Linkage-Loader H02, LINKER B01 and Backup Manager B02 installed by the nd100x
 | BM-OPERATOR `COPY` of `(PACK-ONE:RONNY)TEST:SYMB` to volume `BMTEST-1` on `STREAMER-1` 0, mode OV | "File(s) copied: 1"; the tape holds a Backup Manager volume (header `MEDH`) with the file's bytes |
 | The file deleted from a fresh pack copy, then `COPY` from `VOLUME BMTEST-1 STREAMER-1 0` to `DIRECTORY PACK-ONE RONNY`, `INCLUDE TEST:SYMB` | "File(s) copied: 1"; the restored file is byte-identical to the original and keeps its date |
 
-What has to be done before BM-OPERATOR, in this order. Each item was found by a run that failed
-without it:
+What was done before BM-OPERATOR in the runs that worked, in this order. Items 3 and 4 were
+each found by a run that failed without them; item 1 by earlier runs (no room for the NUCLEUS
+memory areas); items 2 and 5 were always done in the working runs and not tried without (5
+replaced the name `*XM-FIDO` that BM got before; whether a copy needs it is not known):
 
 1. `@SINTRAN-SERVICE-PROGRAM`, `START-XMSG`, `EXIT`; then `@START-SERVERS`; then load and start
    the ND-5000 (ND-895061-1A). In another order the NUCLEUS servers find no room for their
@@ -1649,7 +1651,7 @@ without it:
    XMSG forgets it when XMSG is stopped.
 
 In the form, **leave every "Computer name" field empty** for devices on this machine, as ND's
-examples do (10.3.4, 10.3.7 C). With the local name typed in, B02 opens `D100.STREAMER-1'` as a
+example in 10.3.7 C does. With the local name typed in, B02 opens `D100.STREAMER-1'` as a
 remote file, and SINTRAN answers 260B "File-access reentrant segments are not loaded" (COSMOS
 remote file access, not on this pack).
 
