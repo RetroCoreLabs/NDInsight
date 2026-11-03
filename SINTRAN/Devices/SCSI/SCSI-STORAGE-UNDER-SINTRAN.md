@@ -1481,7 +1481,8 @@ What can be used instead:
 
 #### 10.3.7 Step by step: list the files on a tape, restore one or several
 
-**None of this has been run on the emulator yet.** It is taken from the Backup Manager
+**C (file backup and restore with BM-Operator) has been run on nd100x, see 10.3.8. A and B
+have not been run yet.** It is taken from the Backup Manager
 User Guide, chapter 5 (BM-UG book page 139-152) and 2.8.3 (book page 54-58). Which
 procedure to use depends on how the tape was written:
 
@@ -1614,24 +1615,51 @@ Select execution mode (Manual/Stop-on-error/Automatic): MANUAL
   volume without copying them. The pages of the guide read so far (chapter 2.8 and
   chapter 5) do not show one.
 
-#### 10.3.8 State on nd100x (2026-11-02)
+#### 10.3.8 State on nd100x (2026-11-03): single-file backup and restore work
 
-Measured on a copy of an ND-5000 pack with BACKUP-SYSTEM I05, the ND-500 monitor, the
+Measured on copies of an ND-5000 pack with BACKUP-SYSTEM I05, the ND-500 monitor, the
 Linkage-Loader H02, LINKER B01 and Backup Manager B02 installed by the nd100x
-`tools/installs/` scripts:
+`tools/installs/` scripts. The machine is an ND-120/CX with `fpp = 32`.
 
 | Step | Result |
 |---|---|
 | Install of all five products | works |
-| XMSG, `@START-SERVERS`, then the ND-5000, in that order | no errors; NUCLEUS gets two system LAMUs of 40B pages at multiport pages 4100B and 4140B |
-| BM-OPERATOR COPY of one user area to a volume on `STREAMER-1` | "No files copied". PROMAN reports `Nucleus not started` and `Error in Nucleus initialisation` |
+| BM-OPERATOR `COPY` of `(PACK-ONE:RONNY)TEST:SYMB` to volume `BMTEST-1` on `STREAMER-1` 0, mode OV | "File(s) copied: 1"; the tape holds a Backup Manager volume (header `MEDH`) with the file's bytes |
+| The file deleted from a fresh pack copy, then `COPY` from `VOLUME BMTEST-1 STREAMER-1 0` to `DIRECTORY PACK-ONE RONNY`, `INCLUDE TEST:SYMB` | "File(s) copied: 1"; the restored file is byte-identical to the original and keeps its date |
 
-Error 101025B, which BM-OPERATOR prints in some runs, is `nke_NOTINITIALISED`, "Nucleus
-not started" (ND-820026). The NUCLEUS server NKSERV runs, then ends with `MON 0` and no
-message, so NUCLEUS is never marked started. Why it ends is not known yet. Also, the ND-5000
-emulator in nd100x does not have the four NUCLEUS instructions that ND put in the ND-5000
-microcode (`SEND`, `RECVE`, `GETINF`, hole move). The Backup Manager uses them, so it cannot
-work there until they exist. Both defects are written up in nd100x `BUGS.md` P2.
+What has to be done before BM-OPERATOR, in this order. Each item was found by a run that failed
+without it:
+
+1. `@SINTRAN-SERVICE-PROGRAM`, `START-XMSG`, `EXIT`; then `@START-SERVERS`; then load and start
+   the ND-5000 (ND-895061-1A). In another order the NUCLEUS servers find no room for their
+   memory areas.
+2. Load and rewind the tape: `@DEVICE-FUNCTION STREAMER-1` with `REWIND`, `LOAD`, `REWIND`.
+   This needs the peripheral file `(SYSTEM)STREAMER-1` (9.1).
+3. `@DEFINE-MASS-STORAGE-UNIT STREAMER-1 0`. When the computer-name field is empty, B02 looks a
+   device name up only in SINTRAN's directory and device-name tables (monitor calls 244B
+   GetDirEntry and 245B GetNameEntry). Without this line it prints error 33575
+   `D100.STREAMER-1,0` and copies nothing.
+4. In `(ND-OPERATIONS)BM-PARAMETER-B02:DATA`, set `DOMINO-MODE = OFF` ("search for DOMINO
+   sequential devices"). With ON, each COPY first asks NUCLEUS for the DOMINO name server
+   `DP-NAME-SERVER`. On a machine without DOMINO that name is not there. B02 then stops the
+   COPY ("No files copied"), because it treats only "no access" as "no DOMINO here" and not
+   "name not found".
+5. Give XMSG a local system name: `@XMSG-COMMAND`, `DEFINE-REMOTE-NAME,,D100,100`, `EXIT`. The
+   Backup Manager asks XMSG for it and writes it in front of directory names (`D100.PACK-ONE`).
+   XMSG forgets it when XMSG is stopped.
+
+In the form, **leave every "Computer name" field empty** for devices on this machine, as ND's
+examples do (10.3.4, 10.3.7 C). With the local name typed in, B02 opens `D100.STREAMER-1'` as a
+remote file, and SINTRAN answers 260B "File-access reentrant segments are not loaded" (COSMOS
+remote file access, not on this pack).
+
+Still open (nd100x `BUGS.md` P2): during the restore, B02 printed "Error 33504 (octal). No
+message available" and still copied the file correctly. What 33504 means is not known; the
+message file `UE-ERMSG-EN-D06` has no texts for the Backup Manager's own 337xx codes. Error
+33626 at start-up names `(SYSTEM)SWAP-FILE-0:SWAP` from the parameter file's
+`IMAGE-NO-COMPARE-FILE` line; that file does not exist on this pack. The ND-5000 NUCLEUS
+instructions (`SEND`, `RECVE`, `GETINF`, hole move) are not in the emulator, but the backup and
+the restore never reached them.
 
 ### 10.4 Whole-disk restore from a SCSI streamer (Disk Restore, ND 211187B)
 
