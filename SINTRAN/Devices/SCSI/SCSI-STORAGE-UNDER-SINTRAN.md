@@ -19,7 +19,7 @@ marked **not found** was searched for here and is not there.
 10. [Backup to tape and restore](#10-backup-to-tape-and-restore)
     - [Quick procedure: whole-disk backup and restore on a SCSI streamer](#quick-procedure-whole-disk-backup-and-restore-on-a-scsi-streamer-measured)
     - [10.1 File backup with BACKUP-SYSTEM (not possible on a streamer)](#101-file-backup-with-backup-system)
-    - [10.3 Backup Manager: single files on a SCSI streamer](#103-backup-manager)
+    - [10.3 Backup Manager: back up and restore single files](#103-backup-manager-back-up-and-restore-single-files)
 11. [Optical disk (LD 1200 WORM)](#11-optical-disk-ld-1200-worm)
 12. [CD-ROM](#12-cd-rom)
 13. [Maintenance programs: DISK-MM and SCSI-TV](#13-maintenance-programs-disk-mm-and-scsi-tv)
@@ -31,62 +31,63 @@ marked **not found** was searched for here and is not there.
 
 ## 1. Sources and how they are cited
 
-All paths are inside the NDInsight repository. Citations use the short keys below,
-then a line number, for example (K-REL 13105).
+All paths are inside the NDInsight repository. The text names a document in plain words and
+then gives a line number in that file, for example (SINTRAN K release notes, line 13105).
+This table gives the file for each name.
 
-| Key | File |
+| Named in the text as | File |
 |---|---|
-| K-REL | `SINTRAN/Release-Documentation/ND-60230-5-EN SINTRAN III - Release Information - K-version.md` |
-| L-REL | `SINTRAN/Release-Documentation/ND-860230-6-EN Sintran III - Release Information - L-Version.md` |
-| M-REL | `SINTRAN/Release-Documentation/ND-860230-7A-EN SINTRAN III - Release Information - M-Version.md` |
-| N-REL | `SINTRAN/Release-Documentation/ND-860230-8-EN SINTRAN III - Release Information - N-version.md` |
-| REF | `Reference-Manuals/ND-60.128.5 EN SINTRAN III Reference Manual.md` |
-| SYS-SUP | `Operations/SINTRAN/ND-30.003.007 EN SINTRAN III System Supervisor.md` |
-| HANDBOK | `Reference-Manuals/SINTRAN III Håndbok for driftsansvarlig.md` |
-| BACKUP-UG | `Reference-Manuals/ND-60.250.1_EN_BACKUP_User_Guide.md` |
-| TP-G | `Reference-Manuals/ND-210523G_Test_Programs_for_ND-100_110_120__ND_Software_Library.md` |
-| TP-ADD | `Reference-Manuals/ND-899159-1-EN_Test_Program_Description_for_ND-100_ND-110_-_Addendum_December_1998.md` |
-| TP-OLD | `Reference-Manuals/ND-830005.3 EN Test Program Description for ND-100-110.md` |
-| TP-H | `Installation/Installation-Description/ND-895076-1p-EN.md` (test programs product info, SCSI-TV-C) |
-| TP-I | `Installation/Installation-Description/ND-895076-2A-EN.md` (test programs 210523I, DISK-MM-C03, SCSI-TV-C04) |
-| LD-INST | `Installation/Installation-Description/ND-99118-1-EN.md` (installing the LD 1200 optical drive) |
-| ES-INST | `Installation/Installation-Description/ND-895560-2-EN.md` (ND-5000 ES basic software install) |
-| APP-INST | `Installation/Installation-Description/ND-895496-1-EN.md` |
-| BM-INST | `Installation/Installation-Description/ND-895055-1A-EN.md` (Backup Manager) |
-| BM-UG | Backup Manager User Guide, ND-860276.2 EN (version B). A scan without a text layer, not in this repository (`ND-860276-2-EN.pdf` in the Oddene manual collection). Cited by the manual's own page numbers ("book page"). |
-| BM-FLOPPY | The RetroCore Labs software archive (`RetroCoreLabs/norskdata-software-archive`, folder `images/<md5>/`): the six 211226B02 floppy images, listed with `ndtool`, mode files read with the parity bit stripped, 2026-11-02. |
-| BM-SRC | `Installation/Installation-Description/ND-250351-3-EN.md` (Backup Manager source/C01) |
-| PATCH-L | `Installation/Installation-Description/ND-895230-1A-EN.md` (SINTRAN patch notes) |
-| PATCH-2 | `Installation/Installation-Description/ND-896058-2-EN.md` |
-| ES-ADMIN | `Reference-Manuals/500/ND-830147-3-EN ND-5000 ES System Administrator Guide.md` |
-| DOMINO | `Reference-Manuals/500/ND-814009-1-EN DOMINO SCSI Operator Guide.md` |
-| PI-LD | `Installation/Product-Info/ND-110230-A1-EN.md` (LD 1200 product sheet) |
-| PI-EMD | `Installation/Product-Info/ND-110326-A1-EN.md` (310/630 MB SCSI disk) |
-| PI-GTS | `Installation/Product-Info/ND-110579-A1-EN.md` (ND Gigatape) |
-| PI-HP | `Installation/Product-Info/ND-110580-A1-EN.md` (free-standing SCSI magtape) |
-| BOARD | `SINTRAN/Devices/SCSI/nd-scsi-3201.md` |
-| CTLREC | `SINTRAN/Devices/SCSI/scsi-control-record-and-mount-math.md` |
-| DISKFMT | `SINTRAN/Devices/SCSI/scsi-disk-format.md` |
-| ENTDIR | `SINTRAN/Devices/SCSI/SCSI-ENTER-DIRECTORY-COMPLETE.md` |
-| STRINGS | `tools/boot-floppy/SCSI-DEVICE-STRINGS.md` |
-| BF-README | `tools/boot-floppy/README.md` |
-| INSTALL | `tools/boot-floppy/INSTALL-PROCEDURE.md` |
-| CARVED | `tools/boot-floppy/CARVED-DISC-SUPPORT.md` |
-| LDN | `SINTRAN/SINTRAN Structures/LOGICAL-DEVICE-NUMBERS.md` |
-| OPCOM | `Operations/SINTRAN/OPCOM-COMMAND-REFERENCE.md` |
-| SYMB | `SINTRAN/NPL-SOURCE/s3vs-4.symb` (SINTRAN symbol listing) |
-| NPL-DISK | `SINTRAN/NPL-SOURCE/NPL/IP-P2-SCSI-DISK.NPL` |
-| NPL-MAGTP | `SINTRAN/NPL-SOURCE/NPL/IP-P2-SCSI-MAGTP.NPL` |
-| NPL-OPDI | `SINTRAN/NPL-SOURCE/NPL/IP-P2-SCSI-OPDI.NPL` |
-| RUN | A run on the nd100x emulator, 2026-10-31: DISK-MM-B00 and SCSI-TV-B00 from floppy 210523G02-XX-02D. Measured, but not written down anywhere else in this repository. |
-| RUN-TV | Runs on the nd100x emulator, 2026-11-01: SCSI-TV-B00 (floppy 210523G02-XX-02D) and SCSI-TV-C04 (floppy 210523I01-XX-02D) against an emulated Tandberg TDC 3600 at SCSI ID 1, with the SCSI command log on. |
-| RUN-BK | Runs on the nd100x emulator, 2026-11-01, on copies of the nd100x `SMD0.IMG` pack (SINTRAN III VSX/500 L, system disk `DISC-75MB-1` unit 0) with an emulated Tandberg TDC 3600 at SCSI ID 1 and the SCSI command log on: S3-CONFIG, `@DEVICE-FUNCTION`, BACKUP-SYSTEM I02. |
-| BASY-INST | `Installation/INSTALL-ND-LINKAGE-LOADER-AND-BACKUP-SYSTEM.md` (Backup System I04 install, verified live 2026-07-19) |
-| TV-REL | `Installation/Installation-Description/ND-895560-1-EN.md` (ND-5000 basic platform install, Disk Restore from `STREAMER-1`) |
-| TPS | `Installation/Installation-Description/ND-896058-4-EN.md` (Backup Manager restore from `STREAMER-1`) |
-| TRACE | DISK-MM-B00 FORMAT-INITIALIZE traced on the nd100x emulator under its DAP debugger, 2026-10-31, with the SCSI command log on. DISK-MM is loaded at file word + 065400; the numbers given are its memory addresses (octal), read with nd100-dis. |
-| PCB-LIST | The ND board list (PCB number, part number, short description per board), entries for PCB 3112 and 3201-3207, supplied by the repository owner 2026-11-02. Not in this repository. |
-| MICROP | Micropolis 1370 Series product description, document 101689 rev D (not in this repository; a scan is on the bitsavers mirrors). Appendix A: formatted capacity. Appendix B: MODE SENSE pages and their default values. It refers to Micropolis document 110011 (SCSI implementation) for the details; 110011 is **not found**. |
+| SINTRAN K release notes | `SINTRAN/Release-Documentation/ND-60230-5-EN SINTRAN III - Release Information - K-version.md` |
+| SINTRAN L release notes | `SINTRAN/Release-Documentation/ND-860230-6-EN Sintran III - Release Information - L-Version.md` |
+| SINTRAN M release notes | `SINTRAN/Release-Documentation/ND-860230-7A-EN SINTRAN III - Release Information - M-Version.md` |
+| SINTRAN N release notes | `SINTRAN/Release-Documentation/ND-860230-8-EN SINTRAN III - Release Information - N-version.md` |
+| SINTRAN Reference Manual | `Reference-Manuals/ND-60.128.5 EN SINTRAN III Reference Manual.md` |
+| System Supervisor manual | `Operations/SINTRAN/ND-30.003.007 EN SINTRAN III System Supervisor.md` |
+| Norwegian operator handbook | `Reference-Manuals/SINTRAN III Håndbok for driftsansvarlig.md` |
+| BACKUP-SYSTEM User Guide | `Reference-Manuals/ND-60.250.1_EN_BACKUP_User_Guide.md` |
+| Test program manual | `Reference-Manuals/ND-210523G_Test_Programs_for_ND-100_110_120__ND_Software_Library.md` |
+| Test program addendum 1998 | `Reference-Manuals/ND-899159-1-EN_Test_Program_Description_for_ND-100_ND-110_-_Addendum_December_1998.md` |
+| Old test program manual | `Reference-Manuals/ND-830005.3 EN Test Program Description for ND-100-110.md` |
+| SCSI-TV-C product note | `Installation/Installation-Description/ND-895076-1p-EN.md` (test programs product info, SCSI-TV-C) |
+| Test program note 210523I | `Installation/Installation-Description/ND-895076-2A-EN.md` (test programs 210523I, DISK-MM-C03, SCSI-TV-C04) |
+| LD 1200 installation note | `Installation/Installation-Description/ND-99118-1-EN.md` (installing the LD 1200 optical drive) |
+| ND-5000 ES installation guide | `Installation/Installation-Description/ND-895560-2-EN.md` (ND-5000 ES basic software install) |
+| Installation note ND-895496-1 | `Installation/Installation-Description/ND-895496-1-EN.md` |
+| Backup Manager installation note | `Installation/Installation-Description/ND-895055-1A-EN.md` (Backup Manager) |
+| Backup Manager User Guide | Backup Manager User Guide, ND-860276.2 EN (version B). A scan without a text layer, not in this repository (`ND-860276-2-EN.pdf` in the Oddene manual collection). Cited by the manual's own page numbers ("book page"). |
+| The Backup Manager floppies | The RetroCore Labs software archive (`RetroCoreLabs/norskdata-software-archive`, folder `images/<md5>/`): the six 211226B02 floppy images, listed with `ndtool`, mode files read with the parity bit stripped, 2026-11-02. |
+| Backup Manager source note | `Installation/Installation-Description/ND-250351-3-EN.md` (Backup Manager source/C01) |
+| SINTRAN patch notes ND-895230 | `Installation/Installation-Description/ND-895230-1A-EN.md` (SINTRAN patch notes) |
+| Patch notes ND-896058-2 | `Installation/Installation-Description/ND-896058-2-EN.md` |
+| ND-5000 ES administrator guide | `Reference-Manuals/500/ND-830147-3-EN ND-5000 ES System Administrator Guide.md` |
+| DOMINO operator guide | `Reference-Manuals/500/ND-814009-1-EN DOMINO SCSI Operator Guide.md` |
+| LD 1200 product sheet | `Installation/Product-Info/ND-110230-A1-EN.md` (LD 1200 product sheet) |
+| 310/630 MB disk product sheet | `Installation/Product-Info/ND-110326-A1-EN.md` (310/630 MB SCSI disk) |
+| Gigatape product sheet | `Installation/Product-Info/ND-110579-A1-EN.md` (ND Gigatape) |
+| SCSI magtape product sheet | `Installation/Product-Info/ND-110580-A1-EN.md` (free-standing SCSI magtape) |
+| SCSI board notes | `SINTRAN/Devices/SCSI/nd-scsi-3201.md` |
+| Control record notes | `SINTRAN/Devices/SCSI/scsi-control-record-and-mount-math.md` |
+| SCSI disk format notes | `SINTRAN/Devices/SCSI/scsi-disk-format.md` |
+| ENTER-DIRECTORY notes | `SINTRAN/Devices/SCSI/SCSI-ENTER-DIRECTORY-COMPLETE.md` |
+| Drive name tables | `tools/boot-floppy/SCSI-DEVICE-STRINGS.md` |
+| Boot floppy README | `tools/boot-floppy/README.md` |
+| Boot floppy install notes | `tools/boot-floppy/INSTALL-PROCEDURE.md` |
+| Carved disc notes | `tools/boot-floppy/CARVED-DISC-SUPPORT.md` |
+| Logical device number list | `SINTRAN/SINTRAN Structures/LOGICAL-DEVICE-NUMBERS.md` |
+| OPCOM command reference | `Operations/SINTRAN/OPCOM-COMMAND-REFERENCE.md` |
+| SINTRAN symbol listing | `SINTRAN/NPL-SOURCE/s3vs-4.symb` (SINTRAN symbol listing) |
+| SCSI disk driver source | `SINTRAN/NPL-SOURCE/NPL/IP-P2-SCSI-DISK.NPL` |
+| SCSI magtape driver source | `SINTRAN/NPL-SOURCE/NPL/IP-P2-SCSI-MAGTP.NPL` |
+| SCSI optical driver source | `SINTRAN/NPL-SOURCE/NPL/IP-P2-SCSI-OPDI.NPL` |
+| Nd100x run 2026-10-31 | A run on the nd100x emulator, 2026-10-31: DISK-MM-B00 and SCSI-TV-B00 from floppy 210523G02-XX-02D. Measured, but not written down anywhere else in this repository. |
+| Nd100x SCSI-TV runs 2026-11-01 | Runs on the nd100x emulator, 2026-11-01: SCSI-TV-B00 (floppy 210523G02-XX-02D) and SCSI-TV-C04 (floppy 210523I01-XX-02D) against an emulated Tandberg TDC 3600 at SCSI ID 1, with the SCSI command log on. |
+| Nd100x backup runs 2026-11-01 | Runs on the nd100x emulator, 2026-11-01, on copies of the nd100x `SMD0.IMG` pack (SINTRAN III VSX/500 L, system disk `DISC-75MB-1` unit 0) with an emulated Tandberg TDC 3600 at SCSI ID 1 and the SCSI command log on: S3-CONFIG, `@DEVICE-FUNCTION`, BACKUP-SYSTEM I02. |
+| BACKUP-SYSTEM install notes | `Installation/INSTALL-ND-LINKAGE-LOADER-AND-BACKUP-SYSTEM.md` (Backup System I04 install, verified live 2026-07-19) |
+| ND-5000 platform installation note | `Installation/Installation-Description/ND-895560-1-EN.md` (ND-5000 basic platform install, Disk Restore from `STREAMER-1`) |
+| Installation note ND-896058-4 | `Installation/Installation-Description/ND-896058-4-EN.md` (Backup Manager restore from `STREAMER-1`) |
+| DISK-MM trace 2026-10-31 | DISK-MM-B00 FORMAT-INITIALIZE traced on the nd100x emulator under its DAP debugger, 2026-10-31, with the SCSI command log on. DISK-MM is loaded at file word + 065400; the numbers given are its memory addresses (octal), read with nd100-dis. |
+| ND board list | The ND board list (PCB number, part number, short description per board), entries for PCB 3112 and 3201-3207, supplied by the repository owner 2026-11-02. Not in this repository. |
+| Micropolis 1370 manual | Micropolis 1370 Series product description, document 101689 rev D (not in this repository; a scan is on the bitsavers mirrors). Appendix A: formatted capacity. Appendix B: MODE SENSE pages and their default values. It refers to Micropolis document 110011 (SCSI implementation) for the details; 110011 is **not found**. |
 
 Numbers ending in `B` or written with a subscript 8 are octal. The release notes
 were scanned and OCR'd; where the OCR is plainly broken, that is said.
@@ -150,11 +151,11 @@ flowchart LR
 In words:
 
 - The ND-100 has up to **4 SCSI adaptors**. Each adaptor is one SCSI bus with 8 IDs,
-  0-7. The adaptor takes ID 7, so each bus has room for 7 devices (K-REL 13045,
+  0-7. The adaptor takes ID 7, so each bus has room for 7 devices (SINTRAN K release notes, line 13045,
   13093, 13198).
 - SINTRAN does not find devices by itself. An operator ties each SINTRAN device
   name (for example `DISC-SCSI-1`) to an **adaptor number and an ID** in the
-  configuration program, then warm starts (K-REL 6936-6971).
+  configuration program, then warm starts (SINTRAN K release notes, lines 6936-6971).
 - Disks get directories with `@CREATE-DIRECTORY` / `@ENTER-DIRECTORY`. Tapes are
   used by the BACKUP-SYSTEM, the Backup Manager, `@DEVICE-FUNCTION` and the tape
   monitor calls.
@@ -162,7 +163,7 @@ In words:
   (test) talk to the bus directly, by adaptor and ID.
 - The SINTRAN driver itself only reads the device **type** from INQUIRY (byte 0,
   8-byte request). It never sees the vendor or product name. Only the test
-  programs check vendor and product (STRINGS section 5.3; BF-README 217-258).
+  programs check vendor and product (drive name tables, section 5.3; boot floppy README, lines 217-258).
 
 ---
 
@@ -172,19 +173,19 @@ In words:
 
 | Fact | Value | Source |
 |---|---|---|
-| Board | ND-3201 SCSI/floppy controller, PN 350001; variants 3204/3205/3206/3207 | BOARD 3 |
-| Same board as named in the install guide | "ND-100 PCB 350004 FLOPPY/SCSI", holds the old floppy controller and the SCSI adaptor, one SCSI bus per card, up to four cards | LD-INST 124 |
-| Sales item | "ND-100 FLOPPY/SCSI adapter 110329" | LD-INST 88 |
-| 3204 | the FLOPPY-STREA test program notes "Implemented Floppy/SCSI card 3204"; the 3204 adds an external word count register | TP-G 861; BOARD 726-727 |
-| SCSI chip | NCR 5386, its registers sit straight on the ND-100 IOX bus; SINTRAN's driver runs the SCSI phases itself | BOARD 18 |
-| Floppy half | Z80 + AM9517 DMA + FD1797; the Z80 never touches the NCR 5386 | BOARD 19-21 |
-| Interrupt | ND-100 **level 11**, when WCONT bit 0 is set | BOARD 770, 776; TP-G 1737 ("correct IDENT code on level 11") |
-| Bus | 8-bit parallel; single-ended or differential receivers (RSTAU bits 7 and 15) | K-REL 13045; BOARD 760, 768 |
-| Termination | "The complete SCSI bus ... MUST have a termination plug at BOTH ends." Part 517691 | LD-INST 84, 223-229 |
-| Cable | max 25 m from adaptor to disk (for the 310/630 MB drives) | PI-EMD 46 |
+| Board | ND-3201 SCSI/floppy controller, PN 350001; variants 3204/3205/3206/3207 | SCSI board notes, line 3 |
+| Same board as named in the install guide | "ND-100 PCB 350004 FLOPPY/SCSI", holds the old floppy controller and the SCSI adaptor, one SCSI bus per card, up to four cards | LD 1200 installation note, line 124 |
+| Sales item | "ND-100 FLOPPY/SCSI adapter 110329" | LD 1200 installation note, line 88 |
+| 3204 | the FLOPPY-STREA test program notes "Implemented Floppy/SCSI card 3204"; the 3204 adds an external word count register | test program manual, line 861; SCSI board notes, lines 726-727 |
+| SCSI chip | NCR 5386, its registers sit straight on the ND-100 IOX bus; SINTRAN's driver runs the SCSI phases itself | SCSI board notes, line 18 |
+| Floppy half | Z80 + AM9517 DMA + FD1797; the Z80 never touches the NCR 5386 | SCSI board notes, lines 19-21 |
+| Interrupt | ND-100 **level 11**, when WCONT bit 0 is set | SCSI board notes, lines 770, 776; test program manual, line 1737 ("correct IDENT code on level 11") |
+| Bus | 8-bit parallel; single-ended or differential receivers (RSTAU bits 7 and 15) | SINTRAN K release notes, line 13045; SCSI board notes, lines 760, 768 |
+| Termination | "The complete SCSI bus ... MUST have a termination plug at BOTH ends." Part 517691 | LD 1200 installation note, lines 84, 223-229 |
+| Cable | max 25 m from adaptor to disk (for the 310/630 MB drives) | 310/630 MB disk product sheet, line 46 |
 
-PCB number: BOARD says 350001, LD-INST says 350004. Both are right. The ND board
-list (PCB-LIST) gives one part number per board edition:
+PCB number: the SCSI board notes say 350001, the LD 1200 installation note says 350004. Both are right. The ND board
+list (ND board list) gives one part number per board edition:
 
 | PCB | Name | Part number |
 |---|---|---|
@@ -202,11 +203,11 @@ controller on the same card.
 
 | Fact | Value | Source |
 |---|---|---|
-| Board | N-100 8" + 5.25" Floppy & Streamer Ctrl, PCB 3112, part number 324012 | PCB-LIST |
-| Drives | up to 3 floppy drives (units 0, 1, 2) and one streamer (unit 0) | PCB-LIST |
-| Interrupt | level 11 | PCB-LIST |
-| Memory | two 2048 x 8 SRAM chips (4 KB) | PCB-LIST |
-| SINTRAN | "The streamer drive did not have it's own driver/data field in Sintran III, only accessible from the Backup-System." | PCB-LIST |
+| Board | N-100 8" + 5.25" Floppy & Streamer Ctrl, PCB 3112, part number 324012 | ND board list |
+| Drives | up to 3 floppy drives (units 0, 1, 2) and one streamer (unit 0) | ND board list |
+| Interrupt | level 11 | ND board list |
+| Memory | two 2048 x 8 SRAM chips (4 KB) | ND board list |
+| SINTRAN | "The streamer drive did not have it's own driver/data field in Sintran III, only accessible from the Backup-System." | ND board list |
 | BACKUP-SYSTEM name | `STREAMER-TAPE-1` / `-2`. The I02 device table maps them to the floppy units: `STREAMER-TAPE-1` = 1000B `FLOPPY-1`, 1001B `FLOPPY-2`, 1002B `FLOPPY-3`; `STREAMER-TAPE-2` = 1003B-1005B `FLOPPY-4..6`. This fits the line above: the streamer is reached through the floppy controller's own units. | `BACKUP-SYS-I02:PROG` device table, decoded (10.1) |
 
 The 3112 is a machine **without** SCSI. A machine with SCSI has a 3201-3207 card,
@@ -224,24 +225,24 @@ Text written for one of them does not hold for the other.
 
 | Adaptor | IOX range (octal) | Ident (octal) | SINTRAN logical device | Source |
 |---|---|---|---|---|
-| ADAPTOR-1 | 144300-144377 | 140440 | 2202B (1154 dec) | BOARD 206; K-REL 13142; RUN |
-| ADAPTOR-2 | 144400-144477 | 140441 | 2203B | BOARD 207; K-REL 13144 |
-| ADAPTOR-3 | 144500-144577 | 140442 | 2204B | BOARD 208; K-REL 13145 |
-| ADAPTOR-4 | 144600-144677 | 140443 | 2205B | BOARD 209; K-REL 13146 |
+| ADAPTOR-1 | 144300-144377 | 140440 | 2202B (1154 dec) | SCSI board notes, line 206; SINTRAN K release notes, line 13142; nd100x run 2026-10-31 |
+| ADAPTOR-2 | 144400-144477 | 140441 | 2203B | SCSI board notes, line 207; SINTRAN K release notes, line 13144 |
+| ADAPTOR-3 | 144500-144577 | 140442 | 2204B | SCSI board notes, line 208; SINTRAN K release notes, line 13145 |
+| ADAPTOR-4 | 144600-144677 | 140443 | 2205B | SCSI board notes, line 209; SINTRAN K release notes, line 13146 |
 
 The test programs take the adaptor in any of these forms: `ADAPTOR-n` (n = 1-4), the
 number 1-4, the logical number 2202B-2205B, or the hardware number
-144300B/144400B/144500B/144600B (TP-G 1073-1076).
+144300B/144400B/144500B/144600B (test program manual, lines 1073-1076).
 
-The RUN `LIST-DEVICES` on nd100x showed ADAPTOR-1, hardware 144300, ident 140440,
+In the nd100x run of 2026-10-31, `LIST-DEVICES` showed ADAPTOR-1, hardware 144300, ident 140440,
 logical 2202B, which matches the table.
 
 ### 3.3 Thumbwheels
 
 | Source | What it says |
 |---|---|
-| BOARD 196-209 | TH1 = SCSI ID of the adaptor (strapped onto the NCR 5386 ID pins); TH2 = IDENT / IOX address (settings 0-3, repeated, select bus 1-4); TH3 = floppy |
-| LD-INST 126-167 | The figure labels **TH1** "IOX and Ident" with settings 0-3 = SCSI bus 1-4, and **TH2** "SCSI ID-no. Range 0-7 (7 means host computer)" |
+| SCSI board notes, lines 196-209 | TH1 = SCSI ID of the adaptor (strapped onto the NCR 5386 ID pins); TH2 = IDENT / IOX address (settings 0-3, repeated, select bus 1-4); TH3 = floppy |
+| LD 1200 installation note, lines 126-167 | The figure labels **TH1** "IOX and Ident" with settings 0-3 = SCSI bus 1-4, and **TH2** "SCSI ID-no. Range 0-7 (7 means host computer)" |
 
 **The two sources swap the names TH1 and TH2.** Both agree on what the two switches
 do (one picks the bus 1-4, one the adaptor's own SCSI ID). Which label is printed on
@@ -249,8 +250,8 @@ the board I do not know.
 
 ### 3.4 SCSI ID rules
 
-From the K release notes (K-REL 13198-13204) and the LD 1200 install guide
-(LD-INST 180-191):
+From the K release notes (SINTRAN K release notes, lines 13198-13204) and the LD 1200 install guide
+(LD 1200 installation note, lines 180-191):
 
 | ID | Standard use |
 |---|---|
@@ -263,26 +264,26 @@ From the K release notes (K-REL 13198-13204) and the LD 1200 install guide
 More rules:
 
 - The MEMTOS memory-dump program needs its streamer at "ID no. 1 on SCSI adaptor
-  number 1 ... (hardware device number 144300)" (N-REL 1763).
+  number 1 ... (hardware device number 144300)" (SINTRAN N release notes, line 1763).
 - The test programs say "ID 0 is normally equivalent to "DISC-SCSI-1" which is the
-  boot disk" (TP-G 1078).
+  boot disk" (test program manual, line 1078).
 - Two ND-100s may share one SCSI bus. `@DEVICE-FUNCTION ... RESERVE-DEVICE` /
-  `RELEASE-DEVICE` give one CPU sole use of a tape on that bus (L-REL 810-816).
+  `RELEASE-DEVICE` give one CPU sole use of a tape on that bus (SINTRAN L release notes, lines 810-816).
 - In a two-bus filestore cabinet, "optical disks can only be connected to the bus on
-  the left side" (LD-INST 273).
+  the left side" (LD 1200 installation note, line 273).
 
 ### 3.5 Booting from SCSI
 
-- The SCSI bootstrap driver is only in K standard system D (K-REL 934). It is in
-  all L, M and N standard systems (L-REL 397; M-REL 466; N-REL 490).
-- NDInsight's OPCOM table lists `#144300&` as the SCSI disk bootstrap command
-  (OPCOM 155). That table is NDInsight's own summary. I did not find the original
+- The SCSI bootstrap driver is only in K standard system D (SINTRAN K release notes, line 934). It is in
+  all L, M and N standard systems (SINTRAN L release notes, line 397; SINTRAN M release notes, line 466; SINTRAN N release notes, line 490).
+- NDInsight's OPCOM command reference lists `#144300&` as the SCSI disk bootstrap command
+  (OPCOM command reference, line 155). That table is NDInsight's own summary. I did not find the original
   ND manual line behind it.
 - The ND-3201 ROM has an "autoload" path. It copies an ND-100 SCSI boot driver
   into ND-100 memory at 6000B and puts `JMP I` at address 0. That driver uses
-  bus 1 (144300) (BOARD 83-131).
+  bus 1 (144300) (SCSI board notes, lines 83-131).
 - MACM, the generation program, cannot talk to a SCSI disk. `IOXT` appears zero
-  times in it, and 144300 needs 16 bits while `IOX` carries 11 (BF-README 170-174).
+  times in it, and 144300 needs 16 bits while `IOX` carries 11 (boot floppy README, lines 170-174).
 
 ---
 
@@ -290,8 +291,8 @@ More rules:
 
 ### 4.1 The official name list
 
-K-REL section 22.2 (K-REL 13091-13136), with the logical device numbers from 22.3
-(K-REL 13142-13190):
+SINTRAN K release notes, section 22.2 (SINTRAN K release notes, lines 13091-13136), with the logical device numbers from 22.3
+(SINTRAN K release notes, lines 13142-13190):
 
 | Device type | Max per system (K) | SINTRAN device names | Logical device numbers (octal) |
 |---|---|---|---|
@@ -302,26 +303,26 @@ K-REL section 22.2 (K-REL 13091-13136), with the logical device numbers from 22.
 | Magnetic tape | 4 | `MAG-TAPE-1` ... `MAG-TAPE-4` | 560, 1111, 1231, 1224 |
 
 The SINTRAN symbol listing agrees for the streamers, disks 1-8 and optical 1-2
-(SYMB 25062-25092). The LDN summary file gives the same ranges (LDN 423-428).
+(SINTRAN symbol listing, lines 25062-25092). The logical device number list gives the same ranges (lines 423-428).
 
 **Subdivided disks.** "The device name is expanded (in the same way as for SMD
 disks) with the number of subunits included in the name". The K notes give two
-examples (K-REL 13133-13136):
+examples (SINTRAN K release notes, lines 13133-13136):
 
 - `DISC-2-SCSI-3` means SCSI disk number 3 divided into 2 subunits.
 - `DISC-8-OPTICAL-1` means optical disk 1 divided into 8 subunits.
 
 So the full name set is `DISC-SCSI-n` and `DISC-k-SCSI-n`, for k = 2..8 and
 n = 1..14. That is 112 names. The L07 and M06 images carry all 112; K images carry
-fewer (INSTALL 402-424; CARVED 285-290).
+fewer (boot floppy install notes, lines 402-424; carved disc notes, lines 285-290).
 
-> Note on a wrong reading in NDInsight: INSTALL 426-431 guesses that the leading
+> Note on a wrong reading in NDInsight: boot floppy install notes, lines 426-431 guesses that the leading
 > number in `DISC-n-SCSI-u` counts spindles. The K release notes say it is the
-> number of **subunits** (K-REL 13135). The release notes are the authority.
+> number of **subunits** (SINTRAN K release notes, line 13135). The release notes are the authority.
 
 **DISC vs DISK.** The manuals and the name table in the image say `DISC-SCSI-n`
-(K-REL 13105; INSTALL 406). Comments in the symbol listing and one patch note write
-`DISK-SCSI-n` (SYMB 25066; PATCH-L 251-252). Inferred: the name SINTRAN accepts is
+(SINTRAN K release notes, line 13105; boot floppy install notes, line 406). Comments in the symbol listing and one patch note write
+`DISK-SCSI-n` (SINTRAN symbol listing, line 25066; SINTRAN patch notes ND-895230, lines 251-252). Inferred: the name SINTRAN accepts is
 `DISC-...`. The `DISK-...` spelling is loose writing in comments.
 
 ### 4.2 Two numbers per tape drive
@@ -331,19 +332,19 @@ you make a peripheral file.
 
 | Drive | Device / config number | Number used in the peripheral file | Source |
 |---|---|---|---|
-| SCSI streamer 1 | 2206B ("SCSI streamer tape drive no. 1") | **2226B** ("SCSI STREAMER 1 I/O, UNIT 0") | K-REL 13148; SYMB 25062, 25082; BM-INST 611; ES-ADMIN 1675 |
-| SCSI streamer 2 | 2207B | **2227B** | K-REL 13150; SYMB 25084; BM-INST 612 |
-| SCSI magtape 1 | 560B | `MAG-TAPE-0` = **40B** | K-REL 13180, 13210; BM-INST 613 |
-| SCSI magtape 2 | 1111B | `MAG-TAPE-4` = **32B** | K-REL 13181, 13211; BM-INST 614 |
-| SCSI magtape 3 | 1231B | `MAG-TAPE-8` = **1232B** | K-REL 13182, 13212; BM-INST 615 |
-| SCSI magtape 4 | 1224B | `MAG-TAPE-12` = **1225B** | K-REL 13183, 13213; BM-INST 616 |
+| SCSI streamer 1 | 2206B ("SCSI streamer tape drive no. 1") | **2226B** ("SCSI STREAMER 1 I/O, UNIT 0") | SINTRAN K release notes, line 13148; SINTRAN symbol listing, lines 25062, 25082; Backup Manager installation note, line 611; ND-5000 ES administrator guide, line 1675 |
+| SCSI streamer 2 | 2207B | **2227B** | SINTRAN K release notes, line 13150; SINTRAN symbol listing, line 25084; Backup Manager installation note, line 612 |
+| SCSI magtape 1 | 560B | `MAG-TAPE-0` = **40B** | SINTRAN K release notes, lines 13180, 13210; Backup Manager installation note, line 613 |
+| SCSI magtape 2 | 1111B | `MAG-TAPE-4` = **32B** | SINTRAN K release notes, lines 13181, 13211; Backup Manager installation note, line 614 |
+| SCSI magtape 3 | 1231B | `MAG-TAPE-8` = **1232B** | SINTRAN K release notes, lines 13182, 13212; Backup Manager installation note, line 615 |
+| SCSI magtape 4 | 1224B | `MAG-TAPE-12` = **1225B** | SINTRAN K release notes, lines 13183, 13213; Backup Manager installation note, line 616 |
 
-The streamers also have a "DF data field" number: 2230B / 2231B (LDN 427;
-SYMB 25086-25088).
+The streamers also have a "DF data field" number: 2230B / 2231B (logical device number list, line 427;
+SINTRAN symbol listing, lines 25086-25088).
 
 Inferred, from the tables above: the first number (2206B, 560B, ...) is the
 device's data field. It is used to tie the drive to an adaptor and ID (MON IOMTY
-function 300B accepts 560, 1111, 1224, 1231, 2210-2225, 2232-2235; K-REL 3700). The
+function 300B accepts 560, 1111, 1224, 1231, 2210-2225, 2232-2235; SINTRAN K release notes, line 3700). The
 second number (2226B, 40B, ...) is the I/O data field. A peripheral file for
 `@DEVICE-FUNCTION` and for file-style tape access points at that one.
 
@@ -351,19 +352,19 @@ Two warnings from the source:
 
 - **Overlap.** Magtape 3 and 4 numbers overlap the ST-506 (Winchester) controllers
   2 and 1. So with 1 ST-506 controller you can have at most 3 SCSI magtapes; with
-  2, at most 2 (K-REL 13215).
+  2, at most 2 (SINTRAN K release notes, line 13215).
 - **Streamers missing from MON 300B.** The list of numbers accepted by MON IOMTY
-  300B-303B does not include 2206/2207 (K-REL 3700, 3719, 3747, 3766). Yet the
-  configuration program has a "SCSI streamer 1" line (K-REL 6925). I have not found
+  300B-303B does not include 2206/2207 (SINTRAN K release notes, lines 3700, 3719, 3747, 3766). Yet the
+  configuration program has a "SCSI streamer 1" line (SINTRAN K release notes, line 6925). I have not found
   why. It could be an omission in the manual; I do not know.
 
 ### 4.3 Names used elsewhere for tapes - careful
 
 | Name | What it is | Source |
 |---|---|---|
-| `STREAMER-1` / `STREAMER-2` | SCSI streamer, SINTRAN device name and Backup Manager device name | K-REL 13124; BM-INST 611; ES-INST 359, 461 |
-| `STREAMER-TAPE-1` / `-2` | The streamer on the **3112 floppy-and-streamer controller**, not SCSI. It has no SINTRAN data field of its own; BACKUP-SYSTEM reaches it through the floppy units 1000B-1005B (3.1). | PCB-LIST; TP-OLD 4001-4006; BACKUP-UG 4389; SYS-SUP 11496 |
-| `MAG-TAPE-1..4` | Used for both the old magtape controllers (Cipher, Pertec, STC) and SCSI magtapes | K-REL 937-938, 13130 |
+| `STREAMER-1` / `STREAMER-2` | SCSI streamer, SINTRAN device name and Backup Manager device name | SINTRAN K release notes, line 13124; Backup Manager installation note, line 611; ND-5000 ES installation guide, lines 359, 461 |
+| `STREAMER-TAPE-1` / `-2` | The streamer on the **3112 floppy-and-streamer controller**, not SCSI. It has no SINTRAN data field of its own; BACKUP-SYSTEM reaches it through the floppy units 1000B-1005B (3.1). | ND board list; old test program manual, lines 4001-4006; BACKUP-SYSTEM User Guide, line 4389; System Supervisor manual, line 11496 |
+| `MAG-TAPE-1..4` | Used for both the old magtape controllers (Cipher, Pertec, STC) and SCSI magtapes | SINTRAN K release notes, lines 937-938, 13130 |
 
 **Not found** anywhere in NDInsight: `SCSI-STREAMER`, `SCSI-MAGTAPE`, `SCSI-TAPE`,
 `CDROM`, `CD-ROM` as a SINTRAN device name.
@@ -374,7 +375,7 @@ Two warnings from the source:
 
 ### 5.1 What SINTRAN K says it supports
 
-K-REL 13066-13081 lists:
+SINTRAN K release notes, lines 13066-13081 lists:
 
 - magnetic disks of 60, 125 and 150 MB (5 1/4 inch, fixed);
 - magnetic disks of 310 and 630 MB (8 inch, fixed);
@@ -383,94 +384,94 @@ K-REL 13066-13081 lists:
 - an STC magnetic tape drive.
 
 All SCSI magnetic disks "may be divided into 2, 3, 4, 5, 6 or 8 subunits". The
-optical disk may be divided into 2-8 subunits (K-REL 13074-13077).
+optical disk may be divided into 2-8 subunits (SINTRAN K release notes, lines 13074-13077).
 
-Later versions, per standard system (L-REL 390-394; M-REL 459-466; N-REL 483-490):
+Later versions, per standard system (SINTRAN L release notes, lines 390-394; SINTRAN M release notes, lines 459-466; SINTRAN N release notes, lines 483-490):
 
 | | L std A | L std B | Source |
 |---|---|---|---|
-| SCSI host adaptors | 3 | 2 | L-REL 390 |
-| SCSI disks per system | 8 | 8 | L-REL 391 |
-| SCSI streamers per system | 2 | 2 | L-REL 392 |
-| SCSI magtapes per system | 3 | 2 | L-REL 393 |
-| SCSI optical disks per system | 2 | 2 | L-REL 394 |
+| SCSI host adaptors | 3 | 2 | SINTRAN L release notes, line 390 |
+| SCSI disks per system | 8 | 8 | SINTRAN L release notes, line 391 |
+| SCSI streamers per system | 2 | 2 | SINTRAN L release notes, line 392 |
+| SCSI magtapes per system | 3 | 2 | SINTRAN L release notes, line 393 |
+| SCSI optical disks per system | 2 | 2 | SINTRAN L release notes, line 394 |
 
 M adds "SCSI magnetic tape drives with several logical units on each controller"
-(M-REL 435).
+(SINTRAN M release notes, line 435).
 
 ### 5.2 Drive models
 
-The model names come from the test programs' supported-product lists (TP-G
-1567-1575; TP-ADD 944-955) and from the vendor/product tables decoded from the
-program binaries (STRINGS section 3). SINTRAN itself does not check any of these
-names (section 2).
+The model names come from the test programs' supported-product lists (test program manual,
+lines 1567-1575; test program addendum 1998, lines 944-955) and from the vendor/product tables decoded from the
+program binaries (drive name tables, section 3). SINTRAN itself does not check any of these
+names (section 2). The test programs do; 13.4 says which names each version accepts.
 
 | Class | Vendor / product (INQUIRY strings) | What it is | Size | Source |
 |---|---|---|---|---|
-| Disk, 5 1/4" | `NDMICROP` / `1375` (also `MICROP`) | Micropolis 1375 | ND lists 60 MB and 125 MB variants; block size 1024 | TP-G 1061, 1120-1125; STRINGS 63; RUN |
-| Disk, 8" | `NDCDC` / `EMD 97201 (736)`, `(368)`, `(000)`, `(1.2)` | CDC EMD 97201 | 310 and 630 MB; block size 512 | TP-G 1062, 1124-1125; STRINGS 64, 211, 221; PI-EMD 22 |
-| Disk, 5 1/4" | `NDCDC` / `94171-9` (also -7, -5); listed as "WREN IV, 5 1/4" fixed disk" | CDC WREN IV | Inferred 310 MB (DOMINO lists "310 Mbyte disk drive (5 1/4 inch WREN)") | TP-H 339; DOMINO 349-350; STRINGS 192, 222 |
-| Disk | `NDCDC` / `94181-15`, `94181-13` | CDC (family not named) | not found | STRINGS 192, 223 |
-| Disk, 5 1/4" | (not named) | "155MB SCSI 5.25" disk drive (326392)" | 155 MB | TP-ADD 51; APP-INST 439 |
-| Streamer | `TANDBERG` / ` TDC 3600`, ` TDC 3600 EXPR.`, `RG TDC 3600` | Tandberg TDC 3600 | Inferred: the "125-megabyte streamer" of K-REL 13079; not stated | TP-G 1570; STRINGS 156 |
-| Streamer | `ARCHIVE` / `VIPER 150  21247` (and serial variants 99999, 25066, 21835) | Archive Viper 150 | "the 155MB Archive streamer" | TP-G 1575; STRINGS 193; BM-INST 91 |
-| Streamer (8 mm) | `EXABYTE` / `EXB-8200`, later `EXB-8500` | ND Gigatape System (GTS), ND 110579 | 2.2 GB per cartridge | TP-H 340; PI-GTS 38; STRINGS 197 |
-| Magtape | `NDSTK` / `2925` | StorageTek 2925, ND 110324 | "<250 Mb/tape" | TP-G 1574; LD-INST 77 |
-| Magtape | `HP` / `88780` | HP 88780; inferred to be ND 110580, the free-standing 1600/6250 bpi SCSI magtape | 140 MB per 2400 ft reel at 6250 bpi GCR | TP-H 341; TP-ADD 51; PI-HP 3, 62 |
-| Optical (WORM) | `OSI` / `LD 1200 SCSI` | Laserdrive LD 1200, ND 110230 | 1 GB per side, two sides | TP-G 1572; PI-LD 23; LD-INST 76 |
-| Disk (DOMINO list only) | `CDC WREN IV` | | block size 512 | STRINGS 65 |
+| Disk, 5 1/4" | `NDMICROP` / `1375` (also `MICROP`) | Micropolis 1375 | ND lists 60 MB and 125 MB variants; block size 1024 | test program manual, lines 1061, 1120-1125; drive name tables, line 63; nd100x run 2026-10-31 |
+| Disk, 8" | `NDCDC` / `EMD 97201 (736)`, `(368)`, `(000)`, `(1.2)` | CDC EMD 97201 | 310 and 630 MB; block size 512 | test program manual, lines 1062, 1124-1125; drive name tables, lines 64, 211, 221; 310/630 MB disk product sheet, line 22 |
+| Disk, 5 1/4" | `NDCDC` / `94171-9` (also -7, -5); listed as "WREN IV, 5 1/4" fixed disk" | CDC WREN IV | Inferred 310 MB (the DOMINO operator guide lists "310 Mbyte disk drive (5 1/4 inch WREN)") | SCSI-TV-C product note, line 339; DOMINO operator guide, lines 349-350; drive name tables, lines 192, 222 |
+| Disk | `NDCDC` / `94181-15`, `94181-13` | CDC (family not named) | not found | drive name tables, lines 192, 223 |
+| Disk, 5 1/4" | (not named) | "155MB SCSI 5.25" disk drive (326392)" | 155 MB | test program addendum 1998, line 51; installation note ND-895496-1, line 439 |
+| Streamer | `TANDBERG` / ` TDC 3600`, ` TDC 3600 EXPR.`, `RG TDC 3600` | Tandberg TDC 3600 | Inferred: the "125-megabyte streamer" of SINTRAN K release notes, line 13079; not stated | test program manual, line 1570; drive name tables, line 156 |
+| Streamer | `ARCHIVE` / `VIPER 150  21247` (and serial variants 99999, 25066, 21835) | Archive Viper 150 | "the 155MB Archive streamer" | test program manual, line 1575; drive name tables, line 193; Backup Manager installation note, line 91 |
+| Streamer (8 mm) | `EXABYTE` / `EXB-8200`, later `EXB-8500` | ND Gigatape System (GTS), ND 110579 | 2.2 GB per cartridge | SCSI-TV-C product note, line 340; Gigatape product sheet, line 38; drive name tables, line 197 |
+| Magtape | `NDSTK` / `2925` | StorageTek 2925, ND 110324 | "<250 Mb/tape" | test program manual, line 1574; LD 1200 installation note, line 77 |
+| Magtape | `HP` / `88780` | HP 88780; inferred to be ND 110580, the free-standing 1600/6250 bpi SCSI magtape | 140 MB per 2400 ft reel at 6250 bpi GCR | SCSI-TV-C product note, line 341; test program addendum 1998, line 51; SCSI magtape product sheet, lines 3, 62 |
+| Optical (WORM) | `OSI` / `LD 1200 SCSI` | Laserdrive LD 1200, ND 110230 | 1 GB per side, two sides | test program manual, line 1572; LD 1200 product sheet, line 23; LD 1200 installation note, line 76 |
+| Disk (DOMINO operator guide only) | `CDC WREN IV` | | block size 512 | drive name tables, line 65 |
 
 Notes:
 
 - "Early versions of the MICROPOLIS disk 1370 for 60MB will not be recognized" by
-  SCSI-TV-B (TP-G 1902). SCSI-TV-C04 fixed this (TP-I 638).
+  SCSI-TV-B (test program manual, line 1902). SCSI-TV-C04 fixed this (test program note 210523I, line 638).
 - SCSI-TV-C04 "will now accept any SCSI device without giving any warnings. Devices
   unknown to the program are treated as standard disk/streamer/magtape devices"
-  (TP-I 634). DISK-MM-C "is now able to format disks not delivered from ND"
-  (TP-I 45).
+  (test program note 210523I, line 634). DISK-MM-C "is now able to format disks not delivered from ND"
+  (test program note 210523I, line 45).
 - The test programs do not store the device class. They read it from the live
-  INQUIRY reply (STRINGS 136-141, 236-250).
+  INQUIRY reply (drive name tables, lines 136-141, 236-250).
 
-### 5.3 The Micropolis 1375 as seen in the RUN
+### 5.3 The Micropolis 1375 as seen in the nd100x run of 2026-10-31
 
-From RUN (not in NDInsight):
+From the nd100x run of 2026-10-31 (not written down anywhere else in NDInsight):
 
 - vendor `NDMICROP`, product `1375`, rev `B0C`;
 - 1024-byte blocks, 129312 blocks.
 
 The same block count is in NDInsight's decode of a real SCSI-K disk image: raw
 129312 blocks = 64656 pages, of which 122072 blocks = 61036 pages are usable
-(DISKFMT 44-47, 129-138).
+(SCSI disk format notes, lines 44-47, 129-138).
 
 SINTRAN shows this disk as `DISC-SCSI-1 UNIT 0 ** 125 Mb **`, with 61036 pages
-(ENTDIR 264-268).
+(ENTER-DIRECTORY notes, lines 264-268).
 
 Open: the Micropolis 1370-series data sheet (document 101689, on bitsavers;
 not in this repository) says the 1375 has 8 heads, 1018 formatted cylinders and
 18 blocks of 1024 bytes per track. That is 146592 blocks, about 150.1 MB. The ND disk
 has 129312 blocks. 129312 = 898 x 8 x 18, so the ND disk may use only 898 of the
-1018 cylinders. But DISKFMT 133 warns that this split comes from our own emulator
-and is not proven. K-REL lists both a 125 MB and a 150 MB 5 1/4-inch disk
-(K-REL 13069-13070). Why the ND unit is 129312 blocks is **not found**.
+1018 cylinders. But SCSI disk format notes, line 133 warns that this split comes from our own emulator
+and is not proven. The SINTRAN K release notes list both a 125 MB and a 150 MB 5 1/4-inch disk
+(SINTRAN K release notes, lines 13069-13070). Why the ND unit is 129312 blocks is **not found**.
 
 ### 5.4 Block and page sizes
 
 | Unit | Size | Source |
 |---|---|---|
-| SINTRAN "logical" block | always 1024 bytes | TP-G 1104 |
-| SINTRAN file-system page | always 2048 bytes = 2 blocks | TP-G 1108; DISKFMT 37 |
-| Media block | the drive's own sector size (1024 for Micropolis 1375, 512 for CDC EMD 97201 and WREN IV) | TP-G 1100; STRINGS 63-65 |
-| Disk record size in the driver | 1024 bytes for direct-access devices | NPL-DISK 1266-1267 |
-| Tape | fixed block mode (1024-byte records) if READ BLOCK LIMITS gives min = max; otherwise variable, byte count | NPL-DISK 1256-1273 |
-| Streamer MODE SELECT | the driver sets block size 1024 unless the device is in fixed block mode | NPL-DISK 555-556 |
-| Optical | two disc types: `DTOD1` RS=1024 and `DTOD2` RS=2048 | SYMB 2977-2978; CARVED 114-115 |
-| LD 1200 medium | 32000 tracks x 32 sectors x 1024 user bytes per side | PI-LD 57 |
-| Hard limit in SINTRAN | block size must fit 16 bits, be > 1, and be a power of two, else `RSZER` / `ILRCS`. No maximum disk size anywhere | BF-README 210-213 |
+| SINTRAN "logical" block | always 1024 bytes | test program manual, line 1104 |
+| SINTRAN file-system page | always 2048 bytes = 2 blocks | test program manual, line 1108; SCSI disk format notes, line 37 |
+| Media block | the drive's own sector size (1024 for Micropolis 1375, 512 for CDC EMD 97201 and WREN IV) | test program manual, line 1100; drive name tables, lines 63-65 |
+| Disk record size in the driver | 1024 bytes for direct-access devices | SCSI disk driver source, lines 1266-1267 |
+| Tape | fixed block mode (1024-byte records) if READ BLOCK LIMITS gives min = max; otherwise variable, byte count | SCSI disk driver source, lines 1256-1273 |
+| Streamer MODE SELECT | the driver sets block size 1024 unless the device is in fixed block mode | SCSI disk driver source, lines 555-556 |
+| Optical | two disc types: `DTOD1` RS=1024 and `DTOD2` RS=2048 | SINTRAN symbol listing, lines 2977-2978; carved disc notes, lines 114-115 |
+| LD 1200 medium | 32000 tracks x 32 sectors x 1024 user bytes per side | LD 1200 product sheet, line 57 |
+| Hard limit in SINTRAN | block size must fit 16 bits, be > 1, and be a power of two, else `RSZER` / `ILRCS`. No maximum disk size anywhere | boot floppy README, lines 210-213 |
 
 SINTRAN holds **no table of valid SCSI disk sizes**. Every `DISC-n-SCSI-m` and
 `DISC-n-OPTICAL-m` entry in the name table has size 0. The size comes from READ
-CAPACITY and from the disk's own control record (CARVED 250-262; BF-README
-182-208).
+CAPACITY and from the disk's own control record (carved disc notes, lines 250-262; boot floppy README,
+lines 182-208).
 
 ---
 
@@ -480,9 +481,9 @@ A SCSI disk used by an ND-100 is not just a file system. DISK-MM puts a small
 partition table at the top of the disk, and SINTRAN reads it when it mounts the
 disk.
 
-### 6.1 The partitions (from the RUN)
+### 6.1 The partitions (from the nd100x run of 2026-10-31)
 
-`LIST-DISK-INFORMATION` in DISK-MM, on a Micropolis 1375 of 129312 blocks (RUN):
+`LIST-DISK-INFORMATION` in DISK-MM, on a Micropolis 1375 of 129312 blocks (nd100x run 2026-10-31):
 
 | No. | Name | Start block | Length (blocks) |
 |---|---|---|---|
@@ -496,37 +497,37 @@ disk.
 | 7 | Scratch | 129098 | 171 |
 
 The disk said "Formatted by DMM - Version C02, 1989-08-17". The test-program product
-notes list DISK-MM B00, B01 and C03 (STRINGS 39-43; TP-I 473). A C02 is **not
+notes list DISK-MM B00, B01 and C03 (drive name tables, lines 39-43; test program note 210523I, line 473). A C02 is **not
 listed** in NDInsight.
 
 What the manuals say about partitions:
 
-- "Table partition": REASSIGN and REFRESH-DATA are logged there (TP-G 1165, 1177).
-- "Data partition": SCSI-TV test 14 copies from it to the scratch area (TP-G 1858).
-- "Scratch partition": SCSI-TV tests 12 and 14 write there (TP-G 1850, 1858).
+- "Table partition": REASSIGN and REFRESH-DATA are logged there (test program manual, lines 1165, 1177).
+- "Data partition": SCSI-TV test 14 copies from it to the scratch area (test program manual, line 1858).
+- "Scratch partition": SCSI-TV tests 12 and 14 write there (test program manual, lines 1850, 1858).
 - DISK-MM-C03 has `LIST-DISK-PARTITIONS` and write protection levels Off / Normal /
-  On. In Normal, every partition except Data is write-protected (TP-I 582-588).
+  On. In Normal, every partition except Data is write-protected (test program note 210523I, lines 582-588).
   "If the disk is not initialized, the entire disk will be treated as a data
-  partition" (TP-I 522).
+  partition" (test program note 210523I, line 522).
 
 The names Control, Formatting, Mirroring and Testdata do **not** appear in any
-manual in NDInsight. They come from the program's own output (RUN).
+manual in NDInsight. They come from the program's own output (nd100x run 2026-10-31).
 
 The Scratch partition's length is not a fixed number. FORMAT-INITIALIZE works it out
-from the drive: (heads + 1) x sectors per track, both read from MODE SENSE (TRACE;
+from the drive: (heads + 1) x sectors per track, both read from MODE SENSE (DISK-MM trace 2026-10-31;
 section 13.3). On the emulator, with 8 heads and 18 sectors per track, it is 162. The
 171 above is 9 x 19, which fits a 1375 formatted with 19 sectors of 1024 bytes per
-track, the example in MICROP Appendix A. **Inferred**: that the RUN disk was
+track, the example in the Micropolis 1370 manual, Appendix A. **Inferred**: that the disk in that run was
 formatted that way is reasoning from the number, not read from the disk.
 
 ### 6.2 The control record (last block)
 
-NDInsight decoded the last block of a real SCSI-K image byte by byte (CTLREC
-149-190; DISKFMT section 4):
+NDInsight decoded the last block of a real SCSI-K image byte by byte (control record notes,
+lines 149-190; SCSI disk format notes, section 4):
 
-- Header word 0 = `0x080054D9`. Its high byte 8 is read as **NPART = 8** (CTLREC 169).
+- Header word 0 = `0x080054D9`. Its high byte 8 is read as **NPART = 8** (control record notes, line 169).
 - Header word 3 = `0x0001DCD8` = 122072 = **UHLIM**, the usable block count
-  (CTLREC 172).
+  (control record notes, line 172).
 - Then 12-byte entries `{flag, LBA, length}`:
 
 | Entry | Flag | LBA | Length |
@@ -546,20 +547,20 @@ NDInsight decoded the last block of a real SCSI-K image byte by byte (CTLREC
   unused), Scratch.
 - NPART = 8 is partitions 0-7.
 
-NDInsight's DISKFMT and CTLREC call entries 2-6 "spare-pool extents" and block
-129310 a "disk-parameter block". The RUN names should replace those guesses.
+NDInsight's SCSI disk format notes and control record notes call entries 2-6 "spare-pool extents" and block
+129310 a "disk-parameter block". The names from the run should replace those guesses.
 NDInsight also says block 129310 holds "device-type / vendor / revision /
-format-date" (DISKFMT 61-62). That fits the name "Formatting partition" (inferred).
+format-date" (SCSI disk format notes, lines 61-62). That fits the name "Formatting partition" (inferred).
 
 How SINTRAN uses the record:
 
 - When a SCSI disk is connected, the driver's function 42 reads the last block. It
   checks NPART and an XOR checksum, sets UHLIM from header word 3, and copies the
-  partition table (CTLREC 196-205; BF-README 201-208).
+  partition table (control record notes, lines 196-205; boot floppy README, lines 201-208).
 - If the record is missing, the driver error is "11B No control record on magnetic
-  disk" (K-REL 13322).
+  disk" (SINTRAN K release notes, line 13322).
 - READ CAPACITY reports the **raw** size (last LBA 129311), not the usable size
-  (DISKFMT 49-53, 160-186).
+  (SCSI disk format notes, lines 49-53, 160-186).
 
 ```mermaid
 flowchart TB
@@ -584,7 +585,7 @@ flowchart TB
 ```
 
 What the 7026-block gap between the Data partition and the Scratch partition is for
-is **not found** (DISKFMT 148-156 calls it open).
+is **not found** (SCSI disk format notes, lines 148-156 calls it open).
 
 ---
 
@@ -595,13 +596,13 @@ is **not found** (DISKFMT 148-156 calls it open).
 This order is a summary. Each step has its own source.
 
 1. **Hardware.** Set the adaptor's bus number (1-4) and its own SCSI ID (7), give
-   each device a free ID (section 3.4), terminate both ends of the bus (LD-INST
-   174-191, 227-229).
+   each device a free ID (section 3.4), terminate both ends of the bus (LD 1200 installation note,
+   lines 174-191, 227-229).
 2. **Check the bus.** Run SCSI-TV `LIST-DEVICES` (C version: `LIST-PRESENT-DEVICES`)
-   and see that every device answers (LD-INST 474; TP-ADD 1027).
+   and see that every device answers (LD 1200 installation note, line 474; test program addendum 1998, line 1027).
 3. **Prepare each new disk** with DISK-MM: `SELECT-DEVICE`, then `FORMAT-INITIALIZE`
    (or `INITIALIZE` on an already formatted disk). INITIALIZE "Prepares the disk for
-   use under SINTRAN" (TP-G 1112, 1129). See section 13.
+   use under SINTRAN" (test program manual, lines 1112, 1129). See section 13.
 4. **Tie names to adaptor and ID** in the SINTRAN configuration program (section
    7.2).
 5. **Warm start** (or cold start, see below).
@@ -612,16 +613,16 @@ This order is a summary. Each step has its own source.
 ### 7.2 The configuration program (S3-CONFIG), SCSI command
 
 - The program is called **S3-CONFIG**, run as user SYSTEM. Give the command `SCSI`
-  (LD-INST 317).
-- Menu 1 (K-REL 6911-6925; LD-INST 319-328): lines "SCSI disk no. 1" to "SCSI disk
+  (LD 1200 installation note, line 317).
+- Menu 1 (SINTRAN K release notes, lines 6911-6925; LD 1200 installation note, lines 319-328): lines "SCSI disk no. 1" to "SCSI disk
   no. 14", and "SCSI streamer 1" / "SCSI streamer 2". Each line has a **Current**
   and a **Next** column.
-- Menu 2, reached with the scroll-down key or `N` (K-REL 6949-6957; LD-INST
-  339-347): "Optical disk no. 1-4" and "Mag. tape no. 1-4".
+- Menu 2, reached with the scroll-down key or `N` (SINTRAN K release notes, lines 6949-6957; LD 1200 installation note,
+  lines 339-347): "Optical disk no. 1-4" and "Mag. tape no. 1-4".
 - **Each entry is `adaptor.ID`.** You type the adaptor number (1-4) left of the
   period and the SCSI ID (0-7) to the right. For example, `1.0` is adaptor 1, ID 0
-  (K-REL 6936, 6965).
-- An example from the manual (K-REL 6918-6925, 6953-6956):
+  (SINTRAN K release notes, lines 6936, 6965).
+- An example from the manual (SINTRAN K release notes, lines 6918-6925, 6953-6956):
 
 | Line | Value |
 |---|---|
@@ -633,32 +634,32 @@ This order is a summary. Each step has its own source.
 | Mag. tape no. 1 | 1.2 |
 
 - Changes "will be stored in the SINTRAN III image and save areas immediately, and
-  ... a warm start is required for the changes to take effect" (K-REL 6971). The
+  ... a warm start is required for the changes to take effect" (SINTRAN K release notes, line 6971). The
   LD 1200 guide instead says "Do a COLD-START to make the new definition in
-  S3-CONFIG active" (LD-INST 489). The two sources do not agree. A cold start
+  S3-CONFIG active" (LD 1200 installation note, line 489). The two sources do not agree. A cold start
   would cover both cases (inferred).
 - The same tie can be made by program: MON 336 (IOMTY) functions 300B (set), 301B
   (get), 302B (delete) and 303B (get current), "VSX only", user SYSTEM only. Word 1
   is the SINTRAN logical device number, word 2 the adaptor's logical number
-  2202B-2205B, word 3 the SCSI ID 0-7 (K-REL 2357-2360, 3692-3780).
+  2202B-2205B, word 3 the SCSI ID 0-7 (SINTRAN K release notes, lines 2357-2360, 3692-3780).
 
 ### 7.3 @DEFINE-MASS-STORAGE-UNIT
 
 - Format: `@DEFINE-MASS-STORAGE-UNIT <device name>,<device unit> [,<F or R>]
-  [,<device sub-unit>]` (REF 2535).
+  [,<device sub-unit>]` (SINTRAN Reference Manual, line 2535).
 - It reserves a directory-table index for a device that is not entered yet. "A
   definition of a device in the directory table does not survive a warm start"
-  (REF 2528, 2547). That is why it goes in **LOAD-MODE**.
+  (SINTRAN Reference Manual, lines 2528, 2547). That is why it goes in **LOAD-MODE**.
 - The LD 1200 guide says: put `@DEFINE-MASS-STORAGE-UNIT <device name> <device
   unit> ...` in LOAD-MODE. The device name is `DISC-OPTICAL-1` to `DISC-OPTICAL-4`
-  and must match S3-CONFIG (LD-INST 357-363).
+  and must match S3-CONFIG (LD 1200 installation note, lines 357-363).
 - A real K load-mode file defines `FLOPPY-DISC-1 0` and also `STREAMER-1`
   (NDInsight paraphrase in `Installation/OS/research/HDD-IMAGE-FINDINGS.md`
   line 98; the exact line was not checked).
 - On an ND-5000 ES system, `@LIST-MASS-STORAGE-DEVICES` shows `DIR INDEX 3 :
-  STREAMER-1 UNIT 0` beside the SCSI disk subunits (ES-ADMIN 1642-1651).
+  STREAMER-1 UNIT 0` beside the SCSI disk subunits (ND-5000 ES administrator guide, lines 1642-1651).
 - Related commands: `@DELETE-MASS-STORAGE-UNIT`, `@LIST-MASS-STORAGE-UNITS`
-  (REF 2531-2532, 2867).
+  (SINTRAN Reference Manual, lines 2531-2532, 2867).
 
 ---
 
@@ -668,46 +669,46 @@ This order is a summary. Each step has its own source.
 
 | Command | Format | Source |
 |---|---|---|
-| `@CREATE-DIRECTORY` | `<directory name>,<device name>,<unit>[,<F or R>][,<subunit>],<bit file address>` - user SYSTEM only for hard disk; `<unit>` always required | REF 2080-2109 |
-| `@ENTER-DIRECTORY` | `<directory name>,<device name>,<unit>[,<F or R>][,<subunit>]`; from K, device unit is always required | REF 4669; K-REL 1565-1569 |
-| `@RELEASE-DIRECTORY` | `<directory name>` | REF 7434 |
-| `@SET-MASS-STORAGE-SIZE` | `<device name>,<device unit>[,<F or R>][,<sub-unit>],<number of pages>` - set the directory size on a SCSI disk | K-REL 1853-1863, 13376-13388 |
-| `@EXPAND-DIRECTORY` | for SCSI/DOMINO disks, M version | M-REL 1043, 1057 |
+| `@CREATE-DIRECTORY` | `<directory name>,<device name>,<unit>[,<F or R>][,<subunit>],<bit file address>` - user SYSTEM only for hard disk; `<unit>` always required | SINTRAN Reference Manual, lines 2080-2109 |
+| `@ENTER-DIRECTORY` | `<directory name>,<device name>,<unit>[,<F or R>][,<subunit>]`; from K, device unit is always required | SINTRAN Reference Manual, line 4669; SINTRAN K release notes, lines 1565-1569 |
+| `@RELEASE-DIRECTORY` | `<directory name>` | SINTRAN Reference Manual, line 7434 |
+| `@SET-MASS-STORAGE-SIZE` | `<device name>,<device unit>[,<F or R>][,<sub-unit>],<number of pages>` - set the directory size on a SCSI disk | SINTRAN K release notes, lines 1853-1863, 13376-13388 |
+| `@EXPAND-DIRECTORY` | for SCSI/DOMINO disks, M version | SINTRAN M release notes, lines 1043, 1057 |
 
 `F` / `R` (fixed / removable) does not apply to SCSI disks. It "only apply to disks
-which have both a fixed and a removable part" (REF 2090).
+which have both a fixed and a removable part" (SINTRAN Reference Manual, line 2090).
 
 Real examples:
 
 - `@ENTER-DIRECTORY,,DISC-SCSI-1,0`, then `@DIR` gives `DIR INDEX 0 : DISC-SCSI-1
-  UNIT 0 ** 125 Mb ** : PACK-ONE ... OUT OF 61036 PAGES` (ENTDIR 264-268).
+  UNIT 0 ** 125 Mb ** : PACK-ONE ... OUT OF 61036 PAGES` (ENTER-DIRECTORY notes, lines 264-268).
 - 310 MB disk in 6 subunits: `@ENTER-DIRECTORY PACK-USERS-2 DISC-6-SCSI-1 0 3`
-  (APP-INST 470). "The device DISC-6-SCSI-1 is used for 310 MByte discs. The device
-  DISC-3-SCSI-1 is used for 155 MByte discs" (APP-INST 438-439).
-- ND-5000 ES system disk: `DISC-4-SCSI-1`, unit 0, subunits 0 and 1 (ES-INST
-  457-467, 525-533). Another ES system uses `DISC-2-SCSI-1,0,0` and `,0,1`
-  (PATCH-2 134-135).
+  (installation note ND-895496-1, line 470). "The device DISC-6-SCSI-1 is used for 310 MByte discs. The device
+  DISC-3-SCSI-1 is used for 155 MByte discs" (installation note ND-895496-1, lines 438-439).
+- ND-5000 ES system disk: `DISC-4-SCSI-1`, unit 0, subunits 0 and 1 (ND-5000 ES installation guide,
+  lines 457-467, 525-533). Another ES system uses `DISC-2-SCSI-1,0,0` and `,0,1`
+  (patch notes ND-896058-2, lines 134-135).
 
 ### 8.2 How directory size is set on SCSI
 
 - For SMD and Winchester disks the size is part of the device name (for example
   DISC-70MB-1).
 - On SCSI disks, "the directory size is set to the total disk capacity divided by
-  the number of subunits on the device" (K-REL 13371). Here "total capacity" means
+  the number of subunits on the device" (SINTRAN K release notes, line 13371). Here "total capacity" means
   the usable count from the control record, not the raw size (inferred from
   section 6.2: 61036 pages = UHLIM / 2).
 - `@SET-MASS-STORAGE-SIZE` changes it, for example to match an SMD directory so a
   directory can be copied page for page. It cannot be changed while a directory on
   that device is entered. The unit and sub-unit parameters "are dummy, but must be
-  within legal ranges" (K-REL 13376-13383).
+  within legal ranges" (SINTRAN K release notes, lines 13376-13383).
 - Example: `@SET-MASS-STORAGE-SIZE DISC-2-OPTICAL-1,,,220584` matches the 450 MB
-  SMD size (K-REL 13388). 220584 pages is the tabled size for 450 MB (BF-README 192).
+  SMD size (SINTRAN K release notes, line 13388). 220584 pages is the tabled size for 450 MB (boot floppy README, line 192).
 - Error 3204, "INCOMPATIBLE DIRECTORY SIZES ON THIS CONTROLLER", belongs to the
-  same area (K-REL 13358).
+  same area (SINTRAN K release notes, line 13358).
 
 ### 8.3 Sharing and reserve
 
-New error texts for systems with SCSI (K-REL 13357-13363):
+New error texts for systems with SCSI (SINTRAN K release notes, lines 13357-13363):
 
 - "3203 DIRECTORY ENTERED BY ANOTHER SYSTEM"
 - "3210 DEVICE RESERVED BY ANOTHER SYSTEM"
@@ -715,15 +716,33 @@ New error texts for systems with SCSI (K-REL 13357-13363):
 These are about two ND-100s on one bus (inferred from the wording).
 
 `@DISC-ACCESS-LOG` "does not support SCSI disks in generations 312 nor 406 nor 500"
-(K-REL 6488).
+(SINTRAN K release notes, line 6488).
 
 ---
 
 ## 9. Using tapes: streamer and magtape
 
+**Streamer or magtape: the difference.** Both are tape drives, and on the SCSI bus both answer
+INQUIRY with the same device type, "sequential access"
+(`tools/boot-floppy/SCSI-DEVICE-STRINGS.md`, section 4.6). SINTRAN tells them apart by name:
+
+| | Streamer | Magtape |
+|---|---|---|
+| SCSI drives ND sold (5.2) | Tandberg TDC 3600, Archive Viper 150, Exabyte (8 mm) | StorageTek 2925, HP 88780 |
+| SINTRAN names | `STREAMER-1`, `STREAMER-2` | `MAG-TAPE-0`, `-4`, `-8`, `-12` |
+| Peripheral file number | 2226B, 2227B | 40B, 32B, 1232B, 1225B |
+| On nd100x | `--scsiN=tape:FILE`, an emulated TDC 3600 with 512-byte blocks | not emulated (nd100x `BUGS.md`, C6) |
+
+The names and numbers are from the Backup Manager installation note, lines 605-620 (10.3.8).
+**General knowledge, not from an ND document:** a streamer takes a closed quarter-inch
+cartridge and writes blocks of one fixed size; a magtape is a half-inch open reel and writes
+records of any length. The test program SCSI-TV C04 uses that difference for a tape drive it
+does not know: it asks the drive for its smallest and largest block size and sorts it by
+whether the two are equal (`SCSI-DEVICE-STRINGS.md`, section 4.6).
+
 ### 9.0 Getting a SCSI streamer going - the short version (measured)
 
-Done on SINTRAN L with the streamer at adaptor 1, SCSI ID 1 (RUN-BK). Three steps,
+Done on SINTRAN L with the streamer at adaptor 1, SCSI ID 1 (nd100x backup runs 2026-11-01). Three steps,
 in this order:
 
 | Step | What to do | What goes wrong if you skip it |
@@ -732,15 +751,15 @@ in this order:
 | 2 | `@SET-PERIPHERAL-FILE "STREAMER-1" 2226B` (and `@SET-FILE-ACCESS STREAMER-1 RWACD RWACD RWACD`). | `NO SUCH FILE NAME` on every tape command. Use 2226B, not 2206B: 2206B gives `NO SUCH LOGICAL UNIT`. |
 | 3 | Test: `@DEVICE-FUNCTION STREAMER-1 LOAD`, then `... REWIND`. Both return straight to `@` with no message. | - |
 
-Step 1 is the trap. The pack used for RUN-BK came with **SCSI streamer 1 = 0.0**,
+Step 1 is the trap. The pack used for the nd100x backup runs of 2026-11-01 came with **SCSI streamer 1 = 0.0**,
 which means "not configured", while SCSI disk 1 was `1.0`.
 
-What the drive saw on the first LOAD after the fix, in order (RUN-BK, SCSI log):
+What the drive saw on the first LOAD after the fix, in order (nd100x backup runs 2026-11-01, SCSI log):
 INQUIRY (12h), TEST UNIT READY (00h), which got a UNIT ATTENTION, REQUEST SENSE (03h),
 INQUIRY, TEST UNIT READY, MODE SENSE (1Ah, 12 bytes), MODE SELECT (15h, 12 bytes,
 buffered mode 1, density 0), LOAD (1Bh, load bit set). REWIND then sent REWIND (01h).
 
-**Driving S3-CONFIG from a plain terminal** (RUN-BK). S3-CONFIG is a full-screen
+**Driving S3-CONFIG from a plain terminal** (nd100x backup runs 2026-11-01). S3-CONFIG is a full-screen
 program:
 
 1. `@S3-CONFIG`, then answer the terminal type question (36 = Tandberg TDV 2215).
@@ -757,14 +776,14 @@ program:
    I = IO-COMM), so Return then opens IO-COMM.
 7. Boot again. The new value was in force after a fresh boot from the disk.
 
-The sources disagree on whether a warm or a cold start is needed (section 7.2). RUN-BK
+The sources disagree on whether a warm or a cold start is needed (section 7.2). The backup runs
 only shows that a new boot from the disk is enough.
 
 ### 9.1 Peripheral file
 
 To use a tape with `@DEVICE-FUNCTION` or a tape monitor call, you need a peripheral
 file. The ND-5000 ES mode file `(MODE-FILES)DEF-PERIPHERALS:MODE` does this
-(ES-ADMIN 1661-1676):
+(ND-5000 ES administrator guide, lines 1661-1676):
 
 ```
 @DELETE-FILE STREAMER-1
@@ -772,31 +791,31 @@ file. The ND-5000 ES mode file `(MODE-FILES)DEF-PERIPHERALS:MODE` does this
 @SET-FILE-ACCESS STREAMER-1 RWACD RWACD RWACD
 ```
 
-`@SET-PERIPHERAL-FILE <file name>,<logical device no.>` (REF 9117). For SCSI
+`@SET-PERIPHERAL-FILE <file name>,<logical device no.>` (SINTRAN Reference Manual, line 9117). For SCSI
 magtapes, the recommended peripheral files are `MAG-TAPE-0` = 40B, `MAG-TAPE-4` =
-32B, `MAG-TAPE-8` = 1232B and `MAG-TAPE-12` = 1225B (K-REL 13206-13213). The Backup
-Manager needs exactly these files to find ND-100 tape drives (BM-INST 607-616).
+32B, `MAG-TAPE-8` = 1232B and `MAG-TAPE-12` = 1225B (SINTRAN K release notes, lines 13206-13213). The Backup
+Manager needs exactly these files to find ND-100 tape drives (Backup Manager installation note, lines 607-616).
 
 ### 9.2 @DEVICE-FUNCTION
 
 - Format: `@DEVICE-FUNCTION <peripheral file name>,<function> [,<opt1>[,<opt2>]]`
-  (REF 3068).
+  (SINTRAN Reference Manual, line 3068).
 - For **SCSI streamers**, K added two functions: `LOAD` - "should always be used
   after a new tape is inserted" - and `RESET-DEVICE` - "performs a hard reset of the
-  device. Any tape loaded will be rewound" (K-REL 1550-1555). The numbers 312 and
+  device. Any tape loaded will be rewound" (SINTRAN K release notes, lines 1550-1555). The numbers 312 and
   406 printed beside them in the OCR text look like scan noise; I do not know what
   they are.
 - L added `RESERVE-DEVICE` and `RELEASE-DEVICE`, for two ND-100s on one SCSI bus.
   "Note that the commands will not reserve any device for use by a program in the
-  usual SINTRAN III way" (L-REL 810-816).
+  usual SINTRAN III way" (SINTRAN L release notes, lines 810-816).
 - Other functions (REWIND, ADVANCE-RECORDS, ADVANCE-TO-EOF, WRITE-EOF, UNLOAD,
-  ...) follow the REF chapter from line 3087. Example after a backup:
+  ...) follow the SINTRAN Reference Manual, chapter from line 3087. Example after a backup:
   `@DEVICE-FUNCTION MAG-TAPE-1 WRITE-EOF`, then `@DEVICE-FUNCTION MAG-TAPE-1
-  UNLOAD` (HANDBOK 12519-12520).
+  UNLOAD` (Norwegian operator handbook, lines 12519-12520).
 
 ### 9.3 Tape monitor calls
 
-MON ABSTR (MON 131) supports SCSI streamers for these functions (K-REL 13225-13254):
+MON ABSTR (MON 131) supports SCSI streamers for these functions (SINTRAN K release notes, lines 13225-13254):
 
 | Function | Name |
 |---|---|
@@ -827,14 +846,14 @@ MON ABSTR (MON 131) supports SCSI streamers for these functions (K-REL 13225-132
 | 76 | advance to end of recorded area |
 
 The functions marked with `*` in the manual are also allowed through MON MAGTP
-(MON 144) and `@DEVICE-FUNCTION` (K-REL 13256).
+(MON 144) and `@DEVICE-FUNCTION` (SINTRAN K release notes, line 13256).
 
 The magtape driver has its own, longer list, including select density (23), read
 error counters (25), byte records (26/27) and multiple records (50/51)
-(NPL-MAGTP 10-53).
+(SCSI magtape driver source, lines 10-53).
 
 **Magtape density (MON 144 function 23):** the codes mean different things on
-SCSI magtape and on STC (K-REL 1941-1951):
+SCSI magtape and on STC (SINTRAN K release notes, lines 1941-1951):
 
 | Code | SCSI magtape | STC |
 |---|---|---|
@@ -851,7 +870,7 @@ SCSI magtape and on STC (K-REL 1941-1951):
 ### Quick procedure: whole-disk backup and restore on a SCSI streamer (measured)
 
 Proven end to end on SINTRAN L, BACKUP-SYSTEM I02, a Tandberg TDC 3600 at adaptor 1,
-SCSI ID 1 (RUN-BK). Details and the errors you get when a step is missing: 9.0, 10.0a,
+SCSI ID 1 (nd100x backup runs 2026-11-01). Details and the errors you get when a step is missing: 9.0, 10.0a,
 10.2.
 
 ```
@@ -869,7 +888,7 @@ Ba-sy: DEVICE-COPY STREAMER-1 0 DISC-75MB-1 0 COPY      <- backup  (disk to tape
 Ba-sy: DEVICE-COPY DISC-75MB-1 0 STREAMER-1 0 COPY      <- restore (tape to disk)
 ```
 
-In RUN-BK each name and the word COPY were typed as answers to the prompts, one per
+In the backup runs each name and the word COPY were typed as answers to the prompts, one per
 line. Whether the program also takes them on one line was not tested. Replace
 `DISC-75MB-1 0` with your own disk name and unit (`@LIST-DIRECTORIES-ENTERED`).
 
@@ -881,23 +900,23 @@ volume (`CREATE-VOLUME` refuses the device, 10.1). For files, use the Backup Man
 
 | Tool | Backup to `STREAMER-1` | Restore from `STREAMER-1` | Source |
 |---|---|---|---|
-| **BACKUP-SYSTEM** (ND 210337), `@BACKUP-SYSTEM`, prompt `Ba-sy:` | **Whole disk unit only**, with `DEVICE-COPY`. Single files (`CREATE-VOLUME` + `COPY-USERS-FILES`) are refused for the streamer in I02 (measured, 10.1). | `DEVICE-COPY` the other way round, source `STREAMER-1` | L-REL 3572; BACKUP-UG 4252-4500; RUN-BK |
-| **Backup Manager** (ND 211226), `@BM-OPERATOR` | Files or whole directories, to a `VOLUME` or `TAR` on `STREAMER-1` | `COPY` with `From VOLUME ... STREAMER-1 0`, `To DIRECTORY` | BM-INST 607-616; ES-INST 350-415; TPS 184-189 |
-| **Disk Restore** (ND 211187B), stand-alone | - | A whole-disk image from `STREAMER-1` to a SCSI disk | TV-REL 225-275; ES-INST 453-499 |
-| DIR-BACKUP (stand-alone, SINTRAN stopped) | Not for SCSI. It asks for a "STREAMER system (1-2)" and handles disks up to 75 MB. Inferred: the 3106/3112 streamer. | same | BACKUP-UG 3266-3555 |
-| MCOPY (stand-alone) | No: "Cipher, Tandberg, Pertec and STC Mag-tape drives" | - | BACKUP-UG 3016 |
+| **BACKUP-SYSTEM** (ND 210337), `@BACKUP-SYSTEM`, prompt `Ba-sy:` | **Whole disk unit only**, with `DEVICE-COPY`. Single files (`CREATE-VOLUME` + `COPY-USERS-FILES`) are refused for the streamer in I02 (measured, 10.1). | `DEVICE-COPY` the other way round, source `STREAMER-1` | SINTRAN L release notes, line 3572; BACKUP-SYSTEM User Guide, lines 4252-4500; nd100x backup runs 2026-11-01 |
+| **Backup Manager** (ND 211226), `@BM-OPERATOR` | Files or whole directories, to a `VOLUME` or `TAR` on `STREAMER-1` | `COPY` with `From VOLUME ... STREAMER-1 0`, `To DIRECTORY` | Backup Manager installation note, lines 607-616; ND-5000 ES installation guide, lines 350-415; installation note ND-896058-4, lines 184-189 |
+| **Disk Restore** (ND 211187B), stand-alone | - | A whole-disk image from `STREAMER-1` to a SCSI disk | ND-5000 platform installation note, lines 225-275; ND-5000 ES installation guide, lines 453-499 |
+| DIR-BACKUP (stand-alone, SINTRAN stopped) | Not for SCSI. It asks for a "STREAMER system (1-2)" and handles disks up to 75 MB. Inferred: the 3106/3112 streamer. | same | BACKUP-SYSTEM User Guide, lines 3266-3555 |
+| MCOPY (stand-alone) | No: "Cipher, Tandberg, Pertec and STC Mag-tape drives" | - | BACKUP-SYSTEM User Guide, line 3016 |
 
-Versions (L-REL 3571-3573; N-REL 2353-2354): BACKUP-SYSTEM version H is needed for
+Versions (SINTRAN L release notes, lines 3571-3573; SINTRAN N release notes, lines 2353-2354): BACKUP-SYSTEM version H is needed for
 more than 256 files per user. **Version I is needed for SCSI streamers.** Revision I05,
-with DMA server I05, is needed for SCSI optical disks and SCSI magtapes. K-REL 14032
+with DMA server I05, is needed for SCSI optical disks and SCSI magtapes. SINTRAN K release notes, line 14032
 gives "revision I03 / DMA server I02" for the same optical and magtape support; the two
 release notes do not agree.
 
 ### 10.0a Putting BACKUP-SYSTEM I on a pack (measured)
 
 The official way is the installer on floppy 210337I04-XX-01S/02S/03S (or I05-XX-01D).
-It copies the files and then does the steps below (BASY-INST §3). The steps, as run by
-hand in RUN-BK:
+It copies the files and then does the steps below (BACKUP-SYSTEM install notes, section 3). The steps, as run by
+hand in the backup runs:
 
 ```
 @DUMP-PROGRAM-REENTRANT BACKUP-SYSTEM-I, (UTILITY)BACKUP-SYS-I02:PROG
@@ -906,7 +925,7 @@ BACKUP-SYSTEM / I02  870827
 Ba-sy:
 ```
 
-What each piece is, and what happens without it (RUN-BK):
+What each piece is, and what happens without it (nd100x backup runs 2026-11-01):
 
 | File | Where | Without it |
 |---|---|---|
@@ -917,7 +936,7 @@ What each piece is, and what happens without it (RUN-BK):
 
 The dump is lost at a cold start. The installer says to append the
 `@DUMP-PROGRAM-REENTRANT` line to the DUMP-REENTRANT file on SYSTEM, and
-`BACKUP-LOAD-I:MODE` to HENT-MODE (BASY-INST 102-109).
+`BACKUP-LOAD-I:MODE` to HENT-MODE (BACKUP-SYSTEM install notes, lines 102-109).
 
 Two things that look like faults and are not:
 
@@ -927,7 +946,7 @@ Two things that look like faults and are not:
 - `BAK01` in a SINTRAN error report is the console's own background program, not a
   backup program.
 
-**A damaged copy of the program on the RUN-BK pack.** The `(UTILITY)BACKUP-SYS-I02:PROG`
+**A damaged copy of the program on the pack of the backup runs.** The `(UTILITY)BACKUP-SYS-I02:PROG`
 on nd100x `SMD0.IMG` has 97 pages where the original has 120. Pages 85, 96-104 and
 106-118 are holes. The dump fails with `NO SUCH PAGE / ERROR IN ACCESSING THE PROG-FILE
 / ERROR DETECTED BY RT-LOADER IN BUILDING SEGMENT`. In the original (floppy
@@ -938,23 +957,23 @@ copy from the floppy works.
 ### 10.0b How BACKUP-SYSTEM writes a device copy to a tape (from the manual)
 
 When DEVICE-COPY writes to a streamer or a magtape, the tape becomes a normal
-**volume** holding one volume file (BACKUP-UG 4733-4760):
+**volume** holding one volume file (BACKUP-SYSTEM User Guide, lines 4733-4760):
 
 - Volume name (VOL1 field 3): always `BACKUP`, picked by the program. Owner: `SYSTEM`.
 - File name (HDR1 field 3): the source device name, for example `DISC-75MB-1`.
 - File type (HDR1 field 4): the unit, for example `1`, or `1-2` for subunit 2.
 - Labels follow ANSI X3.27-1969 with ND changes: 80-character labels, data in blocks
   of 1 to 8 pages of 2048 bytes, and a `HOLE` label in front of a block that does not
-  follow on from the one before (BACKUP-UG 4485-4530).
+  follow on from the one before (BACKUP-SYSTEM User Guide, lines 4485-4530).
 - On disk and streamer volumes all labels sit in one sector at fixed places
-  (BACKUP-UG 4865-4880).
+  (BACKUP-SYSTEM User Guide, lines 4865-4880).
 
 The program itself decides between a volume and a plain directory copy: "The device
 should contain a volume if it is a streamer or magnetic tape, or if the source and
-destination devices have different sizes" (BACKUP-UG 4735).
+destination devices have different sizes" (BACKUP-SYSTEM User Guide, line 4735).
 
 The LD 1200 / filestore guide asks for SINTRAN K and "BACKUP-SYSTEM: Version 1I03 or
-later" (LD-INST 94-95; "1I03" is as printed, probably I03).
+later" (LD 1200 installation note, lines 94-95; "1I03" is as printed, probably I03).
 
 ```mermaid
 flowchart LR
@@ -986,7 +1005,7 @@ flowchart LR
 
 ### 10.1 File backup with BACKUP-SYSTEM
 
-1. Create a volume on the tape (BACKUP-UG 985-998):
+1. Create a volume on the tape (BACKUP-SYSTEM User Guide, lines 985-998):
 
    ```
    @BACKUP-SYSTEM
@@ -998,11 +1017,11 @@ flowchart LR
 
    The volume name is at most 6 characters and can never be abbreviated. The manual
    lists "FLOPPY-DISC-1, FLOPPY-DISC-2 or MAG-TAPE-1 to MAG-TAPE-4" as standard names
-   and units 0-3 (BACKUP-UG 996-998). It does not show a SCSI streamer here.
+   and units 0-3 (BACKUP-SYSTEM User Guide, lines 996-998). It does not show a SCSI streamer here.
 
    **Measured with I02: a SCSI streamer cannot hold a BACKUP-SYSTEM file volume.**
    `CREATE-VOLUME TEST01 STREAMER-1 0` and `CREATE-VOLUME TEST01 STREAMER-SCSI-1 0`
-   both answer `* Illegal device name` (RUN-BK). The program's own help text for this
+   both answer `* Illegal device name` (nd100x backup runs 2026-11-01). The program's own help text for this
    field names only `FLOPPY-DISC-1, FLOPPY-DISC-2, or MAG-TAPE-1 to MAG-TAPE-4`.
    The same answer comes back with the full set-up of 9.0 in place (streamer in
    S3-CONFIG, peripheral file, `DEFINE-MASS-STORAGE-UNIT`, XMSG, DMA server).
@@ -1030,7 +1049,7 @@ flowchart LR
    SCSI streamers 1-2, and no SCSI mag tape, so the streamer cannot be set up as a
    `MAG-TAPE-n` either.
 
-   **Test with the entry switched back on (measured, RUN-BK, 2026-11-02).** On a copy
+   **Test with the entry switched back on (measured, nd100x backup runs 2026-11-01, 2026-11-02).** On a copy
    of `BACKUP-SYS-I02:PROG`, the two `x` were changed back to `S`. This is not an ND
    procedure, only a test of what the hidden entry does:
 
@@ -1043,15 +1062,15 @@ flowchart LR
    So the program can read a SCSI streamer, but refuses to create a file volume on
    it. The manual says why, in its section on label layout for disk and streamer
    volumes: "... when normal file backup on disk or streamer volumes is implemented"
-   (BACKUP-UG 4867). **File backup to any streamer, the 3112 one or SCSI, was never
+   (BACKUP-SYSTEM User Guide, line 4867). **File backup to any streamer, the 3112 one or SCSI, was never
    implemented in BACKUP-SYSTEM.** On a streamer the program writes only device
-   copies (10.2), and it names that volume `BACKUP` itself (BACKUP-UG 4733-4745).
+   copies (10.2), and it names that volume `BACKUP` itself (BACKUP-SYSTEM User Guide, lines 4733-4745).
 
    So no shipped ND-100 version of BACKUP-SYSTEM writes a file volume to a SCSI
    streamer. ND's tool for files on a SCSI streamer is the Backup Manager (10.3). It
-   runs on the ND-500/5000. The full B02 floppy set is in the software archive (10.3.2).
+   runs on the ND-500/5000. The full B02 floppy set is in the software archive (10.3.8).
 
-2. Copy files (BACKUP-UG 1013-1027):
+2. Copy files (BACKUP-SYSTEM User Guide, lines 1013-1027):
 
    ```
    Ba-sy: COPY-USERS-FILES
@@ -1067,14 +1086,14 @@ flowchart LR
      Manual selection: YES
    ```
 
-   "VOLUME to VOLUME copying is not implemented" (BACKUP-UG 1044). If a file
+   "VOLUME to VOLUME copying is not implemented" (BACKUP-SYSTEM User Guide, line 1044). If a file
    reaches the end of the tape, its part on that tape is deleted. The program asks
-   for a new tape and writes the file again as the first file there (BACKUP-UG 1139).
+   for a new tape and writes the file again as the first file there (BACKUP-SYSTEM User Guide, line 1139).
 
 3. **Restore**: run `COPY-USERS-FILES` the other way round. The source is `VOLUME`
-   with the volume name, the destination is `DIRECTORY` (BACKUP-UG 1143-1145). To
+   with the volume name, the destination is `DIRECTORY` (BACKUP-SYSTEM User Guide, lines 1143-1145). To
    delete from a volume: `Ba-sy: DELETE-VOLUME-FILES <volume-name>,<device-name>,
-   (<device-unit>),(<generation>),[(<file-name>)]` (BACKUP-UG 1170).
+   (<device-unit>),(<generation>),[(<file-name>)]` (BACKUP-SYSTEM User Guide, line 1170).
 
 A mag-tape unit is reserved automatically. It "IS NOW RESERVED WHEN ACCESSED AND STAYS
 RESERVED UNTIL A NEW UNIT IS ACCESSED OR EXIT FROM THE BACKUP-SYSTEM IS PERFORMED"
@@ -1085,15 +1104,15 @@ about the mag-tape unit; it says nothing about streamers.
 
 `Ba-sy: DEVICE-COPY` asks for `<Destination device name> <Destination device unit>
 <Source device name> <Source device unit> <Function>`. The functions are `COPY`,
-`APPEND-DEVICE`, `LIST-DEVICES-APPENDED` and `DELETE-LAST-APPENDIX` (BACKUP-UG
-4373-4437).
+`APPEND-DEVICE`, `LIST-DEVICES-APPENDED` and `DELETE-LAST-APPENDIX` (BACKUP-SYSTEM User Guide,
+lines 4373-4437).
 
-- COPY counts the pages, copies, then compares, and prints `- OK` (BACKUP-UG 4439).
+- COPY counts the pages, copies, then compares, and prints `- OK` (BACKUP-SYSTEM User Guide, line 4439).
 - The unit can be `<Unit:unit>`, "only ... for tapes", a list so that several tapes
-  can be mounted in advance (BACKUP-UG 4405).
+  can be mounted in advance (BACKUP-SYSTEM User Guide, line 4405).
 
 The manual's tape example uses the 3112 streamer (`STREAMER-TAPE-1`), not a SCSI
-one. It still shows the dialogue (SYS-SUP 11489-11536):
+one. It still shows the dialogue (System Supervisor manual, lines 11489-11536):
 
 ```
 @BACKUP-SYSTEM
@@ -1114,11 +1133,11 @@ Mounted (YES/NO, you can push ESC): Y
 ```
 
 - `RETENTION` compare mode means "Compare for streamer tape. The tape is wound and
-  rewound before use" (SYS-SUP 11474).
-- The cartridge size differs between sources: "60MB" (SYS-SUP 11533) and "45MB"
-  (HANDBOK 13599). Both are the 3112 streamer.
+  rewound before use" (System Supervisor manual, line 11474).
+- The cartridge size differs between sources: "60MB" (System Supervisor manual, line 11533) and "45MB"
+  (Norwegian operator handbook, line 13599). Both are the 3112 streamer.
 
-**DEVICE-COPY to a SCSI streamer, measured (RUN-BK).** No BACKUP-SYSTEM example with a
+**DEVICE-COPY to a SCSI streamer, measured (nd100x backup runs 2026-11-01).** No BACKUP-SYSTEM example with a
 SCSI streamer exists in NDInsight. This one ran on SINTRAN L, BACKUP-SYSTEM I02 and DMA
 server C00, with the streamer set up as in section 9.0.
 
@@ -1133,16 +1152,16 @@ Everything that must be in place first, each step with the message you get witho
 | 5 | `@DUMP-PROGRAM-REENTRANT BACKUP-SYSTEM-I, (UTILITY)BACKUP-SYS-I02:PROG` (section 10.0a) | `@BACKUP-SYSTEM` is not a command |
 
 Steps 2-5 do not survive a new boot. On a real system they belong in LOAD-MODE (step
-2, section 7.3) and in the start-up mode files (steps 3-5). On the RUN-BK pack, XMSG is
+2, section 7.3) and in the start-up mode files (steps 3-5). On the pack of the backup runs, XMSG is
 not started at boot because LOAD-MODE calls `XMSG-START:MODE`, which is not on the pack.
 
 Also learned from the program, without a manual saying so: `NO SUCH LOGICAL UNIT` for
-a source unit means that unit does not exist in this SINTRAN (SMD unit 1 on the RUN-BK
-generation).
+a source unit means that unit does not exist in this SINTRAN (SMD unit 1 in the SINTRAN
+generation of the backup runs).
 
 The dialogue. The system pack itself, unit 0, is the source. The manual says to run
-`RESERVE-SYSTEM:MODE` first on a real system, to stop all other work (BACKUP-UG 4268);
-RUN-BK had no other users.
+`RESERVE-SYSTEM:MODE` first on a real system, to stop all other work (BACKUP-SYSTEM User Guide, line 4268);
+The backup runs had no other users.
 
 ```
 @BACKUP-SYSTEM
@@ -1166,7 +1185,7 @@ Ba-sy:
 36945 pages (75.6 MB) took 7 minutes of guest time to copy and compare. No question is
 asked when the destination is a tape.
 
-What the drive saw, in order (RUN-BK, SCSI log):
+What the drive saw, in order (nd100x backup runs 2026-11-01, SCSI log):
 
 | Phase | SCSI commands |
 |---|---|
@@ -1181,9 +1200,9 @@ The tape starts with the labels described in 10.0b, read straight off the tape i
 `VOL1BACKUP ... SYSTEM`, then `HDR1DISC-75MB-1 ... 0`. The end label reads
 `EOF1DISC-75MB-1 ... 036945SINTRAN III L`, which holds the page count.
 
-**Restore from the streamer, measured (RUN-BK).** Same set-up (steps 1-5 above), then
+**Restore from the streamer, measured (nd100x backup runs 2026-11-01).** Same set-up (steps 1-5 above), then
 DEVICE-COPY with the names swapped. The system pack itself was restored while
-SINTRAN ran from it, as the manual allows (BACKUP-UG 4480-4490):
+SINTRAN ran from it, as the manual allows (BACKUP-SYSTEM User Guide, lines 4480-4490):
 
 ```
 Ba-sy: DEVICE-COPY
@@ -1202,7 +1221,7 @@ Ba-sy: DEVICE-COPY
 ```
 
 - No `Copy to directory. OK?` question came, although the manual shows one when the
-  destination is an entered directory (BACKUP-UG 4476).
+  destination is an entered directory (BACKUP-SYSTEM User Guide, line 4476).
 - After `You should now restart the system.` the machine stopped. Expected behaviour,
   since the running system's own disk had just been overwritten.
 - What the drive saw: REWIND, MODE SENSE, SPACE 2 blocks past the labels, 279 × READ
@@ -1215,138 +1234,455 @@ Ba-sy: DEVICE-COPY
 `ND-210337 Backup-System Version: I02 AUGUST 28, 1987` and `Special version for TDC 3640
 REV.Y1`. So this BACKUP-SERV-I02 build names the Tandberg TDC 3640 itself.
 
-Other CUF service commands (BACKUP-UG 1961, 1971, 2084-2090, 2151-2153):
+Other CUF service commands (BACKUP-SYSTEM User Guide, lines 1961, 1971, 2084-2090, 2151-2153):
 
 - `SET-DENSITY <device> <unit> <density>`: 1600 or 6250, STC tape only.
 - `SET-BLOCK-SIZE-FOR-TAPE <pages>`: 0-8; 0 means the system chooses.
 
-### 10.3 Backup Manager
+### 10.3 Backup Manager: back up and restore single files
 
-The Backup Manager (ND 211226) is ND's tool for **single files** on a SCSI streamer.
-BACKUP-SYSTEM cannot do that (10.1). The section is put together from the install
-papers, the user guide and the floppies themselves. The install (10.3.3) has been run on
-nd100x as an ND-5000 machine and works. A copy to the streamer does not work there yet
-(10.3.8).
+The Backup Manager (ND product 211226) is ND's program for copying **single files** to and
+from a SCSI streamer. BACKUP-SYSTEM cannot do that on a streamer (10.1). The Backup Manager
+runs on the ND-500/5000, so the machine needs one.
 
-#### 10.3.1 What it is and what it needs
+This section has two halves. 10.3.1 to 10.3.6 say how to use it, with what was typed and
+what the screen showed on the nd100x emulator. 10.3.7 and 10.3.8 are reference: the parts of
+the manual not run yet, and the programs, floppies and install steps. Where a sentence comes
+from a document instead of a run, the document is named in brackets; the file names are in
+10.3.9.
 
-Four programs (BM-INST 9-16; BM-UG book page 5):
+#### 10.3.1 What works on nd100x
+
+Measured 2026-11-03 and 2026-11-04 on copies of an ND-5000 pack. The pack has BACKUP-SYSTEM
+I05, the ND-500 monitor, the Linkage-Loader H02, the LINKER B01 and Backup Manager B02,
+installed by the nd100x scripts in `tools/installs/`. The machine is an ND-120/CX with
+`fpp = 32` and an emulated Tandberg TDC 3600 streamer.
+
+| What | Result |
+|---|---|
+| Back up one file to the streamer | works: "File(s) copied: 1" |
+| Back up every file of a user (4 files) | works: "File(s) copied: 4" |
+| Restore one file onto a pack where it was deleted | works: the file is back, byte for byte the same, with its date |
+| Restore 4 files onto a pack where all were deleted | works: all four back, byte for byte the same |
+| List what is on a tape (`Services`, `Tape-operations`, `List-volume`) | works on terminal type 6 (DEC VT100): every file with user, name, type, date, pages and bytes |
+| The menus `Backup`, `Restore`, `Services`, `BM` on terminal type 2 (Teletype) | do not work: error 36602B and the program ends (10.3.6). They work on terminal type 6 (DEC VT100). |
+
+#### 10.3.2 Set-up before the first copy
+
+**Once per pack:**
+
+1. The streamer must be in SINTRAN's configuration: SCSI streamer 1 set up in S3-CONFIG, as
+   9.0 describes. Without it `@DEVICE-FUNCTION STREAMER-1` answers ILLEGAL PARAMETER and
+   `@DEFINE-MASS-STORAGE-UNIT` answers NO SUCH DEVICE NAME (measured on a fresh pack,
+   2026-11-04).
+2. The peripheral file for the streamer: `@SET-PERIPHERAL-FILE "STREAMER-1" 2226B` (9.1).
+   The Backup Manager finds ND-100 tape drives only through these files (Backup Manager
+   installation note, lines 605-616).
+3. The message file `(SYSTEM)UE-ERMSG-EN-D05:ERR` (or another `UE-ERMSG-EN-D..`). Without it
+   the first copy stops with "An internal error has occurred" (10.3.6). B02 does not bring it.
+   It is on floppy `211075C03-EN-01D` (MD5 `be8441322f2c65076c48ecc3b4468eda`):
+   `@COPY-FILE "(SYSTEM)UE-ERMSG-EN-D05:ERR",(211075C03-EN-01D:FLOPPY-USER)UE-ERMSG-EN-D05:ERR`.
+   The file `UE-ERMSG-EN-C05` that BACKUP-SYSTEM brings is not taken. The nd100x install
+   script copies the D05 file itself.
+4. In `(ND-OPERATIONS)BM-PARAMETER-B02:DATA`, the file of Backup Manager settings:
+   - `DOMINO-MODE = OFF`. The setting means "search for DOMINO tape drives". DOMINO is a
+     different SCSI controller for the ND-5000 (section 15); this machine has none. With
+     ON, every copy first asks for the DOMINO name server, does not find it, and stops
+     with "No files copied".
+   - The `IMAGE-NO-COMPARE-FILE` lines must name the swap and segment files this machine
+     really has. As ND ships the file, it names `(SYSTEM)SWAP-FILE-0:SWAP`; on these packs
+     the ND-500 swap file is `(SYSTEM)SWAP-FILE:DATA` (the ND-500 monitor command
+     `LIST-SWAP-FILE-INFO`, number 0, shows it). With a name that does not exist, the
+     program prints error 33626 at every start. ND's notes say to edit these lines for
+     the machine (Backup Manager product information ND-895055-3A, "Information and
+     Hints"; ND-5000 ES installation guide, "Defining Extra Swap-Files and Segment-Files").
+     The nd100x install script `tools/installs/backup-manager-b02/install.py` does this
+     itself: it asks the ND-500 monitor for the swap files and rewrites the lines.
+
+**At every boot, in this order** (as SYSTEM):
+
+1. Start XMSG: `@SINTRAN-SERVICE-PROGRAM`, `START-XMSG`, `EXIT`.
+2. Start the servers: `@START-SERVERS`.
+3. Start the ND-5000: `@ND-500-MONITOR`, `LOAD-CONTROL-STORE,,,,`, `START-SWAPPER`, `EXIT`.
+
+   The order matters. Started the other way round, the ND-5000 takes the shared memory
+   first, and the servers stop with "No LAMU area big enough" (the ND-5000 installation
+   note ND-895061-1A gives the same order).
+4. Load the tape: `@DEVICE-FUNCTION STREAMER-1` with `REWIND`, then `LOAD`, then `REWIND`.
+5. `@DEFINE-MASS-STORAGE-UNIT STREAMER-1 0`. Without it the program cannot find the
+   streamer and prints error 33575 `D100.STREAMER-1,0`.
+6. Give the machine a name in XMSG: `@XMSG-COMMAND`, `DEFINE-REMOTE-NAME,,D100,100`, `EXIT`.
+   The Backup Manager asks XMSG for it and puts it in front of directory names
+   (`D100.PACK-ONE`). Without a name XMSG answers `*XM-FIDO`, the name of one of its own
+   programs. Not tried: whether a copy works without this step.
+7. `@RT DMASRV` was typed in every run that worked. Not tried: whether it is needed.
+
+In the copy form, **leave every "Computer name" field empty** when the files and the
+streamer are on this machine. ND's notes say the same: "NEVER specify the 'Computer name'
+field when copying files between local devices" (ND-895055-3A). With `D100` typed in, the
+program treats the streamer as a file on another machine and SINTRAN answers 260B "File-access
+reentrant segments are not loaded".
+
+#### 10.3.3 Back up files
+
+Start the program, give the terminal type, then the command `COPY` and the form. On terminal
+type 2 (Teletype) the program asks one field at a time; Return alone leaves a field empty.
+
+```
+@BM-OPERATOR
+What is your terminal type?  2
+BmOp: COPY
+Object        SINTRAN
+Copy method   FILE
+Incremental   NO
+From          DIRECTORY
+  Computer name   (empty)
+  Directory name  PACK-ONE
+  User area       RONNY
+  Control         (empty)
+To            VOLUME
+  Volume name     BMTEST-1
+  Computer name   (empty)
+  Device name     STREAMER-1
+  U (unit)        0
+  S (subunit)     (empty)
+  Mode            OV
+Selection     INCLUDE
+  File name       (empty = every file of the user)
+BmOp: Execution method (Stop-on-error/Automatic) : STOP-ON-ERROR
+```
+
+What the screen showed for 4 files:
+
+```
+   Directory: PACK-ONE
+   Index User area        File name        Type V   T Written  M Pages
+   00000 RONNY            TEST             SYMB 1   I 98-09-22 Y     3
+ Loading
+   00001 RONNY            ALPHA-1          MODE 1   I 00-00-00 N     1
+   00002 RONNY            ALPHA-2          MODE 1   I 00-00-00 N     1
+   00003 RONNY            BETA             DATA 1   I 00-00-00 N     5
+ File(s) copied: 4       Time used: 00:00:04
+ Rewinding
+BmOp:
+```
+
+- *Mode* `OV` overwrites the volume. The other modes (Backup Manager User Guide, pages 52-53):
+  `Ap` append, `Ar` archive and delete the file, `Co` compare, `Re` retension, `Sm` shrinking
+  mode, `Ul` unload after the copy.
+- *Volume name*: up to 16 letters, digits and hyphens, not starting with a hyphen.
+- *File name* takes a name (`TEST:SYMB`) or a pattern; empty means every file. *Copy method*
+  `SELECTION FILE` instead takes a text file that lists the files (User Guide, pages 55-58).
+- Execution method: *Stop-on-error* runs on its own and stops at an error; *Automatic* runs
+  on its own and marks failed files `Er`; *Manual* asks before each file (User Guide,
+  page 27).
+- The files with `00-00-00` had no date on the pack (they were put there with `ndtool`); the
+  program copied them anyway.
+
+#### 10.3.4 Restore files
+
+The same `COPY` form, the other way round: from the volume to the directory.
+
+```
+BmOp: COPY
+Object        SINTRAN
+Copy method   FILE
+Incremental   NO
+From          VOLUME
+  Volume name     BMTEST-1
+  Computer name   (empty)
+  Device name     STREAMER-1
+  U (unit)        0
+  S (subunit)     (empty)
+  Mode            (empty)
+To            DIRECTORY
+  Computer name   (empty)
+  Directory name  PACK-ONE
+  User area       RONNY
+  Control         (empty)
+Selection     INCLUDE
+  File name       (empty = every file on the volume; or a name such as TEST:SYMB)
+BmOp: Execution method (Stop-on-error/Automatic) : STOP-ON-ERROR
+```
+
+What the screen showed, restoring all four files onto a pack copy where they had been
+deleted:
+
+```
+ Loading
+   Reel:01 Volume: BMTEST-1         Directory: D100.PACK-ONE
+   Index User area        File name        Type V   T Written  M Pages
+   00001 RONNY            TEST             SYMB 1   I 98-09-22 Y     3
+   00002 RONNY            ALPHA-1          MODE 1   I 00-00-00 N     1
+   00003 RONNY            ALPHA-2          MODE 1   I 00-00-00 N     1
+   00004 RONNY            BETA             DATA 1   I 00-00-00 N     5
+ 007707B: Error 33504 (octal). No message available.
+ File(s) copied: 4       Time used: 00:00:01
+ Rewinding
+```
+
+All four files came back byte for byte the same as before the backup. Error 33504 is not a
+failure; 10.3.6 says what it is. The list before it also shows what is on the volume.
+
+#### 10.3.5 List what is on a tape
+
+`List-volume` shows the files on a Backup Manager volume without copying anything. It is
+under the menu `Services`, then `Tape-operations`, and needs a screen terminal: on terminal
+type 2 (Teletype) the `Services` menu does not open (10.3.6). Measured with terminal type 6
+(DEC VT100), on the tape of 10.3.3:
+
+1. `@BM-OPERATOR`, terminal type `6`. The menu bar shows
+   `BmOp:  Backup   Restore   Copy   Services   BM   Exit`.
+2. `S` and Return: the line under it shows `Tape-operations   Parameters   Automatic-help`.
+3. `T` and Return: `List-volume   Erase-tape   Set-tape-density`, with List-volume already
+   chosen, and its form opens at once. Type only the one letter per menu (more about the
+   keys in 10.3.8).
+4. Fill the form, Return after each field:
+
+   ```
+   List       Volume name      Computer name    Device name      U S Control
+   VOLUME     BMTEST-1         (empty)          STREAMER-1       0 (empty) (empty)
+   ```
+
+   An empty *Volume name* matches every volume.
+5. Three questions follow; Return takes the shown answer:
+
+   ```
+   BmOp: List objects (All/Files/Images): ALL
+         Stop on full page (Yes/No)     : NO
+         List file                      : TERMINAL
+   ```
+
+   *List objects* `FILES` lists only files, `IMAGES` only disk images. *List file* can name
+   a file to write the list to instead of the screen.
+
+What the screen showed:
+
+```
+   Reel:01 Volume: BMTEST-1         Directory: D100.PACK-ONE
+   Index User area        File name        Type V   T Written  M Pages    Bytes
+-  00001 RONNY            TEST             SYMB 1   I 98-09-22 Y     3     5340
+-  00002 RONNY            ALPHA-1          MODE 1   I 00-00-00 N     1      329
+-  00003 RONNY            ALPHA-2          MODE 1   I 00-00-00 N     1      286
+-  00004 RONNY            BETA             DATA 1   I 00-00-00 N     5     9000
+```
+
+Error 33504 shows above the list, as in a restore: the program reads on past the last file
+into blank tape (10.3.6). The help text says the contents can be listed "only if the backup
+was made with Backup Manager. If the volume is a Backup System volume, the program informs
+you about it" (the program's own help, `BM-OPERAT-EN-B02:SEG`).
+
+Careful in this menu: `Erase-tape` sits next to `List-volume`, and asks "Erase whole volume
+(Yes/No)". A wrong letter there can wipe the tape.
+
+On terminal type 2 there is another way to see what is on a volume: a restore with execution
+method *Manual* lists the files one by one and asks before each (User Guide, page 27). Not
+run on nd100x.
+
+#### 10.3.6 Messages and what they mean
+
+| Message | When | What it means |
+|---|---|---|
+| `Error 33504 (octal). No message available.` | at the end of a restore, before "File(s) copied" | The program read past the end of the backup into blank tape, while looking for more files that match. Not a fault: the files are restored. Traced on nd100x 2026-11-03, below. |
+| `Error 33626 (octal)` with `(SYSTEM)SWAP-FILE-0:SWAP` | at every start | The settings file names a swap file this machine does not have. Fix: 10.3.2, "once per pack". |
+| `Error 33575 (octal)` with `D100.STREAMER-1,0` | at a copy | The streamer is not defined as a mass-storage unit. Fix: `@DEFINE-MASS-STORAGE-UNIT STREAMER-1 0` (10.3.2). |
+| `No files copied` | at a copy | With `DOMINO-MODE = ON` the program looks for DOMINO drives first and gives up when there are none. Fix: `DOMINO-MODE = OFF` (10.3.2). |
+| 260B `File-access reentrant segments are not loaded` | at a copy | A "Computer name" field was filled in for a local device. Leave it empty. |
+| `036602B:` followed by the menu word, then `EXIT Backup Manager Operator` | typing `SERVICES` or `TAPE-OPERATIONS` at the `BmOp:` prompt on terminal type 2 | The program ends. On terminal type 6 the same menus work, and `COPY` works on both. 36602B also showed on terminal type 6 when `EXIT` was typed into a form field, without ending the program. What 36602 means is **not known**. Measured 2026-11-04. |
+| `Library UE-ERMSG-EN-D' not found` under "An internal error has occurred. Please, report the error to ND!" | at the first copy | The User Environment message file is missing from the pack. B02 neither brings it nor checks for it; ND fixed that in a later version ("The installation program did not check the presence of correct UE-ERRMSG-file. This is now delivered along with the product", Backup Manager installation note B04, line 523). Fix: 10.3.2, "once per pack". |
+| `No message available` after any code | always for the 33xxx codes | The message file `UE-ERMSG-EN-D06` has no texts for the Backup Manager's own codes. |
+
+**How 33504 was traced.** The tape traffic of the restore, with the emulator's SCSI log: three
+reads of 2 blocks (the volume headers and the file header), one read of 12 blocks (the file's
+data), then a read that meets the first tape mark at once, a read that meets the second tape
+mark, and a read that meets blank tape. SINTRAN answers those last three 3B, 3B and 143B. The
+program turns the read status into its own code (code at 0x100636C9 in `BM-OPERATOR-B02:DOM`):
+3B gives 33505, 143B gives 33504 when bit 10 of the device's flag bits is set, 100B or 146B
+give 33503. The status line then shows 33504 in place of its progress text. The tape holds
+exactly what the backup wrote, and the drive's answers are the ones the SCSI rules and the
+TDC 3600 manual give. Not checked on a real machine; a real drive gives SINTRAN the same status
+at the end of the recorded data.
+
+#### 10.3.7 From the manual, not run yet: single files from a whole-disk tape
+
+A whole-disk backup (BACKUP-SYSTEM `DEVICE-COPY`, 10.2, or the Backup Manager with copy method
+`IMAGE`) is one disk image on the tape, not separate files. Single files are taken out of it
+with a fourth program, BM-FileRestore. It also reads tapes written by BACKUP-SYSTEM: "Backup
+Manager can restore from a tape produced by Backup System" (User Guide, page 17); such a volume
+shows the name `Backup` (page 143). None of this has been run on nd100x yet. From the User
+Guide, chapter 5 (pages 139-152):
+
+1. Put the tape in. If the backup fills more than one tape, start with the first; the program
+   asks "Mount medium number 2 on STREAMER-1 unit 0" when it needs the next.
+2. Start the program and name the drive:
+
+   ```
+   @BM-FILERESTORE
+   BmFi: Restore-file   File-statistics   User-statistics   BM   Exit
+   From     Device name   U  S  Devs
+   VOLUME   STREAMER-1    0
+   BmFi: Continue with defined device(s)? (Yes/No): Yes
+   BmFi: Start   Next-medium   Wrong-medium
+   ```
+
+   `Start` lists the disk copies on the tape (index, directory name, device name, unit, pages,
+   date). Move the arrow to the one wanted and press Return.
+3. `User-statistics` lists the user areas in the disk copy. `File-statistics (MARLEEN)` lists
+   the files of one user area; `(MARLEEN)ADV` only names starting with ADV, `(MARLEEN):TEXT`
+   only text files, `(MARLEEN);2` only version 2.
+4. `Restore-file` copies one file back:
+
+   ```
+   BmFi: Restore-file
+   Source file name     : (MARLEEN)REPORT:TEXT
+   Destination file name: (MARLEEN)REPORT:TEXT
+   ```
+
+   - The source name must point at exactly one file. SYSTEM is the default user area.
+   - An existing destination file is **overwritten**, unless the name is written in double
+     quotes; then the file must not exist yet. A new name without a type gets `:DATA`.
+   - It takes one file at a time ("It is not possible to select more than one file at a
+     time", page 147). For several files, give `Restore-file` again for each, or put the
+     commands in a mode or batch file (pages 151-152):
+
+     ```
+     @ENTER,<user area>,<password>,[<project password>],[<maximum time>]
+     @BM-FILERESTORE
+     Device,STREAMER-1,0
+     User-statistics,MARLEEN
+     File-statistics,(MARLEEN)
+     Restore-file (MARLEEN)REPORT:TEXT,,
+     Restore-file (MARLEEN)HOLIDAY:TEXT,"(CHARLES)HOLIDAY-RESTORE:TEXT"
+     Exit
+     ```
+
+     The empty destination after `REPORT:TEXT,,` means "the same name as the source".
+
+A whole-disk tape cannot be entered with `@ENTER-DIRECTORY` and listed with `@LIST-FILES`:
+on a tape, `DEVICE-COPY` writes a **volume** with the disk copy as one file in it, not a
+SINTRAN directory (BACKUP-SYSTEM User Guide, lines 4733-4745). The other ways to see inside
+one:
+
+| Way | Shows | State |
+|---|---|---|
+| BM-FileRestore, above | the user areas and the files inside the disk copy | from the manual; not run |
+| Restore the tape onto a spare disk (10.2), then `@ENTER-DIRECTORY` and `@LIST-FILES` on that disk | everything | the restore is measured (10.2); the spare-disk step not done |
+| `LIST-VOLUME STREAMER-1 0` in BACKUP-SYSTEM | the files of the volume, which on a device-copy tape is the one disk-copy file | `STREAMER-1` is switched off in every shipped BACKUP-SYSTEM (10.1); only tried on a blank tape with a test copy that has it switched on: `* No data detected` |
+
+#### 10.3.8 Reference: programs, floppies, install
+
+**The four programs** (Backup Manager installation note, lines 9-16; User Guide, page 5):
 
 | Program | Start with | Does |
 |---|---|---|
-| BM-Operator | `@BM-OPERATOR` | the main program: copy files, directories or SIBAS databases, run predefined sets, service commands |
-| BM-Definition | `@BM-DEFINITION` | define backup and restore sets (stored in the job database) |
+| BM-Operator | `@BM-OPERATOR` | the main program: copy files, directories or SIBAS databases, run predefined sets, tape services |
+| BM-Definition | `@BM-DEFINITION` | define backup and restore sets (kept in the job database) |
 | BM-Scheduler | `@BM-SCHEDULER` | run sets or batch jobs at set times, through the RT program `BMSERV` |
-| BM-FileRestore | `@BM-FILERESTORE` | restore single files from an **image** backup on tape or disk |
+| BM-FileRestore | `@BM-FILERESTORE` | restore single files from a whole-disk backup (10.3.7) |
 
-| Needs | Value | Source |
-|---|---|---|
-| CPU | ND-500 or ND-5000. The programs are ND-500 domains (`:DOM`). | BM-INST 66-68 |
-| Operating system | SINTRAN III VSX for ND-500/5000, 210576L | BM-INST 80 |
-| Other products | ND LINKER 211224B01; Backup System 210337I05 (used during install, and its DMA server does the image copies on the ND-100) | BM-INST 84-90 |
-| Disk space | SYSTEM 230 pages; ND-OPERATIONS 34 pages, 2 files; BACKUP-MANAGER 2900 pages, 25 files (B version) | BM-INST 1.3 |
-| ND-100 side | 1 segment, 1 RT description (for `BMSERV`) | BM-INST 1.3 |
-| Login | image copies, database copies and BM-FileRestore need user SYSTEM when User Environment is not running | BM-UG book page 15-16 |
+**What it needs** (installation note, lines 66-90 and section 1.3, unless said otherwise):
 
-The papers are for B04 (BM-INST, 1990) and C (ND-895055-3A). The floppies that exist
-are **B02**. In the commands below, `<rev>` is the revision on the floppies, here `02`.
+| Needs | Value |
+|---|---|
+| CPU | ND-500 or ND-5000. The programs are ND-500 domains (`:DOM`). |
+| Operating system | SINTRAN III VSX for ND-500/5000, 210576L |
+| Other products | ND LINKER 211224B01; BACKUP-SYSTEM 210337I05 (used by the installer, and its DMA server does the image copies on the ND-100) |
+| Disk space | SYSTEM 230 pages; ND-OPERATIONS 34 pages, 2 files; BACKUP-MANAGER 2900 pages, 25 files (B version) |
+| ND-100 side | 1 segment, 1 RT description (for `BMSERV`) |
+| Login | image copies, database copies and BM-FileRestore need user SYSTEM when User Environment is not running (User Guide, pages 15-16) |
+| Screen | a menu that opens a sub-menu needs a screen terminal, for example type 6 (DEC VT100); measured on nd100x, 10.3.6 |
 
-#### 10.3.2 The floppies (B02)
+The installation note is for B04 (1990), the product information ND-895055-3A for version C.
+The floppies that exist are **B02**.
 
-All six are in the RetroCore Labs software archive (BM-FLOPPY), each checked against
-its MD5 when downloaded:
+**On a screen terminal** the menus are a bar at the top: `BmOp:  Backup   Restore   Copy
+Services   BM   Exit`. A letter moves the highlight to the item that starts with it, and Return
+opens that item; its sub-menu then shows on the next line. Letters typed after that are kept and
+go into the next field, so type only the one letter per menu. Forms are filled one field at a
+time with Return. EXIT leaves a program; SHIFT + EXIT leaves the Backup Manager altogether; `@`
+gives a SINTRAN command from inside a form (User Guide, page 16). The menu tree, read from the
+program's English screen texts `BM-OPERAT-EN-B02:SEG`:
+
+| Menu | Sub-menu |
+|---|---|
+| Backup | Start, List |
+| Restore | Start, List |
+| Copy | (the copy form) |
+| Services | Tape-operations (List-volume, Erase-tape, Set-tape-density), Parameters, Automatic-help |
+| BM | Definition, Scheduler, File-Restore |
+| Exit | |
+
+**The floppies.** All six are in the RetroCore Labs software archive
+(`RetroCoreLabs/norskdata-software-archive`, folder `images/<md5>/`), each checked against its
+MD5 when downloaded. The NDInsight catalogue entry is
+`Installation/Software/ND-211226/ND-211226B02/README.md`.
 
 | Floppy | Archive image, MD5 | Files on it |
 |---|---|---|
-| `211226B02-XX-01D` | ND-disk-00032, `d91616fbc2dfb42c4cacd61141c2b529` | installer `IN-BCKMAN-XX-B02:PROG`, `:INIT`, `:XCOM`; `BM-JOBDB-B02:DATA` (job database with examples); `BM-PARAMETER-B02:DATA`; `BM-SIBDUM-B02:NRF` (no-SIBAS stub); `BM-OSIBAS-B02:NRF` (SIBAS/R link); `BM-SERVER-B02:PROG` (the scheduler server); mode files `BM-DRSIB-B02`, `BM-DNOSIB-B02`, `BM-SERVER-B02`, `BM-DUMP-B02`, `BM-START-B02`, `BM-DMAPTC` |
+| `211226B02-XX-01D` | ND-disk-00032, `d91616fbc2dfb42c4cacd61141c2b529` | installer `IN-BCKMAN-XX-B02:PROG`, `:INIT`, `:XCOM`; `BM-JOBDB-B02:DATA` (job database with examples); `BM-PARAMETER-B02:DATA` (the settings); `BM-SIBDUM-B02:NRF` (used when there is no SIBAS); `BM-OSIBAS-B02:NRF` (the SIBAS/R link); `BM-SERVER-B02:PROG` (the scheduler server); mode files `BM-DRSIB-B02`, `BM-DNOSIB-B02`, `BM-SERVER-B02`, `BM-DUMP-B02`, `BM-START-B02`, `BM-DMAPTC` |
 | `211226B02-XX-02D` | ND-disk-00031, `b5b2c0e6c5265a212ff520dcae6b2a51` | `BM-FILERE-B02:DOM` (BM-FileRestore) |
 | `211226B02-XX-03D` | ND-disk-00030, `58bc43dc1c8e70664f6ddacbc80772a1` | `BM-OPERATOR-B02:DOM` (BM-Operator) |
-| `211226B02-XX-04D` | ND-disk-00035, `4e2d509bf12ca1fdcebe24acfc3f5679` | `BM-DEFINI-B02:DOM`, `BM-SCHED-B02:DOM`, `BM-OPERATOR-B02:DO02` (second part of BM-Operator) |
+| `211226B02-XX-04D` | ND-disk-00035, `4e2d509bf12ca1fdcebe24acfc3f5679` | `BM-DEFINI-B02:DOM`, `BM-SCHED-B02:DOM`, `BM-OPERATOR-B02:DO02` (the second part of BM-Operator) |
 | `211226B02-EN-01D` | ND-disk-00034, `9ceed9f8b02aaa1ad44df78f0ec39d48` | English screen texts `BM-FILERE-EN-B02:SEG`, `BM-OPERAT-EN-B02:SEG`, `BM-DEFINI-EN-B02:SEG`, `BM-SCHED-EN-B02:SEG`; `BM-LANG-EN-B02:MODE` |
 | `211226B02-EN-02D` | ND-disk-00033, `8216d1a692387f1cbd3371ca845007ca` | `BM-FILERE-EN-B02:DATA`, `BM-OPERAT-EN-B02:DATA`, `BM-DEFINI-EN-B02:DATA`, `BM-SCHED-EN-B02:DATA` |
 
-The B04 paper says the installer copies XX-01D to 04D and EN-01D (BM-INST 271-279). It
-does not name EN-02D. Whether the B02 installer asks for EN-02D is **not known** until
-it is run. The NDInsight catalogue entry for this set is
-`Installation/Software/ND-211226/ND-211226B02/README.md`.
+The B02 installer asks for XX-01D to XX-04D and EN-01D; it never asks for EN-02D (measured on
+nd100x, 2026-11-02). The EN-02D files are screen texts, not error texts.
 
-#### 10.3.3 Installing (BM-INST 4.1-4.2)
+**Installing.** On nd100x the script `tools/installs/backup-manager-b02/install.py` runs ND's
+own installer and answers its questions; `tools/installs/README.md` gives the order of the
+products before it. By hand, from the installation note, sections 4.1-4.2:
 
-1. Check the prerequisites (10.3.1). BACKUP-SYSTEM I05 must already be on the pack.
-2. Log in as SYSTEM.
-3. Put floppy `211226B02-XX-01D` in the drive and enter it:
+1. BACKUP-SYSTEM I05, the ND-500 monitor as a reentrant subsystem, the Linkage-Loader and the
+   LINKER must already be on the pack.
+2. Log in as SYSTEM, put floppy `211226B02-XX-01D` in and enter it:
+   `@ENTER-DIRECTORY 211226B02-XX-01D <device name> <device number>`.
+3. Start the installer: `@(211226B02-XX-01D:FLOPPY-USER)IN-BCKMAN-XX-B02:PROG`. It asks for
+   the other floppies itself, and whether BM-Operator gets a SIBAS interface; answer **no
+   SIBAS** unless SIBAS/R-B is installed. With no SIBAS it links `BM-SIBDUM-B02:NRF` into
+   BM-Operator (mode file `BM-DNOSIB-B02:MODE`); with SIBAS it links `BM-OSIBAS-B02:NRF` and
+   `(SIBR-B)SIBR-LIBRARY` (`BM-DRSIB-B02:MODE`). The programs go to user `BACKUP-MANAGER`, the
+   job database and the settings file to `ND-OPERATIONS`. It also makes English the default
+   language: `BM-LANG-EN-B02:MODE` creates `BM-OPERAT-XX-B02:SEG` and the others and copies
+   the English texts into them.
 
-   ```
-   @ENTER-DIRECTORY 211226B02-XX-01D <device name> <device number>
-   ```
-
-4. Start the installer:
-
-   ```
-   @(211226B02-XX-01D:FLOPPY-USER)IN-BCKMAN-XX-B02:PROG
-   ```
-
-   It asks for the other floppies itself. It also asks whether BM-Operator gets a
-   SIBAS interface. Choose **no SIBAS** unless SIBAS/R-B is installed. The two choices
-   are the mode files `BM-DNOSIB-B02:MODE` (links the stub `BM-SIBDUM-B02:NRF` into
-   BM-Operator) and `BM-DRSIB-B02:MODE` (links `BM-OSIBAS-B02:NRF` and
-   `(SIBR-B)SIBR-LIBRARY`). The files go to user `BACKUP-MANAGER`; the job database
-   and parameter file go to `ND-OPERATIONS`. The names in the installer
-   (`BM-OPERAT-XX-<VERREV>:SEG`, `BM-LANG-<LANG>`) show that it also installs one
-   language as the default: `BM-LANG-EN-B02:MODE` creates `BM-OPERAT-XX-B02:SEG` and
-   so on, and copies the `-EN-` texts into them.
-5. Add these lines to `(SYSTEM)HENT-MODE:MODE` (run at cold start):
+   ND's installer gives `ND-OPERATIONS` only 20 pages and then cannot fit its two files (it
+   still ends "INSTALLATION - FINISHED"); the nd100x script gives the user 40 pages first.
+4. Add to `(SYSTEM)HENT-MODE:MODE` (run at cold start):
 
    ```
    @MODE (BACKUP-MANAGER)BM-SERVER-B02:MODE,,,
    @MODE (BACKUP-MANAGER)BM-DUMP-B02:MODE,,,
    ```
 
-   `BM-SERVER-B02:MODE` loads `BM-SERVER-B:PROG` onto a new segment `BMSERV` with
-   the RT loader, as RT program `BMSERV` at priority 32. `BM-DUMP-B02:MODE` defines
-   the four standard domains in the ND-500 monitor (`@ND`): `BM-OPERATOR`,
-   `BM-DEFINITION`, `BM-SCHEDULER`, `BM-FILERESTORE`. Those names are what makes
-   `@BM-OPERATOR` etc. work as commands.
-6. Add this line to `(SYSTEM)LOAD-MODE:MODE` (run at every warm start):
+   `BM-SERVER-B02:MODE` loads `BM-SERVER-B:PROG` onto a new segment `BMSERV` as RT program
+   `BMSERV` at priority 32. `BM-DUMP-B02:MODE` defines the four ND-500 standard domains
+   `BM-OPERATOR`, `BM-DEFINITION`, `BM-SCHEDULER`, `BM-FILERESTORE`; those names are what make
+   `@BM-OPERATOR` and the others work as commands.
+5. Add to `(SYSTEM)LOAD-MODE:MODE` (run at every warm start):
+   `@MODE (BACKUP-MANAGER)BM-START-B02:MODE,,,`. It only does `@RT BMSERV`, which starts the
+   scheduler server. The order of XMSG, the servers and the ND-5000 in that file is the one in
+   10.3.2.
+6. Add the DMA server patch to the DMA server's load file `(UTILITY)BACKUP-LOAD-I00:MODE`
+   (10.0a), after the DMA server is loaded: `@MODE (BACKUP-MANAGER)BM-DMAPTC:MODE,,,`. The file
+   holds two `@DMAC` patches to segment `DMASEG`:
+   - "Patch to set the block size in MON ABSTR for BDIO disk calls to 1000b words": word
+     `BIOnn+3` goes from 1 to 2 in each of the 16 routines `BIO01`..`BIO16` (065110-065242),
+     and word 41166 goes from 2000 to 1000.
+   - "Patch to disable write of FM and rewind on streamer in all error situations and
+     termination of dev. oper.", in three places: `Finish_Device` (045105), `Retry`, so that
+     no file mark is written after end of medium (047740), and `Clear_Device`, which now
+     returns at once (011072).
 
-   ```
-   @MODE (BACKUP-MANAGER)BM-START-B02:MODE,,,
-   ```
+   Both carry the header "Must only be execute on DMA-SERVER-C01, Nov. 5 1988", so the octal
+   addresses fit only that build. BACKUP-SYSTEM I05 starts DMA-SERVER C01 itself
+   (`@RT DMASRV`), the version the patch is for (measured on nd100x, 2026-11-02). The B04
+   installation note says the installer runs these patches itself (line 91); whether the B02
+   installer does is **not known**. The note gives the reason for them: "for handling
+   DOMINO/SCSI-disks and the 155MB Archive streamer".
+7. Make the peripheral files for the ND-100 tape drives (installation note, lines 605-620):
 
-   It only does `@RT BMSERV`, which starts the scheduler server.
-
-   The Backup Manager also needs NUCLEUS, ND's message system. Its servers are started
-   with `@START-SERVERS`, and the order in `LOAD-MODE:MODE` matters: XMSG first, then
-   `@START-SERVERS`, then the ND-5000 (ND-895061-1A: "after starting the XMSG ... and
-   before starting the ND-5000"). Starting the ND-5000 first lets its swapper take the
-   shared memory. NUCLEUS then has nowhere to put its memory areas (LAMUs), and MTSERV
-   and PROMAN stop with "No LAMU area big enough". Measured on nd100x, 2026-11-02.
-7. Add the DMA server patch to the DMA server's load file
-   `(UTILITY)BACKUP-LOAD-I00:MODE` (10.0a), after the DMA server is loaded:
-
-   ```
-   @MODE (BACKUP-MANAGER)BM-DMAPTC:MODE,,,
-   ```
-
-   The file holds two `@DMAC` patches to segment `DMASEG`:
-   - "Patch to set the block size in MON ABSTR for BDIO disk calls to 1000b words":
-     word `BIOnn+3` goes from 1 to 2 in each of the 16 routines `BIO01`..`BIO16`
-     (065110-065242), and word 41166 goes from 2000 to 1000.
-   - "Patch to disable write of FM and rewind on streamer in all error situations
-     and termination of dev. oper.", in three places: `Finish_Device` (045105),
-     `Retry`, so that no file mark is written after end of medium (047740), and
-     `Clear_Device`, which now returns at once (011072).
-
-   Both carry the header "Must only be execute on DMA-SERVER-C01, Nov. 5 1988".
-   Inferred from that header: the octal addresses fit only that build. The B04 paper
-   says the installer runs these patches itself (BM-INST 91); whether the B02
-   installer does is not known. BACKUP-SYSTEM I05 starts the DMA server itself
-   (`@RT DMASRV`) during a DEVICE-COPY, and that server is **DMA-SERVER C01**, the
-   version the patch is for (measured on nd100x, 2026-11-02).
-8. Make the peripheral files for the ND-100 tape drives. Backup Manager finds them
-   only through these files (BM-INST 605-616):
-
-   | Peripheral file | Number in the file | Name in Backup Manager |
+   | Peripheral file | Number in the file | Name in the Backup Manager |
    |---|---|---|
    | `STREAMER-1` | 2226B | `STREAMER-1` |
    | `STREAMER-2` | 2227B | `STREAMER-2` |
@@ -1355,90 +1691,16 @@ it is run. The NDInsight catalogue entry for this set is
    | `MAG-TAPE-8` | 1232B | `MAG-TAPE-3` |
    | `MAG-TAPE-12` | 1225B | `MAG-TAPE-4` |
 
-   For the SCSI streamer that is `@SET-PERIPHERAL-FILE "STREAMER-1" 2226B`, the same
-   file as in 9.0. Devices on a DOMINO SCSI controller need no peripheral file
-   (BM-INST 618-620); this machine has no DOMINO.
+   Drives on a DOMINO SCSI controller need no peripheral file.
+8. Fix the settings file for this machine (10.3.2, "once per pack").
 
-#### 10.3.4 Using it
+The Backup Manager writes its own tape format, different from BACKUP-SYSTEM's. One volume can
+hold several devices and a mix of files and disk images (User Guide, page 17). The backup tape
+of 10.3.3 holds, in order: the medium header `MEDH`, the volume header `VOLH BMTEST-1`, a file
+header `OBJH` with the start of the file's data, the rest of the data, and two tape marks.
 
-All screens are forms. Fill a field, then press Return to go to the next one. EXIT
-leaves a program. SHIFT + EXIT leaves the Backup Manager altogether. `@` gives a
-SINTRAN command from inside a form (BM-UG book page 16).
-
-**File backup to the SCSI streamer** (directory to volume, BM-UG 2.8.2, book page
-52-53):
-
-```
-@BM-OPERATOR
-BmOp: Copy
-Object    Copy method   Incremental
-SINTRAN   FILE          NO
-From      Computer name   Directory name   User area   Control
-DIRECTORY                 PACK-4
-To        Volume name   Computer name   Device name   U  S  Mode   Devs
-VOLUME    MY-VOLUME                     STREAMER-1    0     Ap     1
-Selection File name                                     Selection date
-INCLUDE   (ANN):TEXT
-Select execution mode (Manual/Stop-on-error/Automatic): MANUAL
-```
-
-- *Volume name*: up to 16 letters, digits and hyphens, not starting with a hyphen.
-  It can be left empty, but a name is recommended.
-- *Device name*: up to three devices. When one tape is full, copying goes on to the
-  next. Press F2 in the field to add one.
-- *Mode*, for a volume: `Ap` append, `Ar` archive and delete the file, `Co` compare,
-  `Ov` overwrite the volume, `Re` retension, `Sm` shrinking mode, `Ul` unload after
-  the copy.
-- Execution mode: *Manual* asks before each file; *Stop-on-error* runs on its own and
-  stops at an error; *Automatic* runs on its own and marks failed items `Er`
-  (BM-UG book page 27).
-
-**Restoring files from a file backup** (volume to directory, BM-UG 2.8.3, book page
-54-55): the same `Copy` form with `From VOLUME`, the volume name and `STREAMER-1`, and
-`To DIRECTORY`. For example `From VOLUME MY-VOLUME ... STREAMER-1 0 Re`,
-`To DIRECTORY PACK-5 ANN Of`, `INCLUDE REPORT:TEXT`.
-
-**Restoring single files from a whole-disk (image) backup** with BM-FileRestore
-(BM-UG chapter 5, book page 139-146). This also reads **tapes written by
-BACKUP-SYSTEM `DEVICE-COPY`**: "Backup Manager can restore from a tape produced by
-Backup System" (BM-UG 1.15, book page 17). Such a volume shows the name `Backup`
-(BM-UG book page 143). So the DEVICE-COPY tapes of 10.2 are the input:
-
-```
-@BM-FILERESTORE
-BmFi: Restore-file   File-statistics   User-statistics   BM   Exit
-Define the device(s) where your backup volume is mounted.
-From     Device name   U  S  Devs
-VOLUME   STREAMER-1    0
-BmFi: Continue with defined device(s)? (Yes/No): Yes
-BmFi: Start   Next-medium   Wrong-medium
-Reel:01 Volume: TOTAL-BACKUP
-Index Directory name  Device name   U S Pages   Backed up Control
-00001 PACK-ONE        DISC-SCSI-1   0   61036   89-03-03  No
-```
-
-Give `Start` on the right entry, then `Restore-file`:
-
-```
-Source file name     : (MARLEEN)REPORT:TEXT
-Destination file name: (MARLEEN)REPORT:TEXT
-```
-
-- The source name must be unique, and its user area must be given; SYSTEM is the
-  default. Type and version can be added: `(MARLEEN):TEXT`, `(MARLEEN);2`.
-- The destination is overwritten if it exists, unless the name is in double quotes.
-  A new file without a type gets `:DATA`.
-- `File-statistics (MARLEEN)B` lists the files of a user area that start with `B`.
-  `User-statistics` lists the user areas on the image.
-- A backup spread over several tapes: start with the first; the program asks
-  "Mount medium number 2 on STREAMER-1 unit 0".
-
-The Backup Manager writes its own volume format, which differs from BACKUP-SYSTEM's.
-It can hold several devices and a mix of files and images on one volume (BM-UG 1.15).
-
-#### 10.3.5 Example from the ND-5000 ES upgrade guide
-
-Example from the ND-5000 ES upgrade guide (ES-INST 350-362):
+Another example of the copy form, from the ND-5000 ES installation guide (lines 350-362): a
+backup of a whole directory, leaving out the files listed in a text file.
 
 ```
 @BM-OPERATOR
@@ -1454,227 +1716,24 @@ EXCLUDE  (SYSTEM)ES-EXCLUDE-FILES:SYMB
 Select execution mode (Manual/Stop-on-Error/Automatic): Stop-on-Err
 ```
 
-- Restore uses the same form with `From VOLUME ... STREAMER-1 0` and `To DIRECTORY`
-  (BM-SRC 104-108).
-- The Backup Manager finds ND-100 tape drives only through the peripheral files in
-  section 9.1 (BM-INST 607-616).
-- It needs DMA-SERVER patches "for handling DOMINO/SCSI-disks and the 155MB Archive
-  streamer" (BM-INST 91). Those are `BM-DMAPTC:MODE`, 10.3.3 step 7.
+(As printed in the guide; the volume name sits in the Computer name column there.)
 
-#### 10.3.6 Looking at the files on a backup tape: no ENTER-DIRECTORY
+#### 10.3.9 Sources for this section
 
-A whole-disk backup on a streamer cannot be entered with `@ENTER-DIRECTORY` and listed
-with `@LIST-FILES`. On a tape, `DEVICE-COPY` writes a **volume**, not a SINTRAN
-directory. "The device should contain a volume if it is a streamer or magnetic tape",
-and the disk copy inside it is one volume file, in a volume that BACKUP-SYSTEM names
-`BACKUP` itself (BACKUP-UG 4733-4745). No ND document in this repository describes
-entering a directory on a streamer. Not tried on the emulator: what SINTRAN answers
-to `@ENTER-DIRECTORY ... STREAMER-1 0`.
-
-What can be used instead:
-
-| Way | Shows | Needs | State |
-|---|---|---|---|
-| BM-FileRestore (10.3.4, steps in 10.3.7) | `User-statistics`: the user areas inside the disk copy. `File-statistics (USER)`: the files of one user area, with type, access, dates, pages and bytes. `Restore-file`: copies single files back. Reads tapes written by BACKUP-SYSTEM `DEVICE-COPY` (volume name `Backup`). | Backup Manager on an ND-500/5000 | from BM-UG chapter 5; not yet run on a tape written here |
-| Restore the tape onto a spare disk (10.2), then `@ENTER-DIRECTORY` that disk and `@LIST-FILES` | everything, as on the original disk | BACKUP-SYSTEM only, and a second disk unit set up in SINTRAN | DEVICE-COPY restore measured (10.2); the spare-disk step not done |
-| `LIST-VOLUME STREAMER-1 0` in BACKUP-SYSTEM | the files of the volume. On a device-copy tape, by the label layout, that is the one disk-copy file, not the files inside it | `STREAMER-1` is switched off in every shipped BACKUP-SYSTEM version (10.1) | only tried on a blank tape, with the test copy of I02 that has the entry switched on: `* No data detected` |
-
-#### 10.3.7 Step by step: list the files on a tape, restore one or several
-
-**C (file backup and restore with BM-Operator) has been run on nd100x, see 10.3.8. A and B
-have not been run yet.** It is taken from the Backup Manager
-User Guide, chapter 5 (BM-UG book page 139-152) and 2.8.3 (book page 54-58). Which
-procedure to use depends on how the tape was written:
-
-| The tape was written by | It holds | List and restore with |
-|---|---|---|
-| BACKUP-SYSTEM `DEVICE-COPY` (10.2), or BM-Operator with `Copy method IMAGE` | a copy of a whole disk | BM-FileRestore, A and B below |
-| BM-Operator with `Copy method FILE` or `SELECTION FILE` (10.3.4) | single files | BM-Operator `Copy` volume to directory, C below |
-
-The user must be logged in as SYSTEM when User Environment is not running
-(BM-UG book page 15-16).
-
-**A. List what is on a whole-disk tape (BM-FileRestore)**
-
-1. Put the tape in the streamer. If the backup fills more than one tape, all of them
-   must be at hand; start with the first.
-2. Start the program and name the drive (book page 142-143):
-
-   ```
-   @BM-FILERESTORE
-   BmFi: Restore-file   File-statistics   User-statistics   BM   Exit
-   From     Device name   U  S  Devs
-   VOLUME   STREAMER-1    0
-   BmFi: Continue with defined device(s)? (Yes/No): Yes
-   BmFi: Start   Next-medium   Wrong-medium
-   ```
-
-   Give `Start`. The program reads the tape and lists the disk copies on it: index,
-   directory name, device name, unit, pages, date backed up. Move the arrow to the one
-   wanted and press Return. A tape from BACKUP-SYSTEM shows the volume name `Backup`.
-3. **List the user areas** (5.7, book page 149-150):
-
-   ```
-   BmFi: User statistics: ⏎
-   Selection:
-   User area   Created  Entered  Publ. Fr. Own    Pages used  Pages reserv.  Max. files
-   ->SYSTEM    87-02-18 87-11-23 R     R   RWACD  21628       24184          1024
-     MARLEEN   87-02-18 87-11-23 R     R   RWACD    412         600           256
-   ```
-
-   Return alone lists every user area. `MARLEEN` lists one; `M` lists all starting
-   with M. Moving the arrow to a user area and pressing Return makes it the default for
-   the next `File-statistics` and `Restore-file`. EXIT goes back to the menu.
-4. **List the files of a user area** (5.6, book page 146-148):
-
-   ```
-   BmFi: File statistics: (MARLEEN)ADVERT ⏎
-   User area: MARLEEN                 Selection: ADVERT
-   File name          Type  V T Publ. Fr.   Own   Written  Read      Pages  Bytes
-   ->ADVERT-ART       TEXT  1 I       RWACD RWACD 87-10-06 87-10-07   10    19084
-     ADVERT-CINEMA    TEXT  1 I       RWACD RWACD 87-06-29 87-08-31    3     4844
-   ```
-
-   The selection works as in SINTRAN `@FILE-STATISTICS`: `(MARLEEN):TEXT` (all text
-   files), `(MARLEEN);2` (version 2), `(MARLEEN)ADV` (names starting with ADV), or
-   combined, `(MARLEEN)ADV:TEXT;1`. F6 jumps to the *Selection* field to narrow the list
-   further (FUNC G on Facit terminals). One file can be picked with the arrow keys and
-   Return; it then becomes the default name for `Restore-file`.
-
-**B. Restore one file, or several, from a whole-disk tape (BM-FileRestore)**
-
-1. Do A.1 and A.2 (the tape is named and the disk copy chosen).
-2. Give `Restore-file` (5.5, book page 144-145):
-
-   ```
-   BmFi: Restore-file
-   Source file name     : (MARLEEN)REPORT:TEXT
-   Destination file name: (MARLEEN)REPORT:TEXT
-   ```
-
-   - The source name must point at exactly one file. SYSTEM is the default user area,
-     version 1 the default version; `:TEXT` and `;2` pick type and version.
-   - The destination can be a different user area or name, for example
-     `"(CHARLES)HOLIDAY-RESTORE:TEXT"`.
-   - **An existing destination file is overwritten**, unless the name is written in
-     double quotes. Then a file of that name must not exist already. A new name without
-     a type gets `:DATA`.
-   - While copying, the status line shows "Page index".
-3. **Several files:** `Restore-file` takes one file at a time; the guide has no wildcard
-   restore and no way to pick more than one file from the list ("It is not possible to
-   select more than one file at a time", book page 147). Give `Restore-file` again for
-   each file, or put the commands in a mode or batch file (5.8, book page 151-152). The
-   file must start with `Device`; if the backup is on several tapes, all must be mounted
-   before `Device` runs:
-
-   ```
-   @ENTER,<user area>,<password>,[<project password>],[<maximum time>]
-   @BM-FILERESTORE
-   Device,STREAMER-1,0
-   User-statistics,MARLEEN
-   File-statistics,(MARLEEN)
-   Restore-file (MARLEEN)REPORT:TEXT,,
-   Restore-file (MARLEEN)HOLIDAY:TEXT,"(CHARLES)HOLIDAY-RESTORE:TEXT"
-   Exit
-   ```
-
-   The guide's own example uses `Device,mag-tape-1,0` and `Device,mag-tape-1,1` for a
-   backup split over two tape units; `STREAMER-1` is the name this document uses for
-   the SCSI streamer (9.1). The empty destination after `REPORT:TEXT,,` means "same
-   name as the source".
-4. EXIT leaves the program.
-
-**C. List and restore files from a file backup (BM-Operator)**
-
-A file backup is restored with the same `Copy` form that wrote it, run the other way
-(2.8.3, book page 54-55):
-
-```
-@BM-OPERATOR
-BmOp: Copy
-Object    Copy method   Incremental
-SINTRAN   FILE          NO
-From      Volume name   Computer name   Device name   U  S  Mode
-VOLUME    MY-VOLUME                     STREAMER-1    0     Re
-To        Computer name   Directory name   User area   Control
-DIRECTORY                 PACK-5           ANN         Of
-Selection File name                                     Selection date
-INCLUDE   REPORT:TEXT
-Select execution mode (Manual/Stop-on-error/Automatic): MANUAL
-```
-
-- **One file:** name it in the INCLUDE field.
-- **Several files:** a pattern in the INCLUDE field, or `Copy method SELECTION FILE`
-  with a text file that lists them, one per line, written as
-  `(DIRECTORY-NAME:USER-AREA)FILE-NAME:TYPE;VERSION`, with `INCLUDE` / `EXCLUDE` lines
-  and `%` for comments (book page 55-58). A selection file cannot be used to restore
-  from an image backup; that is what BM-FileRestore is for.
-- *Manual* execution mode asks before each file, which shows the file names on the
-  volume one by one.
-- Not checked yet: whether BM-Operator has a command that only lists the files of a
-  volume without copying them. The pages of the guide read so far (chapter 2.8 and
-  chapter 5) do not show one.
-
-#### 10.3.8 State on nd100x (2026-11-03): single-file backup and restore work
-
-Measured on copies of an ND-5000 pack with BACKUP-SYSTEM I05, the ND-500 monitor, the
-Linkage-Loader H02, LINKER B01 and Backup Manager B02 installed by the nd100x
-`tools/installs/` scripts. The machine is an ND-120/CX with `fpp = 32`.
-
-| Step | Result |
+| Named in the text as | File |
 |---|---|
-| Install of all five products | works |
-| BM-OPERATOR `COPY` of `(PACK-ONE:RONNY)TEST:SYMB` to volume `BMTEST-1` on `STREAMER-1` 0, mode OV | "File(s) copied: 1"; the tape holds a Backup Manager volume (header `MEDH`) with the file's bytes |
-| The file deleted from a fresh pack copy, then `COPY` from `VOLUME BMTEST-1 STREAMER-1 0` to `DIRECTORY PACK-ONE RONNY`, `INCLUDE TEST:SYMB` | "File(s) copied: 1"; the restored file is byte-identical to the original and keeps its date |
-
-What was done before BM-OPERATOR in the runs that worked, in this order. Items 3 and 4 were
-each found by a run that failed without them; item 1 by earlier runs (no room for the NUCLEUS
-memory areas); items 2 and 5 were always done in the working runs and not tried without (5
-replaced the name `*XM-FIDO` that BM got before; whether a copy needs it is not known):
-
-1. `@SINTRAN-SERVICE-PROGRAM`, `START-XMSG`, `EXIT`; then `@START-SERVERS`; then load and start
-   the ND-5000 (ND-895061-1A). In another order the NUCLEUS servers find no room for their
-   memory areas.
-2. Load and rewind the tape: `@DEVICE-FUNCTION STREAMER-1` with `REWIND`, `LOAD`, `REWIND`.
-   This needs the peripheral file `(SYSTEM)STREAMER-1` (9.1).
-3. `@DEFINE-MASS-STORAGE-UNIT STREAMER-1 0`. When the computer-name field is empty, B02 looks a
-   device name up only in SINTRAN's directory and device-name tables (monitor calls 244B
-   GetDirEntry and 245B GetNameEntry). Without this line it prints error 33575
-   `D100.STREAMER-1,0` and copies nothing.
-4. In `(ND-OPERATIONS)BM-PARAMETER-B02:DATA`, set `DOMINO-MODE = OFF` ("search for DOMINO
-   sequential devices"). With ON, each COPY first asks NUCLEUS for the DOMINO name server
-   `DP-NAME-SERVER`. On a machine without DOMINO that name is not there. B02 then stops the
-   COPY ("No files copied"), because it treats only "no access" as "no DOMINO here" and not
-   "name not found".
-5. Give XMSG a local system name: `@XMSG-COMMAND`, `DEFINE-REMOTE-NAME,,D100,100`, `EXIT`. The
-   Backup Manager asks XMSG for it and writes it in front of directory names (`D100.PACK-ONE`).
-   XMSG forgets it when XMSG is stopped.
-
-In the form, **leave every "Computer name" field empty** for devices on this machine, as ND's
-example in 10.3.7 C does. With the local name typed in, B02 opens `D100.STREAMER-1'` as a
-remote file, and SINTRAN answers 260B "File-access reentrant segments are not loaded" (COSMOS
-remote file access, not on this pack).
-
-During the restore, B02 printed "Error 33504 (octal). No message available" and still copied
-the file correctly. Traced 2026-11-03 (nd100x `BUGS.md` P2): it is the Backup Manager's own
-"reached blank tape" report, not a drive fault. With `INCLUDE`, B02 keeps reading for more
-matching files after the volume: it reads the file's data, then meets both tape marks, then
-blank tape. SINTRAN answers those three reads 3B, 3B and 143B, and BM-OPERATOR turns 143B into
-33504 (code at 0x100636C9: 3B gives 33505, 143B gives 33504 when bit 10 of the device's flag
-bits is set, 100B/146B give 33503). The status line then shows 33504 in place of its progress
-text. The tape holds exactly what the backup wrote, and the drive answers are the ones the
-SCSI rules and the TDC 3600 manual give. The text is missing because the message file
-`UE-ERMSG-EN-D06` has no texts for the Backup Manager's own 337xx codes. Not checked on a real
-machine; a real drive gives SINTRAN the same status at the end of recorded data.
-
-Still open (nd100x `BUGS.md` P2): error 33626 at start-up names `(SYSTEM)SWAP-FILE-0:SWAP` from the parameter file's
-`IMAGE-NO-COMPARE-FILE` line; that file does not exist on this pack. The ND-5000 NUCLEUS
-instructions (`SEND`, `RECVE`, `GETINF`, hole move) are not in the emulator, but the backup and
-the restore never reached them.
+| Backup Manager installation note | `Installation/Installation-Description/ND-895055-1A-EN.md` (ND-895055-1A, version B04) |
+| Backup Manager product information ND-895055-3A | `Installation/Installation-Description/ND-895055-3A-EN.md` (version C) |
+| Backup Manager User Guide | ND-860276.2 EN, version B. A scan without a text layer, **not in this repository** (`ND-860276-2-EN.pdf` in the Oddene manual collection). Cited by the manual's own page numbers. |
+| ND-5000 ES installation guide | `Installation/Installation-Description/ND-895560-2-EN.md` |
+| ND-5000 installation note ND-895061-1A | `Installation/Installation-Description/ND-895061-1A-EN.md` |
+| BACKUP-SYSTEM User Guide | `Reference-Manuals/ND-60.250.1_EN_BACKUP_User_Guide.md` |
+| the floppies | the RetroCore Labs software archive, read with `ndtool`, 2026-11-02 |
+| measured on nd100x | runs on the nd100x emulator, 2026-11-02 to 2026-11-04; written up in nd100x `BUGS.md`, item P2 |
 
 ### 10.4 Whole-disk restore from a SCSI streamer (Disk Restore, ND 211187B)
 
-From the ND-5000 ES install guide (ES-INST 453-499):
+From the ND-5000 ES install guide (ND-5000 ES installation guide, lines 453-499):
 
 ```
 Di-Re: RESTORE-DISK
@@ -1695,8 +1754,8 @@ Give command (Retry/Overwrite/Cancel): OVERWRITE
 Copying (DMA)  Rewinding  Comparing
 ```
 
-- It is started from floppy with `I560&` (ES-INST 453).
-- It "takes about 22 minutes with compare" for 37685 pages (ES-INST 484, 499).
+- It is started from floppy with `I560&` (ND-5000 ES installation guide, line 453).
+- It "takes about 22 minutes with compare" for 37685 pages (ND-5000 ES installation guide, lines 484, 499).
 
 ### 10.5 Memory dump to a SCSI streamer (MEMTOS)
 
@@ -1706,36 +1765,36 @@ streamer must be ID 1 on adaptor 1 (144300). The procedure:
 1. Stop the system.
 2. Dump the register block with `0<17RD`, then the internal registers with `IRD`.
 3. Press MCL.
-4. Type `15!` (N-REL 1757-1773).
+4. Type `15!` (SINTRAN N release notes, lines 1757-1773).
 
 ### 10.6 Timing figures
 
 | Job | Time | Source |
 |---|---|---|
-| 310 MB disk copy to ND Gigatape (Exabyte) | about 21 minutes; 42 minutes with compare | PI-GTS 84-85 |
-| 1 GB optical: 220584 pages from DISC-450MB-1-F | about 1 h 5 min copy, then 12 min compare (start and end times shown) | K-REL 13453-13461 |
+| 310 MB disk copy to ND Gigatape (Exabyte) | about 21 minutes; 42 minutes with compare | Gigatape product sheet, lines 84-85 |
+| 1 GB optical: 220584 pages from DISC-450MB-1-F | about 1 h 5 min copy, then 12 min compare (start and end times shown) | SINTRAN K release notes, lines 13453-13461 |
 
 ---
 
 ## 11. Optical disk (LD 1200 WORM)
 
 - LD 1200 is a 12-inch WORM drive. The disk is double-sided and removable, 1 GB per
-  side, and you turn it over by hand (PI-LD 23; LD-INST 295-297).
+  side, and you turn it over by hand (LD 1200 product sheet, line 23; LD 1200 installation note, lines 295-297).
 - Names are `DISC-OPTICAL-1..4`, logical 2232-2235. They can be split into up to 8
-  subunits, all of equal size on one drive (K-REL 13117, 13187-13190, 13397).
+  subunits, all of equal size on one drive (SINTRAN K release notes, lines 13117, 13187-13190, 13397).
 - The driver accepts only INQUIRY device type 3 or 4; anything else is an "ILLEGAL
-  DEVICE TYPE" (NPL-OPDI 214-215).
+  DEVICE TYPE" (SCSI optical driver source, lines 214-215).
 - Write recovery: the driver verifies with BYTCHK, finds the first blank block
-  (sense BLANK CHECK) and rewrites from there (NPL-OPDI 299-329; summarised in
+  (sense BLANK CHECK) and rewrites from there (SCSI optical driver source, lines 299-329; summarised in
   `SINTRAN/Devices/SCSI/SCSI-Master-Index.md` Q6).
 
 **Read only from SINTRAN.** Applications can read SINTRAN files from a read-only
 directory on the optical disk. Any change to directory, user or object entries fails.
 "The whole directory structure must be written to the optical disk in one operation
 ... It is not possible to copy single files or use the Backup-System command
-MULTI-USER-COPY" (K-REL 13393-13395).
+MULTI-USER-COPY" (SINTRAN K release notes, lines 13393-13395).
 
-Making an optical directory (K-REL 13411-13473):
+Making an optical directory (SINTRAN K release notes, lines 13411-13473):
 
 1. Build the directory on a magnetic disk first. Contiguous files read fastest. Note
    the directory name: two directories with the same name on optical can never be
@@ -1766,16 +1825,16 @@ Making an optical directory (K-REL 13411-13473):
    directory is now available read-only.
 
 A copy cut short by a power failure can be resumed. The DMA server compares pages
-already written and goes on, as long as the source was not changed (K-REL 13425).
+already written and goes on, as long as the source was not changed (SINTRAN K release notes, line 13425).
 
 SIBAS databases on optical have special rules: each realm must have a small first
-file, and that file plus the schema must be copied to magnetic disk (K-REL
-13475-13522).
+file, and that file plus the schema must be copied to magnetic disk (SINTRAN K release notes,
+lines 13475-13522).
 
 SCSI-TV-C has an optical test (tests 40 and 41). By default it uses "the last
 megabyte on the disk, will not be used by other ND software products".
 `CREATE-OPTICAL-TEST-DISK` gives up a whole cartridge to testing. "The last block
-on the disk is used as 'optical disk control record'" (TP-ADD 963-967, 1343-1353).
+on the disk is used as 'optical disk control record'" (test program addendum 1998, lines 963-967, 1343-1353).
 
 ---
 
@@ -1789,12 +1848,12 @@ on the disk is used as 'optical disk control record'" (TP-ADD 963-967, 1343-1353
   "CD-ROM" with no ND device beside it (for example
   `SINTRAN/Devices/SCSI/scsi_inquiry_explained.md` line 68).
 - The test programs' product tables (all versions B00, C00, C04 of SCSI-TV; B00,
-  B01, C03 of DISK-MM) list no CD-ROM drive (STRINGS section 3; RUN).
-- The optical driver rejects every INQUIRY type except 3 and 4 (NPL-OPDI 214-215).
+  B01, C03 of DISK-MM) list no CD-ROM drive (drive name tables, section 3; nd100x run 2026-10-31).
+- The optical driver rejects every INQUIRY type except 3 and 4 (SCSI optical driver source, lines 214-215).
   A CD-ROM answers type 5. Inferred: the optical driver would refuse a CD-ROM. The
-  disk driver also checks for a "DIRECT ACCESS DEVICE" (NPL-DISK 655), and the INQUIRY
-  routine accepts device types 0, 3 and 4 as direct access (NPL-DISK 1216-1256, quoted
-  in STRINGS 360-369).
+  disk driver also checks for a "DIRECT ACCESS DEVICE" (SCSI disk driver source, line 655), and the INQUIRY
+  routine accepts device types 0, 3 and 4 as direct access (SCSI disk driver source, lines 1216-1256, quoted
+  in drive name tables, lines 360-369).
 - One NDInsight document, `SINTRAN/Devices/SCSI/SCSI-Optical-Commands-Addendum.md`
   line 495, lists "0x01: CD-ROM". That is generic SCSI-2 density text. It does
   not come from the ND source, so it is not evidence.
@@ -1810,41 +1869,41 @@ the test-program floppy.
 
 | Floppy | DISK-MM | SCSI-TV | Source |
 |---|---|---|---|
-| 210523G02-XX-02D | DISK-MM-B00 (1988-06-09) | SCSI-TV-B00 (1988-06-15) + OVL1-4 | TP-G 93-106; STRINGS 38-39 |
-| 210523G02 05S / 06S (single-sided) | DISK-MM-B00 on 05S | SCSI-TV-B00 on 06S | TP-G 242-283 |
-| 210523H00-XX-02D | DISK-MM-B01 (1988-11-14) | SCSI-TV-C00 (1988-12-08) | STRINGS 40-41 |
-| 210523I01-XX-02D | DISK-MM-C03 (1990-06-11) | SCSI-TV-C04 (1990-06-11) | STRINGS 42-43; TP-I 36, 473, 632 |
+| 210523G02-XX-02D | DISK-MM-B00 (1988-06-09) | SCSI-TV-B00 (1988-06-15) + OVL1-4 | test program manual, lines 93-106; drive name tables, lines 38-39 |
+| 210523G02 05S / 06S (single-sided) | DISK-MM-B00 on 05S | SCSI-TV-B00 on 06S | test program manual, lines 242-283 |
+| 210523H00-XX-02D | DISK-MM-B01 (1988-11-14) | SCSI-TV-C00 (1988-12-08) | drive name tables, lines 40-41 |
+| 210523I01-XX-02D | DISK-MM-C03 (1990-06-11) | SCSI-TV-C04 (1990-06-11) | drive name tables, lines 42-43; test program note 210523I, lines 36, 473, 632 |
 
 - SCSI-TV-C "is designed to run STAND-ALONE as well as under SINTRAN (ver. L) as
-  user SYSTEM" (TP-ADD 940).
+  user SYSTEM" (test program addendum 1998, line 940).
 - DISK-MM-C03 also runs online and then asks for a device name instead of adaptor
-  and ID (TP-I 45, 478-485).
+  and ID (test program note 210523I, lines 45, 478-485).
 - The exact TPE load command for these two programs is **not found** in the SCSI
-  sections. The other floppy test programs use `TPE\>Load <name>` (TP-OLD 3993).
+  sections. The other floppy test programs use `TPE\>Load <name>` (old test program manual, line 3993).
 
 ### 13.1 DISK-MM ("DISK Media Maintenance")
 
 "Used to format, initialize and verify SCSI disks connected to the ND-100 SCSI host
 adaptor"; the B version is for the Micropolis 1375 and the CDC EMD 97201
-(TP-G 1054-1062).
+(test program manual, lines 1054-1062).
 
 | Command | What it does | Source |
 |---|---|---|
-| `SELECT-DEVICE <adaptor> <ID>` | pick the disk; defaults ADAPTOR-1, ID 0 | TP-G 1069-1080 |
-| `CONVERT-DISK-ADDRESS <type> <address>` | convert between Media, Logical-SINTRAN and page addresses | TP-G 1084-1108 |
-| `FORMAT-INITIALIZE` | format and initialise. On the 1375, MODE SENSE pages 3 and 4 are set and the cylinder and track skew are tuned | TP-G 1112-1116 |
-| `INITIALIZE` | "Prepares the disk for use under SINTRAN" | TP-G 1129 |
-| `LIST-DISK-INFORMATION` | static and dynamic disk facts (in the RUN this printed the partition table) | TP-G 1133; RUN |
-| `LIST-PARAMETERS` | show the SET-PARAMETERS values | TP-G 1137 |
-| `LIST-REASSIGN-TABLE` | blocks moved by REASSIGN, in time order | TP-G 1141 |
-| `LIST-REFRESH-TABLE` | blocks rewritten by REFRESH-DATA | TP-G 1145 |
-| `REASSIGN <media address>` | let the drive move one bad block to a spare; "done by the disk drive itself"; logged in the Table partition | TP-G 1159-1167 |
-| `REFRESH-DATA <media address>` | read a block and write it back, to cure soft parity errors; logged in the Table partition | TP-G 1171-1177 |
-| `SET-PARAMETERS` | `BUS-RESET` (set "No" on multi-host buses while other hosts run), `RESET-TIMEOUT`, `ADDRESS-INPUT-RADIX`, `FIRST-/LAST-PHYSICAL-BUFFER-PAGE` | TP-G 1181-1217 |
-| `VERIFY <from> <to>` | read-check media blocks, default the whole disk | TP-G 1221-1224 |
-| C03 adds `COPY-DATA`, `MATCH-DATA`, `LOOK-AT-DATA` (with `List-Disk-Partitions`, write-protect levels) | | TP-I 487-606 |
+| `SELECT-DEVICE <adaptor> <ID>` | pick the disk; defaults ADAPTOR-1, ID 0 | test program manual, lines 1069-1080 |
+| `CONVERT-DISK-ADDRESS <type> <address>` | convert between Media, Logical-SINTRAN and page addresses | test program manual, lines 1084-1108 |
+| `FORMAT-INITIALIZE` | format and initialise. On the 1375, MODE SENSE pages 3 and 4 are set and the cylinder and track skew are tuned | test program manual, lines 1112-1116 |
+| `INITIALIZE` | "Prepares the disk for use under SINTRAN" | test program manual, line 1129 |
+| `LIST-DISK-INFORMATION` | static and dynamic disk facts (in the nd100x run of 2026-10-31 this printed the partition table) | test program manual, line 1133; nd100x run 2026-10-31 |
+| `LIST-PARAMETERS` | show the SET-PARAMETERS values | test program manual, line 1137 |
+| `LIST-REASSIGN-TABLE` | blocks moved by REASSIGN, in time order | test program manual, line 1141 |
+| `LIST-REFRESH-TABLE` | blocks rewritten by REFRESH-DATA | test program manual, line 1145 |
+| `REASSIGN <media address>` | let the drive move one bad block to a spare; "done by the disk drive itself"; logged in the Table partition | test program manual, lines 1159-1167 |
+| `REFRESH-DATA <media address>` | read a block and write it back, to cure soft parity errors; logged in the Table partition | test program manual, lines 1171-1177 |
+| `SET-PARAMETERS` | `BUS-RESET` (set "No" on multi-host buses while other hosts run), `RESET-TIMEOUT`, `ADDRESS-INPUT-RADIX`, `FIRST-/LAST-PHYSICAL-BUFFER-PAGE` | test program manual, lines 1181-1217 |
+| `VERIFY <from> <to>` | read-check media blocks, default the whole disk | test program manual, lines 1221-1224 |
+| C03 adds `COPY-DATA`, `MATCH-DATA`, `LOOK-AT-DATA` (with `List-Disk-Partitions`, write-protect levels) | | test program note 210523I, lines 487-606 |
 
-Times from the manual (TP-G 1120-1125, 1228-1233):
+Times from the manual (test program manual, lines 1120-1125, 1228-1233):
 
 | Disk | FORMAT-INITIALIZE | VERIFY |
 |---|---|---|
@@ -1855,27 +1914,27 @@ Times from the manual (TP-G 1120-1125, 1228-1233):
 
 Known fault: DISK-MM does not clean up after MPM4 errors. Reload the program and set
 `FIRST-/LAST-PHYSICAL-BUFFER-PAGE` to MPM5 memory before `SELECT-DEVICE`
-(TP-G 1247-1271).
+(test program manual, lines 1247-1271).
 
 ### 13.2 SCSI-TV ("SCSI Test and Verify")
 
 "Test program for the Floppy/SCSI print (SCSI part only) and SCSI devices connected
-to the bus" (TP-G 1553).
+to the bus" (test program manual, line 1553).
 
 | Command | What it does | Source |
 |---|---|---|
-| `LIST-DEVICES` | list every SCSI adaptor and its devices. In C this becomes `LIST-DEFINED-DEVICES` (SINTRAN's view) and `LIST-PRESENT-DEVICES` (the bus) | TP-G 1628; TP-ADD 1023-1027 |
-| `SELECT-DEVICE <adaptor> <ID>` | as DISK-MM. Online in C, a SINTRAN device name is accepted too | TP-G 1644-1653; TP-ADD 1047-1069 |
-| `CLEAR-DEVICE` | SCSI bus reset, for "hang" situations | TP-G 1581 |
-| `DECODE <item>` | decode interface register bits, message, command, sense key, ASC, status, memory address | TP-G 1588-1610 |
-| `DUMP-SENSE-DATA` | hex dump of the last sense block | TP-G 1624 |
-| `RUN-ADAPTOR-TESTS`, `RUN-DEVICE-TESTS <list>` | run the tests below | TP-G 1636-1640 |
-| `SET-PARAMETERS`, `SET-TAPE-PARAMETERS`, `SET-BUFFER-LIMITS` | loop/abort mode, tape test defaults, DMA buffer pages | TP-G 1657-1675 |
-| `TAPE-SERVICES` | LOAD, UNLOAD, REWIND | TP-G 1679 |
-| `PRINT-TAPE-STATISTICS` | tape test statistics | TP-G 1632 |
-| C adds `CREATE-OPTICAL-TEST-DISK`, `SET-OPTICAL-DISK-PARAMETERS` | | TP-ADD 963-967, 1077 |
+| `LIST-DEVICES` | list every SCSI adaptor and its devices. In C this becomes `LIST-DEFINED-DEVICES` (SINTRAN's view) and `LIST-PRESENT-DEVICES` (the bus) | test program manual, line 1628; test program addendum 1998, lines 1023-1027 |
+| `SELECT-DEVICE <adaptor> <ID>` | as DISK-MM. Online in C, a SINTRAN device name is accepted too | test program manual, lines 1644-1653; test program addendum 1998, lines 1047-1069 |
+| `CLEAR-DEVICE` | SCSI bus reset, for "hang" situations | test program manual, line 1581 |
+| `DECODE <item>` | decode interface register bits, message, command, sense key, ASC, status, memory address | test program manual, lines 1588-1610 |
+| `DUMP-SENSE-DATA` | hex dump of the last sense block | test program manual, line 1624 |
+| `RUN-ADAPTOR-TESTS`, `RUN-DEVICE-TESTS <list>` | run the tests below | test program manual, lines 1636-1640 |
+| `SET-PARAMETERS`, `SET-TAPE-PARAMETERS`, `SET-BUFFER-LIMITS` | loop/abort mode, tape test defaults, DMA buffer pages | test program manual, lines 1657-1675 |
+| `TAPE-SERVICES` | LOAD, UNLOAD, REWIND | test program manual, line 1679 |
+| `PRINT-TAPE-STATISTICS` | tape test statistics | test program manual, line 1632 |
+| C adds `CREATE-OPTICAL-TEST-DISK`, `SET-OPTICAL-DISK-PARAMETERS` | | test program addendum 1998, lines 963-967, 1077 |
 
-Tests (TP-G 1689-1778; TP-ADD 1229-1230, 1343-1353):
+Tests (test program manual, lines 1689-1778; test program addendum 1998, lines 1229-1230, 1343-1353):
 
 - **Adaptor tests 1-6:** register read-back; control/status bits; DMA in test mode;
   level 11 interrupt with the right ident; NCR self test; NCR command checks.
@@ -1883,11 +1942,11 @@ Tests (TP-G 1689-1778; TP-ADD 1229-1230, 1343-1353):
   path with WRITE/READ BUFFER, bus stress.
 - **Disk tests 10-14** ("none destructive"): seek, random seek, write/read to the
   scratch area, random read, data partition to scratch.
-- **Magtape tests 20-23.** The NDSTK 2925 "must be in 'select mode'" (TP-G 1781).
+- **Magtape tests 20-23.** The NDSTK 2925 "must be in 'select mode'" (test program manual, line 1781).
 - **Streamer tests 30-32.**
 - **Optical tests 40-41** (C only).
 
-**SCSI-TV on a Tandberg TDC 3600 streamer** (RUN-TV, emulated drive at ID 1,
+**SCSI-TV on a Tandberg TDC 3600 streamer** (nd100x SCSI-TV runs 2026-11-01, emulated drive at ID 1,
 `RUN-DEVICE-TESTS ALL-TESTS`):
 
 | Version | Passed | Failed |
@@ -1897,7 +1956,7 @@ Tests (TP-G 1689-1778; TP-ADD 1229-1230, 1343-1353):
 
 - Test 3 sends SEND DIAGNOSTIC `1D 07` (self test 2). The emulated drive at first
   refused it, because the Tandberg manual does not describe that self test. ND's test
-  description says test 3 "will perform no operation" on the TDC 3600 (TP-G, "3.5
+  description says test 3 "will perform no operation" on the TDC 3600 (test program manual, "3.5
   Known but not Corrected Errors"), so the emulated drive now answers GOOD without
   doing anything, and C04 test 3 then ends with no error. What a real drive answers is
   not known.
@@ -1916,14 +1975,14 @@ Tests (TP-G 1689-1778; TP-ADD 1229-1230, 1343-1353):
 The LD 1200 install guide's check is: `LIST-DEVICES`, then `SELECT-DEVICE <adaptor>
 <ID>`, then `RUN-DEVICE-TESTS,ALL-TESTS`. The most common faults it names are a broken
 bus, a missing terminator at either end, and two devices on the same ID
-(LD-INST 472-482).
+(LD 1200 installation note, lines 472-482).
 
 ### 13.3 What FORMAT-INITIALIZE expects of the drive: mode pages and skew
 
 The manual says only: "Special for Micropolis 1375: Before format starts, MODE-SENSE
 default page 3 and 4 is set to current, and cylinder skew and track skew is
-optimized." (TP-G 1112-1116). What that means in commands and numbers was traced
-(TRACE).
+optimized." (test program manual, lines 1112-1116). What that means in commands and numbers was traced
+(DISK-MM trace 2026-10-31).
 
 **Skew does not move any data.** Track skew and cylinder skew only say where sector
 0 of the next track starts, so the head finds it sooner after a head or cylinder
@@ -1931,7 +1990,7 @@ switch. A block number still maps to the same place. DISK-MM never works anythin
 from the skew; it sets it before the format and reads it back afterwards to decide
 whether the disk was formatted.
 
-**What it sends**, in order (TRACE, DISK-MM-B00 on a 1375 at SCSI ID 3):
+**What it sends**, in order (DISK-MM trace 2026-10-31, DISK-MM-B00 on a 1375 at SCSI ID 3):
 
 1. INQUIRY, TEST UNIT READY, READ CAPACITY, RESERVE, then READ(6) of the last block
    (129311, the control record).
@@ -1952,7 +2011,7 @@ whether the disk was formatted.
 7. MODE SENSE page 3Fh (all pages, current values), then WRITE(6) of the blocks at
    the top of the disk: the partition table and the control area.
 
-**The check after the format** (TRACE, DISK-MM 124516-124565 and 124175-124236).
+**The check after the format** (DISK-MM trace 2026-10-31, DISK-MM 124516-124565 and 124175-124236).
 DISK-MM compares the saved page with the default page:
 
 | Page | Field (page bytes) | Must be |
@@ -1965,7 +2024,7 @@ DISK-MM compares the saved page with the default page:
 If any of these fails it prints "(DF) Must be formatted" and stops. So a drive that
 does not keep what MODE SELECT set, as saved values, through FORMAT UNIT, can never
 be formatted by DISK-MM. **Inferred**: that the 1375 keeps the current values as the
-saved values when it formats comes from this check; MICROP does not say it, and
+saved values when it formats comes from this check; the Micropolis manual does not say it, and
 110011, which would, is not found.
 
 Cylinder skew for some formats, by that rule:
@@ -1977,16 +2036,16 @@ Cylinder skew for some formats, by that rule:
 | 36 | 512 | 12 | 0 |
 
 The drive's own default cylinder skew is 12 and its default format 36 sectors of 512
-bytes (MICROP Appendix B), which fits the same rule. **Inferred**: Micropolis and ND
+bytes (Micropolis 1370 manual, Appendix B), which fits the same rule. **Inferred**: Micropolis and ND
 may have used the same rule; nothing found says so.
 
-**The Scratch partition from the drive** (TRACE, DISK-MM 125076-125146 and
+**The Scratch partition from the drive** (DISK-MM trace 2026-10-31, DISK-MM 125076-125146 and
 133034-133072). After the format DISK-MM sends MODE SENSE page 3Fh and reads two
 fields at fixed byte offsets in the reply: sectors per track from bytes 42-43 and the
 heads from byte 61. The Scratch partition (entry 7) gets (heads + 1) x sectors per
 track blocks, placed just below the Testdata partition. Those offsets are only right
 when the drive sends the 4-byte header, one 8-byte block descriptor, and then its
-four pages in ascending order with the lengths of MICROP Appendix B:
+four pages in ascending order with the lengths of Micropolis 1370 manual, Appendix B:
 
 | Page | Name | Page length byte | Bytes in the reply | Starts at byte |
 |---|---|---|---|---|
@@ -2003,9 +2062,95 @@ partition block (not INITIALIZED ?)" (message code 050261; the check at
 131044-131047 refuses a Scratch entry of length 0).
 
 **Where a real drive keeps the saved values.** MODE SENSE page control 3 reports
-them and they are expected to outlive power-off. MICROP Appendix A says "3 cylinders,
+them and they are expected to outlive power-off. Micropolis 1370 manual, Appendix A says "3 cylinders,
 used by the drive, are not user accessible". **Inferred**: those reserved cylinders
-are where the 1375 keeps its saved pages; MICROP does not say what they hold.
+are where the 1375 keeps its saved pages; the Micropolis manual does not say what they hold.
+
+### 13.4 Which drive names the test programs accept
+
+Every SCSI drive answers the INQUIRY command with its **vendor name** (8 characters) and
+**product name** (16 characters), both padded with blanks. SINTRAN itself never looks at
+them: its driver asks for only the first 8 bytes of the answer, which hold the device type
+but not the names (section 2). The ND test programs SCSI-TV and DISK-MM do look at them. They
+carry a table of the drives ND sold and compare the names **exactly**, all 8 and all 16
+characters, blanks included. A drive that answers `1376` where the table has `1375` is
+"unknown".
+
+Measured on nd100x, 2026-11-04, with an emulated disk set to answer other names. nd100x itself
+has no setting for this; its disk names are fixed in `src/devices/scsi/device_scsi.c` and
+`disk_scsi.c`, so the runs used a changed copy of the emulator. The program code that does the
+compare was read with `nd100-dis`. The tables are decoded byte for byte in
+`tools/boot-floppy/SCSI-DEVICE-STRINGS.md`.
+
+**The list in the manual.** The test program manual has this table, "Products supported by
+version B" (`Reference-Manuals/ND-210523G_Test_Programs_for_ND-100_110_120__ND_Software_Library.md`,
+lines 1563-1575). Every line of it is in the programs, written as below; `␣` marks a blank
+that is easy to miss.
+
+| Vendor (8) | Product (16) | Device type | In |
+|---|---|---|---|
+| `NDMICROP` | `1375` | disk | every SCSI-TV and DISK-MM |
+| `TANDBERG` | `␣TDC 3600` (starts with a blank) | streamer | SCSI-TV B00, C00, C04 |
+| `OSI` | `LD 1200 SCSI` | optical disk (write once) | SCSI-TV B00, C00, C04 |
+| `NDCDC` | `EMD 97201 (736)` | disk | every SCSI-TV and DISK-MM |
+| `NDCDC` | `EMD 97201 (368)` | disk | every SCSI-TV and DISK-MM |
+| `NDSTK` | `2925` | magtape | SCSI-TV B00, C00, C04 |
+| `ARCHIVE` | `VIPER 150␣␣21247` (two blanks) | streamer | SCSI-TV B00, C00, C04 |
+
+The device type column is the manual's; the tables do not hold it.
+
+**Every name each version knows:**
+
+| Program | Vendor names | Products |
+|---|---|---|
+| SCSI-TV B00 | `NDMICROP`, `MICROP` | `1375` |
+| | `CDC`, `NDCDC` | `94161-156`, `EMD 97201 (736)`, `EMD 97201 (368)` |
+| | `ARCHIVE` | `VIPER 150  21247` |
+| | `TANDBERG`, `NDTANDBE` | ` TDC 3600`, ` TDC 3600 EXPR.`, `RG TDC 3600` |
+| | `OSI` | `LD 1200 SCSI` |
+| | `NDSTK` | `2925` |
+| | `EXABYTE` | `EXB-8200` |
+| SCSI-TV C00 | the ten above, and `NDARCHIV`, `ND ARCHV`, `NDEXABYT`, `NDEXABY`, `HP`, `NDHP` | `94171-9` in place of `94161-156`; Viper serials `99999` and `21835` added; `88780` (HP) added |
+| SCSI-TV C04 | the same 16 as C00 | adds `94181-15`, `EXB-8500`, Viper serial `25066` |
+| DISK-MM B00, B01 | `NDMICROP`, `NDCDC` | `1375`; `EMD 97201 (000)`, `(368)`, `(736)`; `94171-9` |
+| DISK-MM C03 | `NDMICROP`, `NDCDC` | adds `EMD 97201 (1.2)`, `94171-7`, `94171-5`, `94171-`, `94181-15`, `94181-13`, `94181-` |
+
+**What happens with a name that is not in the table:**
+
+| Program | Result |
+|---|---|
+| SCSI-TV B00 and C00 | The drive is listed and can be chosen. The test run prints `*** Warning *** ... Unknown vendor` (or `Unknown product`) and runs **fewer tests**: with an unknown vendor only tests 1 and 10-14, with an unknown product tests 1, 2 and 10-14. A known Micropolis 1375 runs 1-5 and 10-14. |
+| SCSI-TV C04 | No warning. An unknown drive is treated as a standard disk, streamer, magtape or optical disk by the device type it reports, and only test 3 (the extended self test) is left out. The manual says the same: "Devices unknown to the program are treated as standard disk/streamer/magtape devices" (`Installation/Installation-Description/ND-895076-2A-EN.md`, line 634). |
+| DISK-MM B00 | **Refused** when the vendor name does not start with `ND`: `* Selected disk is non standard ND disk (see note 3) *`, and the next command asks for a device again. A vendor that starts with `ND` but is not in the table (for example `NDSEAGAT`), or a known vendor with an unknown product, gets `* WARNING : Selected disk is not known by the program *` and then works. |
+| DISK-MM C03 | Accepted with no message, whatever the name. |
+
+So only the 1988 versions (SCSI-TV B00/C00, DISK-MM B00/B01) care, and only DISK-MM B00 turns a
+drive away. An emulated drive meant to be used with them should answer with a name from the
+table, written exactly as above.
+
+**Is there a tool that writes the name into a drive?** None was found. No SCSI-TV or DISK-MM
+version has a function or a help text for changing a drive's vendor or product name, or for
+loading drive firmware. (Their texts were searched for download, firmware, microcode, PROM,
+EEPROM, write buffer and mode select; not every SCSI command they send has been decoded.) What
+the texts do show is that ND's drives carried an **ND PROM**, a firmware chip on the drive:
+
+- DISK-MM B00 and B01: "The selected device has a disk that is not delivered from Norsk Data or
+  it has not been modified for Norsk Data use", and then "On some disks this will occur after
+  changing to correct "ND" prom. Format the disk if this occur." (`DISK-MM-B00.TEST`, bytes
+  24537 and 24814.)
+- DISK-MM C03: "With offical ND PROM, these disks have: Micropolis 1375 : 1024 / CDC EMD 97201 :
+  512 / CDC WREN IV : 512" (`DISK-MM-C03.TEST`, byte 6031; the numbers are block sizes in bytes).
+
+**Inferred, not stated anywhere:** the ND PROM is what makes a drive answer `NDMICROP`, `NDCDC`
+and so on. The vendor names starting with `ND`, the "not delivered from Norsk Data" text, and
+DISK-MM B00 accepting any vendor that starts with `ND` all point that way. So a drive got its ND
+name from a chip swapped by ND, not from a program.
+
+The ND-5000 DOMINO service program DP-SERVICE shows the vendor and product of each drive
+(`Reference-Manuals/500/ND-830147-3-EN ND-5000 ES System Administrator Guide.md`, lines
+1688-1697). Whether it checks them is **not known**. BACKUP-SYSTEM and the Backup Manager were
+not checked for a name table; the earlier search of the hard-disk images found none outside
+the test programs (`tools/boot-floppy/SCSI-DEVICE-STRINGS.md`, section 5.5).
 
 ---
 
@@ -2013,7 +2158,7 @@ are where the 1375 keeps its saved pages; MICROP does not say what they hold.
 
 ### 14.1 Status word
 
-The status word from MON ABSTR for SCSI devices (K-REL 13263-13272):
+The status word from MON ABSTR for SCSI devices (SINTRAN K release notes, lines 13263-13272):
 
 | Bit | Meaning |
 |---|---|
@@ -2026,11 +2171,11 @@ The status word from MON ABSTR for SCSI devices (K-REL 13263-13272):
 | 11-16 | driver error code |
 
 Magnetic disk and magtape also return an old-style status for compatibility. The
-new status is given in errors 22 and 24 (K-REL 13260).
+new status is given in errors 22 and 24 (SINTRAN K release notes, line 13260).
 
 ### 14.2 Driver error codes
 
-The driver error codes are in K-REL 13312-13349. Ones worth knowing:
+The driver error codes are in SINTRAN K release notes, line 13312-13349. Ones worth knowing:
 
 | Code (octal) | Meaning |
 |---|---|
@@ -2045,16 +2190,16 @@ The driver error codes are in K-REL 13312-13349. Ones worth knowing:
 | 63 | memory address register not as expected |
 
 Error 63 ("63020 - MAR not as expected") was a real fault on 32 MB systems, fixed by
-a patch (PATCH-2 1001-1003, 1418).
+a patch (patch notes ND-896058-2, lines 1001-1003, 1418).
 
 ### 14.3 SINTRAN messages
 
-SINTRAN messages for SCSI are 3203-3211 (K-REL 13357-13363).
+SINTRAN messages for SCSI are 3203-3211 (SINTRAN K release notes, lines 13357-13363).
 
 ### 14.4 Mount failure on emulators
 
 Error 243B on `@ENTER-DIRECTORY` of a SCSI disk was an emulator RDIV bug, not a
-disk fault (ENTDIR; CTLREC section 0). It is listed here because the symptom - block
+disk fault (ENTER-DIRECTORY notes; control record notes, section 0). It is listed here because the symptom - block
 0 is never read - points at the disk, but the disk was fine.
 
 ---
@@ -2065,20 +2210,20 @@ DOMINO SCSI is a different system. It is not the ND-100 adaptor described above.
 
 - "There are two types of SCSI mass storage systems on ND computers: the
   DOMINO-based and the ND-100-based. Both systems use the same type of filestore
-  cabinets, but use different disk storage formats and host adapters" (DOMINO 256).
+  cabinets, but use different disk storage formats and host adapters" (DOMINO operator guide, line 256).
 - A disk moved from the ND-100 adaptor to DOMINO must be backed up, prepared again
-  and restored (DOMINO 258-288).
+  and restored (DOMINO operator guide, lines 258-288).
 - DOMINO disks are cut into **pools** with the BDIO program. You give the pool name
-  instead of the disk name in `@CREATE-DIRECTORY` (DOMINO 319-325).
-- Mirroring is done by mirror pools (DOMINO 333-335).
+  instead of the disk name in `@CREATE-DIRECTORY` (DOMINO operator guide, lines 319-325).
+- Mirroring is done by mirror pools (DOMINO operator guide, lines 333-335).
 - DOMINO tapes are reached only through the Backup Manager or the tape access
-  library, not MAGTP or `@DEVICE-FUNCTION` (DOMINO 337-339).
+  library, not MAGTP or `@DEVICE-FUNCTION` (DOMINO operator guide, lines 337-339).
 - Device names and IDs are kept in `DDS-DEVICES:CNFG`, set by the ND-100 program
-  DP-SERVICE (DOMINO 360).
+  DP-SERVICE (DOMINO operator guide, line 360).
 - From L, the ND-100's SCSI adaptor can also be put behind a DOMINO controller
-  (L-REL 374).
+  (SINTRAN L release notes, line 374).
 
-The DOMINO hardware list (DOMINO 349-356) names the same device families:
+The DOMINO hardware list (DOMINO operator guide, lines 349-356) names the same device families:
 
 - 310 MB WREN, single-ended and differential;
 - 310 and 630 MB EMD;
@@ -2111,10 +2256,10 @@ The DOMINO hardware list (DOMINO 349-356) names the same device families:
   13.3).
 - Backup with BACKUP-SYSTEM (version I or later for SCSI streamers) and the Backup
   Manager; restore with COPY-USERS-FILES or Disk Restore (section 10).
-- Measured (RUN-BK): a SCSI streamer works under SINTRAN L only after S3-CONFIG sets
+- Measured (nd100x backup runs 2026-11-01): a SCSI streamer works under SINTRAN L only after S3-CONFIG sets
   "SCSI streamer 1" to `adaptor.ID`, plus the peripheral file `STREAMER-1` = 2226B
   (section 9.0). BACKUP-SYSTEM I02 refuses the streamer for `CREATE-VOLUME` (10.1).
-- Measured (RUN-TV): SCSI-TV B00 and C04 pass tests 1, 2, 4, 5, 30, 31 and 32 on a TDC
+- Measured (nd100x SCSI-TV runs 2026-11-01): SCSI-TV B00 and C04 pass tests 1, 2, 4, 5, 30, 31 and 32 on a TDC
   3600; test 4 uses READ BUFFER 3Ch / WRITE BUFFER 3Bh (section 13.2).
 - Optical is read-only from SINTRAN and written whole with DEVICE-COPY (section 11).
 - No CD-ROM support anywhere (section 12).
@@ -2124,16 +2269,16 @@ The DOMINO hardware list (DOMINO 349-356) names the same device families:
 1. **Any CD-ROM support** in SINTRAN or ND software.
 2. **A BACKUP-SYSTEM example with a SCSI streamer in a manual.** All manual examples
    use a floppy, a magtape or the 3112 `STREAMER-TAPE-1`. `DEVICE-COPY` to and from
-   `STREAMER-1` is now measured (RUN-BK, section 10.2). Still not known: whether
+   `STREAMER-1` is now measured (nd100x backup runs 2026-11-01, section 10.2). Still not known: whether
    BACKUP-SYSTEM I05 accepts a SCSI streamer for `CREATE-VOLUME` / `COPY-USERS-FILES`.
    I02 does not.
 3. **Why MON 336 functions 300B-303B omit 2206B/2207B** (the streamers).
-4. **Which thumbwheel is TH1 and which is TH2**: BOARD and LD-INST disagree. Also
+4. **Which thumbwheel is TH1 and which is TH2**: the SCSI board notes and the LD 1200 installation note disagree. Also
    PCB 350001 or 350004.
-5. **Warm start or cold start** after S3-CONFIG: K-REL says warm, LD-INST says cold.
+5. **Warm start or cold start** after S3-CONFIG: the SINTRAN K release notes say warm, the LD 1200 installation note says cold.
 6. **The partition names in a manual.** Control, Formatting, Mirroring and Testdata
-   come only from the RUN. What Mirroring and Testdata hold, and how the Mirroring
-   partition ties to the Disk Mirroring product 210855 (N-REL 2356-2358), is not
+   come only from the nd100x run of 2026-10-31. What Mirroring and Testdata hold, and how the Mirroring
+   partition ties to the Disk Mirroring product 210855 (SINTRAN N release notes, lines 2356-2358), is not
    found.
 7. **What the 7026-block gap** between the Data partition and the Scratch partition
    is for.
@@ -2144,7 +2289,7 @@ The DOMINO hardware list (DOMINO 349-356) names the same device families:
    310 MB and which 630 MB.
 10. **Capacity of the Tandberg TDC 3600 cartridge** under ND. The "125 MB streamer"
     is not tied to a model in the text.
-11. **The DISK-MM version C02** that formatted the RUN disk (1989-08-17). NDInsight
+11. **The DISK-MM version C02** that formatted the disk in that run (1989-08-17). NDInsight
     lists only B00, B01, C03.
 12. **The exact TPE load command** for DISK-MM and SCSI-TV.
 13. **The original manual line for `#144300&`** as the SCSI boot command.
@@ -2154,6 +2299,6 @@ The DOMINO hardware list (DOMINO 349-356) names the same device families:
 15. **SCSI magtape block size and streamer block size in bytes** as used by
     BACKUP-SYSTEM. Only `SET-BLOCK-SIZE-FOR-TAPE` (0-8 pages) was found.
 16. **Whether an unknown drive makes DISK-MM-B / SCSI-TV-B stop or only skip tests**
-    (STRINGS 295-301). C04 accepts any device (TP-I 634).
-17. **What the numbers 312 and 406** beside LOAD and RESET-DEVICE in K-REL 1554-1555
+    (drive name tables, lines 295-301). C04 accepts any device (test program note 210523I, line 634).
+17. **What the numbers 312 and 406** beside LOAD and RESET-DEVICE in SINTRAN K release notes, lines 1554-1555
     mean.
