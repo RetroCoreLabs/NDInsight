@@ -130,6 +130,11 @@ interpretation/inference, [C] = contradiction, [UNCERTAIN] = explicitly open.
    sites, CMSYSPAR/CMCPURES multibyte builders, 5OMBREAD receive dispatch,
    CH5CPUPRESENT/OCSTART/XX5CONOMD startup ladders, MF-controller error
    records), with the LMFIELD record layout and M06 constant values.
+10. **[DOMINO-NUCLEUS-PROMAN-2026-11-04.md](DOMINO-NUCLEUS-PROMAN-2026-11-04.md)** -
+   What DOMINO, NUCLEUS and PROMAN are, the start-up order (XMSG, START-SERVERS, then the
+   ND-5000), PROMAN's steps and files, the error codes, and the CPU type check in the
+   NUCLEUS server (MON 262B at 036361B, goes on only for type 5 = ND-110/CX or ND-120/CX
+   with 32-bit floating point) that stopped all three on nd100x.
 
 ## Related documentation elsewhere
 
