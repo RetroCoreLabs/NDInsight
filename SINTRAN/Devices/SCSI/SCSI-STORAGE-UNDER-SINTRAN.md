@@ -722,23 +722,60 @@ These are about two ND-100s on one bus (inferred from the wording).
 
 ## 9. Using tapes: streamer and magtape
 
-**Streamer or magtape: the difference.** Both are tape drives, and on the SCSI bus both answer
-INQUIRY with the same device type, "sequential access"
-(`tools/boot-floppy/SCSI-DEVICE-STRINGS.md`, section 4.6). SINTRAN tells them apart by name:
+### Streamer or magtape: the difference
 
-| | Streamer | Magtape |
-|---|---|---|
-| SCSI drives ND sold (5.2) | Tandberg TDC 3600, Archive Viper 150, Exabyte (8 mm) | StorageTek 2925, HP 88780 |
-| SINTRAN names | `STREAMER-1`, `STREAMER-2` | `MAG-TAPE-0`, `-4`, `-8`, `-12` |
-| Peripheral file number | 2226B, 2227B | 40B, 32B, 1232B, 1225B |
-| On nd100x | `--scsiN=tape:FILE`, an emulated TDC 3600 with 512-byte blocks | not emulated (nd100x `BUGS.md`, C6) |
+Both store data on magnetic tape. The difference is the kind of drive and medium.
 
-The names and numbers are from the Backup Manager installation note, lines 605-620 (10.3.8).
-**General knowledge, not from an ND document:** a streamer takes a closed quarter-inch
-cartridge and writes blocks of one fixed size; a magtape is a half-inch open reel and writes
-records of any length. The test program SCSI-TV C04 uses that difference for a tape drive it
-does not know: it asks the drive for its smallest and largest block size and sorts it by
-whether the two are equal (`SCSI-DEVICE-STRINGS.md`, section 4.6).
+**Streamer**
+
+- A small cartridge: quarter-inch tape in a closed plastic case, about the size of a
+  paperback. The ones ND sold for SCSI are the Tandberg TDC 3600 and the Archive Viper 150
+  (5.2); the Exabyte 8 mm drive of the ND Gigatape System is also handled as a streamer by the
+  test programs (`tools/boot-floppy/SCSI-DEVICE-STRINGS.md`, section 4.6).
+- Built to run the tape at full speed without stopping, which is what "streaming" means. The
+  computer has to keep data coming. If it cannot, the drive stops, backs up and starts again,
+  which is slow.
+- Fixed block size. On the emulated TDC 3600 in nd100x every block is 512 bytes (measured in
+  the nd100x backup runs).
+- Cheap and small, made mainly for backups.
+- SINTRAN device names `STREAMER-1`, `STREAMER-2`; peripheral files 2226B and 2227B.
+
+**Magtape** ("tape" in ND papers)
+
+- Large open reels of half-inch tape on a big floor-standing or rack drive, the classic
+  computer-room tape. The ND SCSI ones are the StorageTek 2925 (`NDSTK 2925`) and the HP 88780
+  (5.2).
+- Can stop and start on every block, and blocks can have different sizes.
+- Used for backups and also for moving data between different computers, since half-inch reel
+  tape was the common exchange format.
+- SINTRAN device names `MAG-TAPE-1` to `MAG-TAPE-4`. These names cover both the old non-SCSI
+  magtape controllers (Cipher, Pertec, STC) and SCSI magtapes (SINTRAN K release notes,
+  lines 937-938, 13130; sections 4.1 and 4.3). The peripheral files are named differently:
+  `MAG-TAPE-0` = 40B, `MAG-TAPE-4` = 32B, `MAG-TAPE-8` = 1232B, `MAG-TAPE-12` = 1225B
+  (SINTRAN K release notes, lines 13206-13213).
+
+**General knowledge, not from an ND document:** the cartridge and reel sizes, what "streaming"
+means for the drive, the start-stop and variable block size of a magtape, and the use of
+half-inch tape for exchange. The rest of this section is from the ND documents named and from
+nd100x.
+
+For SINTRAN and the backup programs the two are separate kinds of device:
+
+- different names (above);
+- different driver code: the NPL sources have a separate SCSI magtape driver,
+  `SINTRAN/NPL-SOURCE/NPL/IP-P2-SCSI-MAGTP.NPL`;
+- different peripheral-file numbers in the Backup Manager table (Backup Manager installation
+  note, lines 605-620; 10.3.8): `STREAMER-1` = 2226B, `MAG-TAPE-0` = 40B, and so on.
+
+On the SCSI bus both answer INQUIRY with the same device type, "sequential access". The test
+program SCSI-TV C04 tells a tape drive it does not know apart by asking for its smallest and
+largest block size: equal means one class, different the other
+(`SCSI-DEVICE-STRINGS.md`, section 4.6). nd100x emulates only the streamer:
+`--scsiN=tape:FILE` is an emulated TDC 3600, and a magtape is not emulated (nd100x `BUGS.md`,
+C6).
+
+Both read and write in order from the start of the tape and put tape marks between files. A
+program cannot jump straight to a block the way it can on a disk.
 
 ### 9.0 Getting a SCSI streamer going - the short version (measured)
 
