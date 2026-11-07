@@ -1302,7 +1302,7 @@ installed by the nd100x scripts in `tools/installs/`. The machine is an ND-120/C
 | Restore one file onto a pack where it was deleted | works: the file is back, byte for byte the same, with its date |
 | Restore 4 files onto a pack where all were deleted | works: all four back, byte for byte the same |
 | List what is on a tape (`Services`, `Tape-operations`, `List-volume`) | works on terminal type 6 (DEC VT100): every file with user, name, type, date, pages and bytes |
-| The menus `Backup`, `Restore`, `Services`, `BM` on terminal type 2 (Teletype) | do not work: error 36602B and the program ends (10.3.6). They work on terminal type 6 (DEC VT100). |
+| The menus `Backup`, `Restore`, `Services`, `BM` on terminal type 2 (Teletype) | do not work: error 36602B, "Invalid parameter value given", and the program ends (10.3.6). They work on terminal type 6 (DEC VT100). |
 
 #### 10.3.2 Set-up before the first copy
 
@@ -1525,9 +1525,40 @@ run on nd100x.
 | `Error 33575 (octal)` with `D100.STREAMER-1,0` | at a copy | The streamer is not defined as a mass-storage unit. Fix: `@DEFINE-MASS-STORAGE-UNIT STREAMER-1 0` (10.3.2). |
 | `No files copied` | at a copy | With `DOMINO-MODE = ON` the program looks for DOMINO drives first and gives up when there are none. Fix: `DOMINO-MODE = OFF` (10.3.2). |
 | 260B `File-access reentrant segments are not loaded` | at a copy | A "Computer name" field was filled in for a local device. Leave it empty. |
-| `036602B:` followed by the menu word, then `EXIT Backup Manager Operator` | typing `SERVICES` or `TAPE-OPERATIONS` at the `BmOp:` prompt on terminal type 2 | The program ends. On terminal type 6 the same menus work, and `COPY` works on both. 36602B also showed on terminal type 6 when `EXIT` was typed into a form field, without ending the program. What 36602 means is **not known**. Measured 2026-11-04. |
+| `036602B:` followed by the menu word, then `EXIT Backup Manager Operator` | typing `SERVICES` or `TAPE-OPERATIONS` at the `BmOp:` prompt on terminal type 2 | **"Invalid parameter value given"** (group 366B "Backup Manager - Operator/Definition", message 2, read from `UE-ERMSG-EN-D05:ERR`, 10.3.6a): the program did not take the word it printed after the code. On terminal type 2 it then ends. On terminal type 6 the same menus work, and `COPY` works on both. 36602B also showed on terminal type 6 when `EXIT` was typed into a form field, without ending the program. Why the menu words are not taken on terminal type 2 is not known. Measured 2026-11-04. |
 | `Library UE-ERMSG-EN-D' not found` under "An internal error has occurred. Please, report the error to ND!" | at the first copy | The User Environment message file is missing from the pack. B02 neither brings it nor checks for it; ND fixed that in a later version ("The installation program did not check the presence of correct UE-ERRMSG-file. This is now delivered along with the product", Backup Manager installation note B04, line 523). Fix: 10.3.2, "once per pack". |
-| `No message available` after any code | always for the 33xxx codes | The message file `UE-ERMSG-EN-D06` has no texts for the Backup Manager's own codes. |
+| `No message available` after any code | for the 33xxx codes | `UE-ERMSG-EN-D05:ERR` does hold texts for 33504 ("End of volume detected") and 33575 ("No such device name"), but not for 33626: its group 336B has 17 messages and 33626 is number 26B. Why the program printed no text for 33504 and 33575 is not known; which message file it reads was not measured. |
+
+#### 10.3.6a Reading a Backup Manager code in the message file
+
+The codes the Backup Manager prints are one 16-bit number, **group × 64 + message number**.
+In octal, the last two digits are the message number and the rest is the group:
+`33504` is group `335`, message `04`. Read from `UE-ERMSG-EN-D05:ERR` (211075C03-EN-01D) on
+2026-11-07:
+
+| Code | Group | Message |
+|---|---|---|
+| 33504 | 335 "Backup Manager - Copy library" | 04 "End of volume detected" |
+| 33575 | 335 "Backup Manager - Copy library" | 75 "No such device name" |
+| 33626 | 336 "Backup Manager - Copy library" | none: the group has 17 messages |
+| 36602 | 366 "Backup Manager - Operator/Definition" | 02 "Invalid parameter value given" |
+
+The same rule gives SINTRAN's own file errors: `260` is group 2, message 60, "File access
+reentrant segments are not loaded", the text SINTRAN prints for 260B. The two meanings found
+on nd100x before (33504 the end of the recorded tape, 33575 the streamer not defined) agree
+with the file's texts.
+
+How the file is laid out (all numbers big-endian; offsets in bytes):
+
+- Offset 0: one 16-bit word per group, the 256-byte block that holds the group's table, or 0
+  when the group has no messages. The file has room for 2174 groups; 236 are used, the
+  highest is 3620B.
+- A group's table: one 32-bit byte offset per message. Entry 0 points at the group's name,
+  entry N at message N. A table has at most 64 entries. The number of entries is not stored
+  next to the table that was found; the reader used here stopped at the first entry that is
+  not an offset into the file, which is how "17 messages" for group 336 was counted.
+- A message: one length byte, then that many characters. Messages never cross a 256-byte
+  block; the rest of a block is filled with zero bytes.
 
 **How 33504 was traced.** The tape traffic of the restore, with the emulator's SCSI log: three
 reads of 2 blocks (the volume headers and the file header), one read of 12 blocks (the file's
