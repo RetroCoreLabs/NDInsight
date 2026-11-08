@@ -1305,7 +1305,7 @@ installed by the nd100x scripts in `tools/installs/`. The machine is an ND-120/C
 | Restore 4 files onto a pack where all were deleted | works: all four back, byte for byte the same |
 | Two COPYs in one `BM-OPERATOR` run onto the same volume: the first with mode `OV`, the second with mode `AP` (append) | works: "File(s) copied: 1" each; the second winds to the end of the volume first ("Winding") and its file gets index 00002. A restore of the whole volume lists both files and brings both back byte for byte (2026-11-08). |
 | List what is on a tape (`Services`, `Tape-operations`, `List-volume`) | works on terminal type 6 (DEC VT100): every file with user, name, type, date, pages and bytes |
-| The menus `Backup`, `Restore`, `Services`, `BM` on terminal type 2 (Teletype) | do not work: error 36602B, "Invalid parameter value given", and the program ends (10.3.6). They work on terminal type 6 (DEC VT100). |
+| The menus `Backup`, `Restore`, `Services`, `BM` on terminal type 2 (Teletype) | do not work: error 36602B, "Invalid parameter value given", and the program ends (10.3.6). On terminal type 2 the prompt takes only the batch command words (`COPY`, `LIST-VOLUME` and a few more, 10.3.6). The menus work on terminal type 6 (DEC VT100). |
 
 #### 10.3.2 Set-up before the first copy
 
@@ -1478,9 +1478,10 @@ failure; 10.3.6 says what it is. The list before it also shows what is on the vo
 #### 10.3.5 List what is on a tape
 
 `List-volume` shows the files on a Backup Manager volume without copying anything. It is
-under the menu `Services`, then `Tape-operations`, and needs a screen terminal: on terminal
-type 2 (Teletype) the `Services` menu does not open (10.3.6). Measured with terminal type 6
-(DEC VT100), on the tape of 10.3.3:
+under the menu `Services`, then `Tape-operations`, on a screen terminal. On terminal type 2
+(Teletype) the `Services` menu does not open (10.3.6), but the command `LIST-VOLUME` does the
+same job (end of this section). Measured with terminal type 6 (DEC VT100), on the tape of
+10.3.3:
 
 1. `@BM-OPERATOR`, terminal type `6`. The menu bar shows
    `BmOp:  Backup   Restore   Copy   Services   BM   Exit`.
@@ -1526,9 +1527,28 @@ you about it" (the program's own help, `BM-OPERAT-EN-B02:SEG`).
 Careful in this menu: `Erase-tape` sits next to `List-volume`, and asks "Erase whole volume
 (Yes/No)". A wrong letter there can wipe the tape.
 
-On terminal type 2 there is another way to see what is on a volume: a restore with execution
-method *Manual* lists the files one by one and asks before each (User Guide, page 27). Not
-run on nd100x.
+**On terminal type 2 (Teletype)** type the command `LIST-VOLUME` at the `BmOp:` prompt, then
+the same form one field per line and the same three questions (measured on nd100x
+2026-11-08, on a tape with two files of RONNY):
+
+```
+BmOp: LIST-VOLUME
+VOLUME     BMTEST-1                          STREAMER-1       0
+BmOp: List objects (All/Files/Images): ALL
+      Stop on full page (Yes/No)     : NO
+      List file                      : TERMINAL
+   Reel:01 Volume: BMTEST-1         Directory: D100.PACK-ONE
+   Index User area        File name        Type V   T Written  M Pages
+   00001 RONNY            TEST             SYMB 1   I 98-09-22 Y     3
+   00002 RONNY            ALPHA            DATA 1   I 00-00-00 N     2
+ 033504B: End of volume detected
+BmOp:
+```
+
+The answers typed were: `BMTEST-1`, Return (computer name empty), `STREAMER-1`, `0`, Return,
+Return, then Return to each of the three questions (the defaults ALL, NO and TERMINAL).
+`033504B` here only says the list reached the blank tape after the last file. Only some
+command words work at this prompt; see `036602B` in 10.3.6.
 
 #### 10.3.6 Messages and what they mean
 
@@ -1540,7 +1560,7 @@ run on nd100x.
 | `No files copied` | at a copy | With `DOMINO-MODE = ON` the program looks for DOMINO drives first and gives up when there are none. Fix: `DOMINO-MODE = OFF` (10.3.2). |
 | `000021B: Illegal character in parameter` with `*XM-FIDO` | at a backup | The machine has no XMSG name, so XMSG gave the name of its own program `*XM-FIDO`, which is not a valid computer name. Fix: `DEFINE-REMOTE-NAME` (10.3.2, step 6). Measured 2026-11-08. |
 | 260B `File-access reentrant segments are not loaded` | at a copy | A "Computer name" field was filled in for a local device. Leave it empty. |
-| `036602B:` followed by the menu word, then `EXIT Backup Manager Operator` | typing `SERVICES` or `TAPE-OPERATIONS` at the `BmOp:` prompt on terminal type 2 | **"Invalid parameter value given"** (group 366B "Backup Manager - Operator/Definition", message 2, read from `UE-ERMSG-EN-D05:ERR`, 10.3.6a): the program did not take the word it printed after the code. On terminal type 2 it then ends. On terminal type 6 the same menus work, and `COPY` works on both. 36602B also showed on terminal type 6 when `EXIT` was typed into a form field, without ending the program. Why the menu words are not taken on terminal type 2 is not known. Measured 2026-11-04. |
+| `036602B:` followed by the menu word, then `EXIT Backup Manager Operator` | typing `SERVICES` or `TAPE-OPERATIONS` at the `BmOp:` prompt on terminal type 2 | **"Invalid parameter value given"** (group 366B "Backup Manager - Operator/Definition", message 2, read from `UE-ERMSG-EN-D05:ERR`, 10.3.6a): the program did not take the word it printed after the code. On terminal type 2 it then ends. On terminal type 6 the same menus work, and `COPY` works on both. 36602B also showed on terminal type 6 when `EXIT` was typed into a form field, without ending the program. Measured 2026-11-04. **Why terminal type 2 refuses the menu words:** on terminal type 2 the `BmOp:` prompt takes the batch command words, not the menu words. The language file `BM-OPERAT-EN-B02:DATA` (floppy 211226B02-EN-02D) holds a table named `BATCH-COMMANDS` with `BACKUP-START`, `COPY`, `LIST-VOLUME`, `ERASE-TAPE` and `SET-TAPE-DENSITY`; `EXIT` also works. Measured 2026-11-08: `LIST-VOLUME` lists the tape (10.3.5), `SERVICES` right after it gives 36602B and the program ends. The User Guide ND-860276.2 (section 2.15, page 103) gives a longer list with other names (`LIST-VOLUME-ALL-OBJECTS`, `LIST-VOLUME-FILE`, `LIST-VOLUME-IMAGE`, `SET-DENSITY`); `LIST-VOLUME-ALL-OBJECTS` gave 36602B on B02, so the guide describes another version. This fits every measurement, but the code that reads the table was not traced, and why the program ends after the error, instead of asking again, is not known. |
 | `Library UE-ERMSG-EN-D' not found` under "An internal error has occurred. Please, report the error to ND!" | at the first copy | The User Environment message file is missing from the pack. B02 neither brings it nor checks for it; ND fixed that in a later version ("The installation program did not check the presence of correct UE-ERRMSG-file. This is now delivered along with the product", Backup Manager installation note B04, line 523). Fix: 10.3.2, "once per pack". |
 | `No message available` after any code | for the 33xxx codes | Seen in the runs of 2026-11-03. On a pack with `UE-ERMSG-EN-D05:ERR` (2026-11-08) the program printed `033504B: End of volume detected`, the text from that file. Which message file the 2026-11-03 pack had was not recorded. D05 has no text for 33626: its group 336B has 17 messages and 33626 is number 26B. |
 
@@ -1673,7 +1693,7 @@ one:
 | Disk space | SYSTEM 230 pages; ND-OPERATIONS 34 pages, 2 files; BACKUP-MANAGER 2900 pages, 25 files (B version) |
 | ND-100 side | 1 segment, 1 RT description (for `BMSERV`) |
 | Login | image copies, database copies and BM-FileRestore need user SYSTEM when User Environment is not running (User Guide, pages 15-16) |
-| Screen | a menu that opens a sub-menu needs a screen terminal, for example type 6 (DEC VT100); measured on nd100x, 10.3.6 |
+| Screen | the menus need a screen terminal, for example type 6 (DEC VT100); on terminal type 2 only the batch commands work (`COPY`, `LIST-VOLUME` ...); measured on nd100x, 10.3.6 |
 
 The installation note is for B04 (1990), the product information ND-895055-3A for version C.
 The floppies that exist are **B02**.
