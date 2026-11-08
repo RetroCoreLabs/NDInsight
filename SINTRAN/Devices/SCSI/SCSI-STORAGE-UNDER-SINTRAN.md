@@ -1303,6 +1303,7 @@ installed by the nd100x scripts in `tools/installs/`. The machine is an ND-120/C
 | Back up every file of a user (4 files) | works: "File(s) copied: 4" |
 | Restore one file onto a pack where it was deleted | works: the file is back, byte for byte the same, with its date |
 | Restore 4 files onto a pack where all were deleted | works: all four back, byte for byte the same |
+| Two COPYs in one `BM-OPERATOR` run onto the same volume: the first with mode `OV`, the second with mode `AP` (append) | works: "File(s) copied: 1" each; the second winds to the end of the volume first ("Winding") and its file gets index 00002. A restore of the whole volume lists both files and brings both back byte for byte (2026-11-08). |
 | List what is on a tape (`Services`, `Tape-operations`, `List-volume`) | works on terminal type 6 (DEC VT100): every file with user, name, type, date, pages and bytes |
 | The menus `Backup`, `Restore`, `Services`, `BM` on terminal type 2 (Teletype) | do not work: error 36602B, "Invalid parameter value given", and the program ends (10.3.6). They work on terminal type 6 (DEC VT100). |
 
@@ -1418,7 +1419,8 @@ BmOp:
 
 - *Mode* `OV` overwrites the volume. The other modes (Backup Manager User Guide, pages 52-53):
   `Ap` append, `Ar` archive and delete the file, `Co` compare, `Re` retension, `Sm` shrinking
-  mode, `Ul` unload after the copy.
+  mode, `Ul` unload after the copy. `AP` was run on nd100x: a second COPY with `AP` to the
+  same volume adds its files after the ones already there (10.3.1).
 - *Volume name*: up to 16 letters, digits and hyphens, not starting with a hyphen.
 - *File name* takes a name (`TEST:SYMB`) or a pattern; empty means every file. *Copy method*
   `SELECTION FILE` instead takes a text file that lists the files (User Guide, pages 55-58).
