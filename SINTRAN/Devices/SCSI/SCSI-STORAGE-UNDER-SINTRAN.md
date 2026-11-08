@@ -1832,7 +1832,9 @@ Select execution mode (Manual/Stop-on-Error/Automatic): Stop-on-Err
 | ND-5000 installation note ND-895061-1A | `Installation/Installation-Description/ND-895061-1A-EN.md` |
 | BACKUP-SYSTEM User Guide | `Reference-Manuals/ND-60.250.1_EN_BACKUP_User_Guide.md` |
 | the floppies | the RetroCore Labs software archive, read with `ndtool`, 2026-11-02 |
-| measured on nd100x | runs on the nd100x emulator, 2026-11-02 to 2026-11-04; written up in nd100x `BUGS.md`, item P2 |
+| the batch command table (`BATCH-COMMANDS`) | `BM-OPERAT-EN-B02:DATA` on floppy 211226B02-EN-02D, read as bytes 2026-11-08 |
+| the message texts | `UE-ERMSG-EN-D05:ERR` on floppy 211075C03-EN-01D, decoded 2026-11-07 (10.3.6a) |
+| measured on nd100x | runs on the nd100x emulator, 2026-11-02 to 2026-11-08; written up in nd100x `BUGS.md`, item P2 |
 
 ### 10.4 Whole-disk restore from a SCSI streamer (Disk Restore, ND 211187B)
 
