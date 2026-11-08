@@ -799,7 +799,9 @@ buffered mode 1, density 0), LOAD (1Bh, load bit set). REWIND then sent REWIND (
 **Driving S3-CONFIG from a plain terminal** (nd100x backup runs 2026-11-01). S3-CONFIG is a full-screen
 program:
 
-1. `@S3-CONFIG`, then answer the terminal type question (36 = Tandberg TDV 2215).
+1. `@S3-CONFIG`, then answer the terminal type question (36 = Tandberg TDV 2215). The
+   S3-CONFIG on the ND-5000 pack (`ND-211024E01`) has no type 36 and answers "This terminal
+   type is unknown"; type 6 (DEC VT100) works there with the same keys below (2026-11-08).
 2. Type `SCSI` and Return. The cursor lands on SCSI disk 1.
 3. Each Return moves one half field: adaptor, then ID, for disk 1, 2, ... 8. The
    empty rows (disks 9-14) are skipped. **15 Returns** reach the adaptor field of
@@ -1351,8 +1353,18 @@ installed by the nd100x scripts in `tools/installs/`. The machine is an ND-120/C
 6. Give the machine a name in XMSG: `@XMSG-COMMAND`, `DEFINE-REMOTE-NAME,,D100,100`, `EXIT`.
    The Backup Manager asks XMSG for it and puts it in front of directory names
    (`D100.PACK-ONE`). Without a name XMSG answers `*XM-FIDO`, the name of one of its own
-   programs. Not tried: whether a copy works without this step.
-7. `@RT DMASRV` was typed in every run that worked. Not tried: whether it is needed.
+   programs. **A backup needs this step**: without it the copy stops with
+   `000021B: Illegal character in parameter` / `*XM-FIDO` and "No files copied" (measured
+   2026-11-08). A restore of that backup worked without it: the directory showed as
+   `D100.PACK-ONE`, the name the backup wrote to the tape, and the three files came back
+   byte for byte the same.
+
+`@RT DMASRV` is **not needed**. Measured 2026-11-08 on a pack fresh from the five install
+scripts: a backup of three files of RONNY and two restores onto copies of the pack with the
+files deleted, none with `@RT DMASRV` typed; all three files came back byte for byte the same
+each time. Nothing at boot starts it either: the only line that would, in
+`(SYSTEM)BACKUP-LOAD-I:MODE`, is `@CC @rt dmasrv`, a comment, and that file belongs to the
+BACKUP-SYSTEM install, not to the boot.
 
 In the copy form, **leave every "Computer name" field empty** when the files and the
 streamer are on this machine. ND's notes say the same: "NEVER specify the 'Computer name'
@@ -1524,10 +1536,11 @@ run on nd100x.
 | `Error 33626 (octal)` with `(SYSTEM)SWAP-FILE-0:SWAP` | at every start | The settings file names a swap file this machine does not have. Fix: 10.3.2, "once per pack". |
 | `Error 33575 (octal)` with `D100.STREAMER-1,0` | at a copy | The streamer is not defined as a mass-storage unit. Fix: `@DEFINE-MASS-STORAGE-UNIT STREAMER-1 0` (10.3.2). |
 | `No files copied` | at a copy | With `DOMINO-MODE = ON` the program looks for DOMINO drives first and gives up when there are none. Fix: `DOMINO-MODE = OFF` (10.3.2). |
+| `000021B: Illegal character in parameter` with `*XM-FIDO` | at a backup | The machine has no XMSG name, so XMSG gave the name of its own program `*XM-FIDO`, which is not a valid computer name. Fix: `DEFINE-REMOTE-NAME` (10.3.2, step 6). Measured 2026-11-08. |
 | 260B `File-access reentrant segments are not loaded` | at a copy | A "Computer name" field was filled in for a local device. Leave it empty. |
 | `036602B:` followed by the menu word, then `EXIT Backup Manager Operator` | typing `SERVICES` or `TAPE-OPERATIONS` at the `BmOp:` prompt on terminal type 2 | **"Invalid parameter value given"** (group 366B "Backup Manager - Operator/Definition", message 2, read from `UE-ERMSG-EN-D05:ERR`, 10.3.6a): the program did not take the word it printed after the code. On terminal type 2 it then ends. On terminal type 6 the same menus work, and `COPY` works on both. 36602B also showed on terminal type 6 when `EXIT` was typed into a form field, without ending the program. Why the menu words are not taken on terminal type 2 is not known. Measured 2026-11-04. |
 | `Library UE-ERMSG-EN-D' not found` under "An internal error has occurred. Please, report the error to ND!" | at the first copy | The User Environment message file is missing from the pack. B02 neither brings it nor checks for it; ND fixed that in a later version ("The installation program did not check the presence of correct UE-ERRMSG-file. This is now delivered along with the product", Backup Manager installation note B04, line 523). Fix: 10.3.2, "once per pack". |
-| `No message available` after any code | for the 33xxx codes | `UE-ERMSG-EN-D05:ERR` does hold texts for 33504 ("End of volume detected") and 33575 ("No such device name"), but not for 33626: its group 336B has 17 messages and 33626 is number 26B. Why the program printed no text for 33504 and 33575 is not known; which message file it reads was not measured. |
+| `No message available` after any code | for the 33xxx codes | Seen in the runs of 2026-11-03. On a pack with `UE-ERMSG-EN-D05:ERR` (2026-11-08) the program printed `033504B: End of volume detected`, the text from that file. Which message file the 2026-11-03 pack had was not recorded. D05 has no text for 33626: its group 336B has 17 messages and 33626 is number 26B. |
 
 #### 10.3.6a Reading a Backup Manager code in the message file
 
