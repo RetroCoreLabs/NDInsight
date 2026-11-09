@@ -21,6 +21,17 @@ This directory contains the complete documentation for all 230 SINTRAN III Monit
 - Use `mon-call.schema.json` with JSON Schema validators
 - See [Validation](#validation) section below
 
+## Pages in this folder
+
+| Page | What it is |
+|------|------------|
+| [ND MON Calls.md](ND%20MON%20Calls.md) | The generated reference for every call, with three indexes |
+| [Monitor Calls.md](Monitor%20Calls.md) | The OCR text of the manual (ND-860228.2 EN) |
+| [calls/60B_N500M_Functions.md](calls/60B_N500M_Functions.md) | Monitor call 60B (N500M): its functions |
+| [calls/60B_N500M_Hardware_Mapping.md](calls/60B_N500M_Hardware_Mapping.md) | Monitor call 60B (N500M): how it maps to the hardware |
+| [calls/SCHEMA-EMULATION-BLOCK.md](calls/SCHEMA-EMULATION-BLOCK.md) | The `emulation:` block in the YAML files: what we learned by emulating the calls, and the rules for writing it |
+| [mon-call.schema.json](mon-call.schema.json) | JSON Schema for the YAML files |
+
 ## Directory Structure
 
 ```

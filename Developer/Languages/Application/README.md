@@ -25,7 +25,7 @@ Modern, portable system and application programming language.
 - Algorithm implementation
 - Modern programming
 
-**Reference Manual:** `../../../Reference-Manuals/ND-60.214.01 CC-100 and CC-500 C-Compiler User Manual.md`
+**Reference Manual:** [ND-60.214.01 CC-100 and CC-500 C-Compiler User Manual](../../../Reference-Manuals/ND-60.214.01%20CC-100%20and%20CC-500%20C-Compiler%20User%20Manual.md)
 
 ---
 
@@ -86,10 +86,24 @@ Structured programming language with strong typing and modularity.
   into SINTRAN: as an RT program that holds no terminal and starts at boot, or as a reentrant
   subsystem every user shares one copy of. Where an RT program's name comes from, the RT-LOADER
   sequence, and `DUMP-PROGRAM-REENTRANT`**
+- [PLANC-DEBUGGING.md](PLANC-DEBUGGING.md) - debug symbols on, the Symbolic Debugger, and the
+  runtime error messages
+- **[PLANC-INTERACTIVE-SCREEN-PATTERNS.md](PLANC-INTERACTIVE-SCREEN-PATTERNS.md) - START HERE for any
+  screen program: the program skeleton, the keyboard poll, the VTM flush, windows, clipping,
+  scrolling, and a table of every trap**
+- [PLANC-UI-VTM-GUIDE.md](PLANC-UI-VTM-GUIDE.md) - PLANC-SCREEN-H, the drawing layer: boxes, bars,
+  editable fields
+- [PLANC-VTM-PROGRAMMING-GUIDE.md](PLANC-VTM-PROGRAMMING-GUIDE.md) - what VTM is, what you need
+  first, terminal types (including 0 and 2)
+- [VTM-API-REFERENCE.md](VTM-API-REFERENCE.md) - all 37 VTM routines: argument counts, output
+  arguments, status codes
+- [VTM-VIEWPORT-HOW-TO-USE-IT.md](VTM-VIEWPORT-HOW-TO-USE-IT.md) - `VTDSCR` is a real viewport: it
+  clips, it does not nest, and how to build windows on it
+- [VTM-KEY-CODES.md](VTM-KEY-CODES.md) - the key-code lookup table
 
 **Reference Manuals:**
-- `../../../Reference-Manuals/ND-60.117.5 EN PLANC Reference Manual.md`
-- `../../../Reference-Manuals/ND-10309A PLANC FOR ND-100.md`
+- [ND-60.117.5 EN PLANC Reference Manual](../../../Reference-Manuals/ND-60.117.5%20EN%20PLANC%20Reference%20Manual.md)
+- [ND-10309A PLANC FOR ND-100](../../../Reference-Manuals/ND-10309A%20PLANC%20FOR%20ND-100.md)
 
 ---
 
@@ -112,7 +126,7 @@ Educational and structured programming language.
 - Academic computing
 - Learning programming
 
-**Reference Manual:** `../../../Reference-Manuals/ND-60.124.05 ND-PASCAL User's Guide.md`
+**Reference Manual:** [ND-60.124.05 ND-PASCAL User's Guide](../../../Reference-Manuals/ND-60.124.05%20ND-PASCAL%20User's%20Guide.md)
 
 ---
 
@@ -135,12 +149,19 @@ Scientific and numerical computing language.
 - Matrix operations
 - Statistical analysis
 
+**Companion docs:**
+- [FORTRAN-BUILD-LEARNINGS-FAQ.md](FORTRAN-BUILD-LEARNINGS-FAQ.md) - short questions and answers
+  from building a real FORTRAN program (the English Adventure game) on SINTRAN III: which
+  compiler, linking, debugging
+- [ADVENTURE-BUILD-AND-INITIALIZE.md](ADVENTURE-BUILD-AND-INITIALIZE.md) - how the Adventure game
+  was compiled, linked, run once to read its database, and saved with `@DUMP` as a finished `:PROG`
+
 **Reference Manuals:**
-- `../../../Reference-Manuals/ND-60.145.7A EN ND FORTRAN Reference Manual.md`
-- `../../../Reference-Manuals/ND-60.011.04 NORD Standard FORTRAN Reference Manual.md`
-- `../../../Reference-Manuals/ND-10191A Fortran for ND-100-NORD-10.md`
-- `../../../Reference-Manuals/ND-10190D FORTRAN FOR ND-500.md`
-- `../../../Reference-Manuals/ND-10033K FORTRAN 32 BITS FLOATING FORMAT.md`
+- [ND-60.145.7A EN ND FORTRAN Reference Manual](../../../Reference-Manuals/ND-60.145.7A%20EN%20ND%20FORTRAN%20Reference%20Manual.md)
+- [ND-60.011.04 NORD Standard FORTRAN Reference Manual](../../../Reference-Manuals/ND-60.011.04%20NORD%20Standard%20FORTRAN%20Reference%20Manual.md)
+- [ND-10191A Fortran for ND-100-NORD-10](../../../Reference-Manuals/ND-10191A%20Fortran%20for%20ND-100-NORD-10.md)
+- [ND-10190D FORTRAN FOR ND-500](../../../Reference-Manuals/ND-10190D%20FORTRAN%20FOR%20ND-500.md)
+- [ND-10033K FORTRAN 32 BITS FLOATING FORMAT](../../../Reference-Manuals/ND-10033K%20FORTRAN%2032%20BITS%20FLOATING%20FORMAT.md)
 
 ---
 
@@ -163,7 +184,7 @@ Business-oriented programming language.
 - Report generation
 - Legacy system maintenance
 
-**Reference Manual:** `../../../Reference-Manuals/ND-60.144.3 EN COBOL Reference Manual.md`
+**Reference Manual:** [ND-60.144.3 EN COBOL Reference Manual](../../../Reference-Manuals/ND-60.144.3%20EN%20COBOL%20Reference%20Manual.md)
 
 ---
 
@@ -187,8 +208,17 @@ Interactive, easy-to-learn programming language.
 - Prototyping
 
 **Reference Manuals:**
-- `../../../Reference-Manuals/ND-60.071.01D NORD-10 BASIC Compiler Reference Manual.md`
-- `../../../Reference-Manuals/ND-60.040.02 NORD BASIC Reference Manual.md`
+- [ND-60.071.01D NORD-10 BASIC Compiler Reference Manual](../../../Reference-Manuals/ND-60.071.01D%20NORD-10%20BASIC%20Compiler%20Reference%20Manual.md)
+- [ND-60.040.02 NORD BASIC Reference Manual](../../../Reference-Manuals/ND-60.040.02%20NORD%20BASIC%20Reference%20Manual.md)
+
+---
+
+### [SIMULA/](SIMULA/README.md)
+**SIMULA (TPH SIMULA, sold by ND as ND 10058)**
+
+The first object-oriented language: classes, subclasses, virtual procedures, coroutines, and the SIMSET and SIMULATION classes for discrete-event simulation. Four pages: [language guide](SIMULA/SIMULA-LANGUAGE-GUIDE.md), [compiler and running](SIMULA/SIMULA-COMPILER-AND-RUN.md), [debugging](SIMULA/SIMULA-DEBUGGING.md), [install from floppy](SIMULA/SIMULA-INSTALL.md). Written from the manual; not yet run on a machine.
+
+**Reference Manuals:** [ND-60.092.03 NORD-100 SINTRAN III SIMULA - Reference Manual](../../../Reference-Manuals/ND-60.092.03%20NORD-100%20SINTRAN%20III%20SIMULA%20-%20Reference%20Manual.md) (ND-100), [ND-60208-1-EN ND-500 SIMULA reference manual](../../../Reference-Manuals/ND-60208-1-EN%20ND-500%20SIMULA%20reference%20manual.md) (ND-500)
 
 ---
 
@@ -211,10 +241,10 @@ CODASYL / DBTG-style (network model) database, accessed from a host language.
 - Legacy SIBAS database maintenance
 
 **Reference Manuals:**
-- `../../../Reference-Manuals/ND-60.127.5 EN THE DATABASE SYSTEM SIBAS II ND User Manual.md`
-- `../../../Reference-Manuals/ND-30.009.3 EN SIBAS II Operator Manual.md`
-- `../../../Reference-Manuals/210166F SIBAS II for ND-100.md`
-- `../../../Reference-Manuals/ND-60.057.03 The Data Base System SIBAS I Users Manual Appendix A.md`
+- [ND-60.127.5 EN THE DATABASE SYSTEM SIBAS II ND User Manual](../../../Reference-Manuals/ND-60.127.5%20EN%20THE%20DATABASE%20SYSTEM%20SIBAS%20II%20ND%20User%20Manual.md)
+- [ND-30.009.3 EN SIBAS II Operator Manual](../../../Reference-Manuals/ND-30.009.3%20EN%20SIBAS%20II%20Operator%20Manual.md)
+- [210166F SIBAS II for ND-100](../../../Reference-Manuals/210166F%20SIBAS%20II%20for%20ND-100.md)
+- [ND-60.057.03 The Data Base System SIBAS I Users Manual Appendix A](../../../Reference-Manuals/ND-60.057.03%20The%20Data%20Base%20System%20SIBAS%20I%20Users%20Manual%20Appendix%20A.md)
 
 ---
 
@@ -376,7 +406,7 @@ Each developer guide includes:
 
 ---
 
-**Last Updated**: 2026-07-04  
+**Last Updated**: 2026-11-09  
 **Languages**: 6 (C, PLANC, PASCAL, FORTRAN, COBOL, BASIC) + SIBAS database system  
 **Documentation Status**: ✅ Complete guides available (SIBAS = reference index)
 

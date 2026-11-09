@@ -43,6 +43,8 @@ FORTRAN calling sequence. The reentrant `@MAC` on the M pack will not start.
 
 Verified on SINTRAN III VSX/500 M under RetroCore.
 
+The source files and MODE files for this case study: [TCP-Echo-Server/README.md](TCP-Echo-Server/README.md).
+
 ### [Finger-Server.md](Finger-Server.md)
 **A Finger server (RFC 1288, TCP port 79) for SINTRAN III, in PLANC**
 
@@ -53,6 +55,8 @@ configuration file decides who may be listed. Tested with Windows and Linux `fin
 **Highlights:** there is no call that lists sessions, so the server walks the terminal and
 TAD device ranges. SLIB takes in data only inside its own calls, so a SINTRAN sleep in a read
 loop loses a query sent in two segments; the fix is SLIB's no-activity timer.
+
+The source, MODE, config and batch files for this case study: [Finger-Server/README.md](Finger-Server/README.md).
 
 ---
 

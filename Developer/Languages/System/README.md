@@ -26,7 +26,7 @@ The primary language for SINTRAN III operating system development.
 - RT programs
 - Monitor-level code
 
-**Reference Manual:** `../../../Reference-Manuals/ND-60.047.03 NORD PL User's Guide.md`
+**Reference Manual:** [ND-60.047.03 NORD PL User's Guide](../../../Reference-Manuals/ND-60.047.03%20NORD%20PL%20User's%20Guide.md)
 
 ---
 
@@ -50,8 +50,8 @@ Low-level assembly language for NORD-100 computers.
 - NPL compiler output
 
 **Reference Manuals:**
-- `../../../Reference-Manuals/ND-60.096.01 MAC Interactive Assembly and Debugging System User's Guide.md`
-- `../../../Reference-Manuals/ND-60.009.02 MACM Mac Mass Storage Assembler.md`
+- [ND-60.096.01 MAC Interactive Assembly and Debugging System User's Guide](../../../Reference-Manuals/ND-60.096.01%20MAC%20Interactive%20Assembly%20and%20Debugging%20System%20User's%20Guide.md)
+- [ND-60.009.02 MACM Mac Mass Storage Assembler](../../../Reference-Manuals/ND-60.009.02%20MACM%20Mac%20Mass%20Storage%20Assembler.md)
 
 ---
 
@@ -95,8 +95,8 @@ Assembly language for the 32-bit ND-500 coprocessor.
 - High-performance tasks
 
 **Reference Manuals:**
-- `../../../Reference-Manuals/ND-60.113.02 EN Assembler Reference Manual.md`
-- `../../../Reference-Manuals/ND-05.009.4 EN ND-500 Reference Manual.md`
+- [ND-60.113.02 EN Assembler Reference Manual](../../../Reference-Manuals/ND-60.113.02%20EN%20Assembler%20Reference%20Manual.md)
+- [ND-05.009.4 EN ND-500 Reference Manual](../../../Reference-Manuals/ND-05.009.4%20EN%20ND-500%20Reference%20Manual.md)
 
 ---
 

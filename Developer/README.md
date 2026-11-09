@@ -59,7 +59,13 @@ Developer/
 │   │   ├── COBOL-DEVELOPER-GUIDE.md
 │   │   ├── FORTRAN-DEVELOPER-GUIDE.md
 │   │   ├── PASCAL-DEVELOPER-GUIDE.md
-│   │   └── BASIC-DEVELOPER-GUIDE.md
+│   │   ├── BASIC-DEVELOPER-GUIDE.md
+│   │   ├── FORTRAN-BUILD-LEARNINGS-FAQ.md (what a real FORTRAN build taught us)
+│   │   ├── ADVENTURE-BUILD-AND-INITIALIZE.md (building the Adventure game :PROG)
+│   │   ├── SIBAS-DEVELOPER-GUIDE.md (the SIBAS database system)
+│   │   ├── HOW-TO-PROGRAM-PLANC.md and the other PLANC-*, VTM-*, SLIB-*, COSMOS-* pages
+│   │   ├── monitor-calls.json, xmp-api.json (data files for tools)
+│   │   └── SIMULA/ (TPH SIMULA: language, compiler, debugging, install)
 │   │
 │   └── System/ (Intro + Expert guides)
 │       ├── NPL-DEVELOPER-GUIDE.md (Intro - 70KB)
@@ -75,7 +81,22 @@ Developer/
 │   ├── LINKING-GUIDE.md
 │   ├── SCRIPT-GUIDE.md
 │   ├── CROSS-DEVELOPMENT-WITH-ND100X.md
-│   └── TOOLS-REFERENCE.md
+│   ├── TOOLS-REFERENCE.md
+│   ├── LINKING-GUIDE-500-DEEP-DIVE.md
+│   ├── CONVERT-DOMAIN-PSEG-DSEG-TO-DOM.md
+│   ├── TWO-BANK-PROGRAMS.md
+│   ├── LINK-LIBRARY-ENTRY-POINTS.md (every :BRF library and its names)
+│   ├── LINK-LIBRARY-NAME-INDEX.md (which library defines a name)
+│   ├── SIBAS-DATABASE-PROGRAMMING.md
+│   ├── VTM-TERMINAL-INTERFACES.md
+│   └── PLANC-VTM-UI-CATALOG.md
+│
+├── ND500/ (Compiling and linking on the ND-500/5000)
+│   ├── NC-C-COMPILER-GUIDE.md
+│   ├── PLANC-500-COMPILER-GUIDE.md
+│   └── ND-LINKER-PRACTICAL-GUIDE.md
+│
+├── MON/ (Monitor calls: manual, generated reference, one YAML per call)
 │
 ├── Case-Studies/ (End-to-end worked examples)
 │   ├── HTTP-Server-over-HDLC.md
@@ -93,9 +114,8 @@ Developer/
 │   ├── QED-QUICK-REFERENCE.md
 │   └── PED-QUICK-REFERENCE.md
 │
-└── System-Development/ (Future - High Priority)
-    ├── MONITOR-CALLS-GUIDE.md (Future)
-    └── XMSG-DEVELOPMENT-GUIDE.md (Future)
+└── System-Development/
+    └── nd500-buddy-system.md (ND-500 buddy memory allocator)
 ```
 
 ---
@@ -119,9 +139,21 @@ Developer/
 | **PLANC** | [PLANC-DEVELOPER-GUIDE.md](Languages/Application/PLANC-DEVELOPER-GUIDE.md) | ✅ | Pascal-like, structured programming. **The main SINTRAN language** - see the PLANC section below |
 | **C** | [C-DEVELOPER-GUIDE.md](Languages/Application/C-DEVELOPER-GUIDE.md) | ✅ | Portable applications |
 | **COBOL** | [COBOL-DEVELOPER-GUIDE.md](Languages/Application/COBOL-DEVELOPER-GUIDE.md) | ✅ | Business applications |
-| **FORTRAN** | [FORTRAN-DEVELOPER-GUIDE.md](Languages/Application/FORTRAN-DEVELOPER-GUIDE.md) | 🔄 | Scientific computing |
+| **FORTRAN** | [FORTRAN-DEVELOPER-GUIDE.md](Languages/Application/FORTRAN-DEVELOPER-GUIDE.md), then [FORTRAN-BUILD-LEARNINGS-FAQ.md](Languages/Application/FORTRAN-BUILD-LEARNINGS-FAQ.md) (questions and answers from building a real 4,000-line program) and [ADVENTURE-BUILD-AND-INITIALIZE.md](Languages/Application/ADVENTURE-BUILD-AND-INITIALIZE.md) (how the Adventure game was compiled, linked, set up and saved as a `:PROG`) | 🔄 | Scientific computing |
 | **PASCAL** | [PASCAL-DEVELOPER-GUIDE.md](Languages/Application/PASCAL-DEVELOPER-GUIDE.md) | 🔄 | Education, structured programming |
 | **BASIC** | [BASIC-DEVELOPER-GUIDE.md](Languages/Application/BASIC-DEVELOPER-GUIDE.md) | 🔄 | Beginner-friendly scripting |
+| **SIMULA** | [SIMULA/README.md](Languages/Application/SIMULA/README.md) | 🔄 | TPH SIMULA (classes, coroutines, simulation). Language guide, compiler, debugger, install from floppy ND-10058O - written from the manual, not yet run on a machine |
+
+#### SIBAS (the ND database system)
+
+SIBAS is Norsk Data's database system. It follows the CODASYL network model (realms, records,
+sets), not SQL: a program calls named DML routines from a host language such as COBOL or FORTRAN.
+
+| Guide | What it is for |
+|-------|----------------|
+| [SIBAS-DEVELOPER-GUIDE.md](Languages/Application/SIBAS-DEVELOPER-GUIDE.md) | What SIBAS is, SIBAS I and SIBAS II, how to install SIBAS-II, and links to the manuals. No worked examples yet |
+| [SIBAS-DATABASE-PROGRAMMING.md](Workflow/SIBAS-DATABASE-PROGRAMMING.md) | Programming against a SIBAS-II database: the data model, the schema (DDL) syntax and the DML call names, taken from ND's product sheets |
+| [MON/ND MON Calls.md](MON/ND%20MON%20Calls.md) | The SIBAS monitor calls are in here: 304B SendSIBASMessage, 305B GetSIBASMessage, 432B SIBASFunction, 506B AnswerSIBAS |
 
 #### PLANC in depth
 
@@ -135,6 +167,7 @@ Developer/
 | [HOW-TO-PROGRAM-PLANC.md](Languages/Application/HOW-TO-PROGRAM-PLANC.md) | How to program PLANC on SINTRAN III |
 | [PLANC-DEVELOPER-GUIDE.md](Languages/Application/PLANC-DEVELOPER-GUIDE.md) | The main guide - start here |
 | [PLANC-LANGUAGE-RULES.md](Languages/Application/PLANC-LANGUAGE-RULES.md) | Every rule as something a linter can check |
+| [PLANC-DEBUGGING.md](Languages/Application/PLANC-DEBUGGING.md) | Debug symbols on, the Symbolic Debugger, and the runtime error messages |
 
 **Monitor calls, RT and reentrant programs**
 
@@ -204,6 +237,12 @@ Compiling and linking on the ND-500/5000 itself, measured under real SINTRAN III
 | **[PLANC-VTM-UI-CATALOG.md](Workflow/PLANC-VTM-UI-CATALOG.md)** | Every screen-UI system on ND hardware compared: VTM, PLANC-SCREEN-H, NSHS, UNIQUE, FOCUS | - |
 | **[SCRIPT-GUIDE.md](Workflow/SCRIPT-GUIDE.md)** | MODE files, automation | 15KB |
 | **[TOOLS-REFERENCE.md](Workflow/TOOLS-REFERENCE.md)** | Complete tools reference | 22KB |
+| **[CROSS-DEVELOPMENT-WITH-ND100X.md](Workflow/CROSS-DEVELOPMENT-WITH-ND100X.md)** | Edit, build and run SINTRAN programs from a PC by driving the nd100x emulator | - |
+| **[TWO-BANK-PROGRAMS.md](Workflow/TWO-BANK-PROGRAMS.md)** | Putting code and data in separate 64K-word banks on ND-100: which languages can, compile, link, run | - |
+| **[LINK-LIBRARY-ENTRY-POINTS.md](Workflow/LINK-LIBRARY-ENTRY-POINTS.md)** | Every `:BRF` file on the ND software archive floppies, with every name it defines (generated) | - |
+| **[LINK-LIBRARY-NAME-INDEX.md](Workflow/LINK-LIBRARY-NAME-INDEX.md)** | Which library defines a name - use it when the linker says `Undefined entries` (generated) | - |
+| **[SIBAS-DATABASE-PROGRAMMING.md](Workflow/SIBAS-DATABASE-PROGRAMMING.md)** | Programming against a SIBAS-II database (see the SIBAS section above) | - |
+| **[Workflow/README.md](Workflow/README.md)** | Index of this folder | - |
 
 ### Editors
 
@@ -338,6 +377,39 @@ Compiling and linking on the ND-500/5000 itself, measured under real SINTRAN III
 | [MON/ND MON Calls.md](MON/ND%20MON%20Calls.md) | ND monitor calls |
 | [MON/calls/60B_N500M_Hardware_Mapping.md](MON/calls/60B_N500M_Hardware_Mapping.md) | Monitor call 60B hardware mapping |
 | [MON/calls/60B_N500M_Functions.md](MON/calls/60B_N500M_Functions.md) | Monitor call 60B functions |
+| [MON/calls/SCHEMA-EMULATION-BLOCK.md](MON/calls/SCHEMA-EMULATION-BLOCK.md) | The `emulation:` block in the MON call YAML files: what we learned by emulating the calls, and the rules for writing it |
+| [MON/mon-call.schema.json](MON/mon-call.schema.json) | JSON Schema for the MON call YAML files |
+
+### Case Studies
+
+End-to-end worked examples, run on a real SINTRAN III. Index: [Case-Studies/README.md](Case-Studies/README.md).
+
+| Document | Description |
+|----------|-------------|
+| [Case-Studies/HTTP-Server-over-HDLC.md](Case-Studies/HTTP-Server-over-HDLC.md) | An HTTP server in MAC that serves files from the SINTRAN file system to a browser over HDLC |
+| [Case-Studies/TCP-Echo-Server.md](Case-Studies/TCP-Echo-Server.md) | TCP and UDP echo servers in PLANC, and a TCP one in MAC |
+| [Case-Studies/TCP-Echo-Server/README.md](Case-Studies/TCP-Echo-Server/README.md) | Their source files, and what each must look like on the pack (parity, line ends) |
+| [Case-Studies/Finger-Server.md](Case-Studies/Finger-Server.md) | A Finger server (RFC 1288) in PLANC |
+| [Case-Studies/Finger-Server/README.md](Case-Studies/Finger-Server/README.md) | Its source, MODE, config and batch files, and how to run it |
+
+### Reverse Engineering
+
+Index: [Reverse-Engineering/README.md](Reverse-Engineering/README.md).
+
+| Document | Description |
+|----------|-------------|
+| [Reverse-Engineering/Disassembling-a-PROG.md](Reverse-Engineering/Disassembling-a-PROG.md) | How to take a built `:PROG` or `:BRF` apart when you have no source |
+| [Reverse-Engineering/ND-100-Instruction-Decoding.md](Reverse-Engineering/ND-100-Instruction-Decoding.md) | Decode table: 16-bit instruction word to mnemonic |
+
+### Folder indexes
+
+| Index | Covers |
+|-------|--------|
+| [Languages/README.md](Languages/README.md) | All language folders |
+| [Languages/Application/README.md](Languages/Application/README.md) | Application languages, PLANC pages, SIBAS, SIMULA |
+| [Languages/System/README.md](Languages/System/README.md) | NPL, MAC, NORD-500 assembler |
+| [Editors/README.md](Editors/README.md) | QED, PED, LED |
+| [MON/README.md](MON/README.md) | Monitor call files and how they are made |
 
 ### System Development
 
@@ -472,7 +544,7 @@ If you can check all boxes, you're ready to develop! 🚀
 ---
 
 **Version:** 3.0  
-**Last Updated:** October 18, 2025  
+**Last Updated:** November 9, 2026 (index brought up to date with the folder)  
 **Status:** Active Development  
 **Total Documentation:** 768KB+ across 50+ files
 

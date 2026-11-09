@@ -301,6 +301,7 @@ Cross-development tools for the Intel-8080 microprocessor, hosted on NORD hardwa
 | Manual | Document # | Lines | Description |
 |--------|-----------|-------|-------------|
 | **NORD-100 SINTRAN III SIMULA - Reference Manual** | ND-60.092.03 | 2,449 | SIMULA language reference for the NORD-100 under SINTRAN III |
+| **ND-500 SIMULA Reference Manual** | ND-60208-1-EN | 9,092 | SIMULA language reference for the ND-500 |
 
 **Key Topics:** SIMULA language, simulation, object-oriented / class programming
 
@@ -407,7 +408,7 @@ Test-program and diagnostic documentation for the ND-100/ND-110/ND-120 processor
 | **COBOL** | ND-60.144.3, ND-60.089.03 | COBOL-DEVELOPER-GUIDE.md | 🚧 Placeholder |
 | **FORTRAN** | ND-60.145.7A, ND-60.074.01, ND-60.011.04, ND-10191A, ND-10190D, ND-10033K | FORTRAN-DEVELOPER-GUIDE.md | 🚧 Placeholder |
 | **BASIC** | ND-60.040.02, ND-60.071.01D | BASIC-DEVELOPER-GUIDE.md | 🚧 Placeholder |
-| **SIMULA** | ND-60.092.03 | (none yet) | 🚧 Reference only |
+| **SIMULA** | ND-60.092.03, ND-60208-1-EN | (none yet) | 🚧 Reference only |
 | **SIBAS** (database) | ND-60.127.5, ND-30.009.3, 210166F, ND-60.057.01, ND-60.057.03 | SIBAS-DEVELOPER-GUIDE.md | 🚧 Reference index |
 
 ### Development Tools → [Developer/Workflow/](../Developer/Workflow/)
@@ -614,6 +615,7 @@ All manuals are high-quality OCR-scanned versions from original NORD/SINTRAN doc
 | ND-60.086.02 | NORD-10 PASCAL | Language (PASCAL) | 1,721 |
 | ND-60.089.03 | NORD-10 COBOL | Language (COBOL) | 4,790 |
 | ND-60.092.03 | NORD-100 SINTRAN III SIMULA | Language (SIMULA) | 2,449 |
+| ND-60208-1-EN | ND-500 SIMULA Reference Manual | Language (SIMULA) | 9,092 |
 | ND-60.096.01 | MAC Interactive Assembly | Assembler | 6,019 |
 | ND-60.112.01 | SINTRAN III System Doc, Appendix A - Data Fields | SINTRAN III | 4,455 |
 | ND-60.113.02 | NORD-500 Assembler | Assembler | 4,139 |

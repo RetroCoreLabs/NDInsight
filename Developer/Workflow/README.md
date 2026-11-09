@@ -167,12 +167,58 @@ All SINTRAN development tools and utilities.
 
 **Covered Tools:**
 - **@MAC-DEBUG** - Interactive debugger
-- **@SIBAS** - System debugger
+- **SIBAS** is not a debugger: it is the ND database system, see [SIBAS-DATABASE-PROGRAMMING.md](SIBAS-DATABASE-PROGRAMMING.md)
 - **@DUMP** - Object file dumper
 - **@XREF** - Cross-reference generator
 - **@COMPARE** - File comparison
 - **@PATCH** - Binary patching
 - And many more...
+
+---
+
+### [TWO-BANK-PROGRAMS.md](TWO-BANK-PROGRAMS.md)
+**Two-Bank Programs on ND-100**
+
+How to put a program's code and its data in separate 64K-word banks: which languages support it,
+how to turn it on when compiling, and how to link and run the result. Sourced from the SINTRAN III
+Monitor Calls manual.
+
+---
+
+### [LINK-LIBRARY-ENTRY-POINTS.md](LINK-LIBRARY-ENTRY-POINTS.md)
+**Link Libraries: Entry Points** (generated, do not edit by hand)
+
+Every `:BRF` file found on the Norsk Data software archive floppies, with every name it defines -
+what `LOAD` in the BRF linker can find.
+
+### [LINK-LIBRARY-NAME-INDEX.md](LINK-LIBRARY-NAME-INDEX.md)
+**Link Libraries: Name Index** (generated, do not edit by hand)
+
+Which library defines a name. When the linker says `Undefined entries`, look the name up here and
+`LOAD` that library.
+
+---
+
+### [SIBAS-DATABASE-PROGRAMMING.md](SIBAS-DATABASE-PROGRAMMING.md)
+**Programming Against a SIBAS-II Database**
+
+SIBAS-II is ND's CODASYL database system: call-based, not SQL. The data model (realms, records,
+sets), the schema (DDL) syntax and the DML call names, taken from ND's product sheets. See also
+[../Languages/Application/SIBAS-DEVELOPER-GUIDE.md](../Languages/Application/SIBAS-DEVELOPER-GUIDE.md).
+
+---
+
+### [VTM-TERMINAL-INTERFACES.md](VTM-TERMINAL-INTERFACES.md)
+**Building Screen-Oriented User Interfaces with VTM**
+
+VTM is SINTRAN III's terminal-independence layer: how one screen program works on many terminal
+models. Terminal types, DDBTABLES, VTM-COMPOUND.
+
+### [PLANC-VTM-UI-CATALOG.md](PLANC-VTM-UI-CATALOG.md)
+**Screen-Oriented UI on ND Hardware - the Full Catalog**
+
+Every documented way to build a screen UI on SINTRAN III compared: VTM, PLANC-SCREEN-H, NSHS,
+UNIQUE, FOCUS.
 
 ---
 
@@ -295,7 +341,7 @@ Run with: `@build:MODE`
 
 ### Debugging Tools
 - **@MAC-DEBUG** - Interactive debugger
-- **@SIBAS** - System debugger
+- **SIBAS** is not a debugger: it is the ND database system, see [SIBAS-DATABASE-PROGRAMMING.md](SIBAS-DATABASE-PROGRAMMING.md)
 - **@DUMP** - Object file analyzer
 - See [TOOLS-REFERENCE.md](TOOLS-REFERENCE.md)
 
@@ -399,7 +445,7 @@ Run with: `@build:MODE`
 
 ---
 
-**Last Updated**: October 20, 2025
-**Documentation Files**: 5 complete guides (including ND-500 deep-dive)
+**Last Updated**: November 9, 2026
+**Documentation Files**: 13 pages (list above)
 **Documentation Status**: ✅ Complete workflow coverage with ND-500 binary specifications
 

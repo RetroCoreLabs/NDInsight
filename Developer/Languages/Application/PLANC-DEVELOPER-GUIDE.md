@@ -98,6 +98,14 @@ The compiler produces three files:
 
 **SINTRAN quoting rule**: files being CREATED need `"quotes"`. Existing files do not.
 
+### Debug symbols
+
+Put `$DEBUG-MODE ON` before the outermost `MODULE` (or give `DEBUG-MODE` at the compiler prompt),
+link as usual, then start `@DEBUGGER name` to set breaks and look at variables by name. Taken from
+the manuals, not yet tried on our machines. The full story - the debugger commands, RT programs,
+and the runtime messages `NO ON ROUTINEERROR HANDLER` and `STACK OVERFLOW AT` - is in
+**[PLANC-DEBUGGING.md](PLANC-DEBUGGING.md)**.
+
 ---
 
 ## PLANC Syntax Summary

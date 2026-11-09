@@ -66,8 +66,8 @@ SINTRAN III provides three powerful text editors, each suited for different use 
 ## 📚 Reference Manuals
 
 For complete reference documentation, see:
-- **QED**: `Reference-Manuals/ND-60.031.04 EN QED User Manual.md`
-- **PED**: `Reference-Manuals/ND-60.121.4 PED User's Guide.md`
+- **QED**: [ND-60.031.04 EN QED User Manual](../../Reference-Manuals/ND-60.031.04%20EN%20QED%20User%20Manual.md)
+- **PED**: [ND-60.121.4 PED User's Guide](../../Reference-Manuals/ND-60.121.4%20PED%20User's%20Guide.md)
 
 ---
 
