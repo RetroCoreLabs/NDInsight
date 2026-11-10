@@ -421,29 +421,32 @@ Index: [Reverse-Engineering/README.md](Reverse-Engineering/README.md).
 
 ## 📊 Documentation Statistics
 
-### Local Documentation (This Directory)
+Counted 2026-11-10 (Markdown pages only).
 
-- **Core Guides:** 3 files (README, SINTRAN-DEV-GUIDE, QUICK-START)
-- **Language Guides:** 9+ files (Application + System)
-- **Workflow:** 4 files (Compiler, Linker, Script, Tools)
-- **Editors:** 3 files (Guide + 2 Quick References)
-- **Total Size:** ~250KB+
-- **Status:** ✅ Core complete, expanding
+### This Directory (`Developer/`)
 
-### Kernel Documentation (GitHub Repository)
+| Folder | Pages | Size |
+|---|---|---|
+| `Developer/` (top level) | 4 | 61 KB |
+| `Languages/` | 1 | 6 KB |
+| `Languages/Application/` (with `SIMULA/`) | 33 | 678 KB |
+| `Languages/System/` | 6 | 192 KB |
+| `Workflow/` | 14 | 951 KB |
+| `Editors/` | 4 | 29 KB |
+| `MON/` (with `calls/`) | 6 | 1674 KB |
+| `Case-Studies/` | 6 | 38 KB |
+| `Reverse-Engineering/` | 3 | 16 KB |
+| `ND500/` | 4 | 43 KB |
+| `System-Development/` | 1 | 80 KB |
+| **Total** | **82** | **about 3.7 MB** |
+
+- **Languages:** 10 (NPL, MAC, NORD-500 assembler, C, PLANC, PASCAL, FORTRAN, COBOL, BASIC,
+  SIMULA), plus the SIBAS database system.
+
+### Operating System Internals
 
 - **Location:** `SINTRAN/OS/`
-- **Files:** 31 comprehensive documents
-- **Size:** 518KB
-- **C# Code:** ~2,000 lines
-- **Status:** ✅ Complete
-
-### Combined Total
-
-- **Files:** 50+
-- **Size:** 768KB+
-- **Coverage:** Complete SINTRAN III development
-- **Languages:** 8 (NPL, MAC, NORD-500, C, PLANC, COBOL, FORTRAN, PASCAL, BASIC)
+- **Pages:** 46, about 1.6 MB
 
 ---
 

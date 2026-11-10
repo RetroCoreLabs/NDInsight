@@ -1,113 +1,46 @@
 # Quick Navigation Guide
 
-**All SINTRAN III documentation is now in the Developer directory**
+Where to start in the `Developer/` folder. The full list of every page is in
+[README.md](README.md); this page only points you at the right door.
+
+## Start here
+
+| If you want to... | Open |
+|---|---|
+| See everything in this folder | [README.md](README.md) |
+| Get an overview of programming on SINTRAN III | [SINTRAN-DEVELOPER-GUIDE.md](SINTRAN-DEVELOPER-GUIDE.md) |
+| Run a first program in each language | [QUICK-START-EXAMPLES.md](QUICK-START-EXAMPLES.md) |
+
+## By subject
+
+| Subject | Index page |
+|---|---|
+| All languages | [Languages/README.md](Languages/README.md) |
+| Application languages: C, PLANC, PASCAL, FORTRAN, COBOL, BASIC, SIMULA, and the SIBAS database | [Languages/Application/README.md](Languages/Application/README.md) |
+| System languages: NPL, MAC, NORD-500 assembler | [Languages/System/README.md](Languages/System/README.md) |
+| SIMULA | [Languages/Application/SIMULA/README.md](Languages/Application/SIMULA/README.md) |
+| Compiling, linking, MODE scripts, tools, two-bank programs | [Workflow/README.md](Workflow/README.md) |
+| Editors: QED, PED, LED | [Editors/README.md](Editors/README.md) |
+| Monitor calls | [MON/README.md](MON/README.md) |
+| Worked example programs (HTTP, TCP echo, finger servers) | [Case-Studies/README.md](Case-Studies/README.md) |
+| Reading ND-100 programs back (disassembly) | [Reverse-Engineering/README.md](Reverse-Engineering/README.md) |
+| ND-500 compilers and linker | [ND500/README.md](ND500/README.md) |
+
+## Common tasks
+
+| Task | Page |
+|---|---|
+| Find a compiler command | [Workflow/COMPILER-COMMANDS-REFERENCE.md](Workflow/COMPILER-COMMANDS-REFERENCE.md) |
+| Fix linker errors | [Workflow/LINKING-GUIDE.md](Workflow/LINKING-GUIDE.md) |
+| Automate a build | [Workflow/SCRIPT-GUIDE.md](Workflow/SCRIPT-GUIDE.md) |
+| Debug a PLANC program | [Languages/Application/PLANC-DEBUGGING.md](Languages/Application/PLANC-DEBUGGING.md) |
+| Work with a SIBAS database | [Workflow/SIBAS-DATABASE-PROGRAMMING.md](Workflow/SIBAS-DATABASE-PROGRAMMING.md) |
+
+## Elsewhere in the repository
+
+- Operating system internals: `SINTRAN/OS/` (46 pages).
+- ND manuals: `Reference-Manuals/`.
 
 ---
 
-## 📂 File Location
-
-**Current Location:** `Source Code\Sintran L\NPL\Developer\`
-
-**All 15 documentation files are here.**
-
----
-
-## 🚀 Start Here
-
-| If you want to... | Open this file... |
-|-------------------|-------------------|
-| **Get started immediately** | [_START-HERE.md](_START-HERE.md) |
-| **See everything available** | [README.md](README.md) |
-| **Navigate all documentation** | [SINTRAN-DEVELOPER-GUIDE.md](SINTRAN-DEVELOPER-GUIDE.md) |
-| **Run Hello World** | [QUICK-START-EXAMPLES.md](QUICK-START-EXAMPLES.md) |
-
----
-
-## 📚 All Documentation Files
-
-### Core Guides (Start Here)
-1. **[_START-HERE.md](_START-HERE.md)** - 5-minute quick start
-2. **[README.md](README.md)** - Master index and overview
-3. **[SINTRAN-DEVELOPER-GUIDE.md](SINTRAN-DEVELOPER-GUIDE.md)** - Master navigation guide
-4. **[QUICK-START-EXAMPLES.md](QUICK-START-EXAMPLES.md)** - Hello World for all 8 languages
-
-### Language Guides
-5. **[NPL-DEVELOPER-GUIDE.md](Languages/System/NPL-DEVELOPER-GUIDE.md)** - Complete NPL guide (70KB)
-6. **[MAC-DEVELOPER-GUIDE.md](Languages/System/MAC-DEVELOPER-GUIDE.md)** - MAC assembler guide
-7. **[C-DEVELOPER-GUIDE.md](Languages/Application/C-DEVELOPER-GUIDE.md)** - C compiler (placeholder)
-8. **[PLANC-DEVELOPER-GUIDE.md](Languages/Application/PLANC-DEVELOPER-GUIDE.md)** - PLANC (placeholder)
-
-### Process Guides
-9. **[LINKING-GUIDE.md](Workflow/LINKING-GUIDE.md)** - NRL linker, BRF/BPUN/PROG files
-10. **[SCRIPT-GUIDE.md](Workflow/SCRIPT-GUIDE.md)** - MODE files and build automation
-
-### Reference Guides
-11. **[COMPILER-COMMANDS-REFERENCE.md](Workflow/COMPILER-COMMANDS-REFERENCE.md)** - All commands
-12. **[TOOLS-REFERENCE.md](Workflow/TOOLS-REFERENCE.md)** - All development tools
-
-### Status Reports
-13. **[PHASE2-SUMMARY.md](PHASE2-SUMMARY.md)** - Phase 2 completion
-14. **[PROJECT-COMPLETE.md](PROJECT-COMPLETE.md)** - Project status
-15. **[DOCUMENTATION-COMPLETE-FINAL.md](DOCUMENTATION-COMPLETE-FINAL.md)** - Final report
-
----
-
-## 🎯 Common Tasks
-
-### "I'm brand new to SINTRAN"
-1. Read [README.md](README.md) (10 minutes)
-2. Try [QUICK-START-EXAMPLES.md](QUICK-START-EXAMPLES.md) (5 minutes)
-3. Explore [SINTRAN-DEVELOPER-GUIDE.md](SINTRAN-DEVELOPER-GUIDE.md) for navigation
-
-### "I want to learn NPL"
-1. [QUICK-START-EXAMPLES.md](QUICK-START-EXAMPLES.md) - Section 1
-2. [NPL-DEVELOPER-GUIDE.md](Languages/System/NPL-DEVELOPER-GUIDE.md) - Complete guide
-
-### "I need to find a command"
-→ [COMPILER-COMMANDS-REFERENCE.md](Workflow/COMPILER-COMMANDS-REFERENCE.md)
-
-### "I need to use a tool"
-→ [TOOLS-REFERENCE.md](Workflow/TOOLS-REFERENCE.md)
-
-### "I want to automate my build"
-→ [SCRIPT-GUIDE.md](Workflow/SCRIPT-GUIDE.md)
-
-### "I have linker errors"
-→ [LINKING-GUIDE.md](Workflow/LINKING-GUIDE.md)
-
----
-
-## 📊 Documentation Statistics
-
-- **Files:** 15
-- **Total Size:** ~205KB
-- **Languages:** 8 (NPL, MAC, C, PLANC, FORTRAN, PASCAL, COBOL, BASIC)
-- **Examples:** 200+
-- **Status:** ✅ Complete and ready for use
-
----
-
-## 🌐 Other Locations
-
-### Kernel Documentation (OS Internals)
-**Location:** `SINTRAN\OS\`  
-**Contents:** 31 kernel documentation files (518KB)  
-**Purpose:** Operating system internals, device drivers, emulator development
-
-### KERNEL Directory (This Repository)
-**Location:** `Source Code\Sintran L\NPL\KERNEL\`  
-**Contents:** Source code analysis tools and scripts  
-**Purpose:** NPL source code analysis utilities
-
----
-
-## ✅ Ready to Start!
-
-All documentation is organized and ready. Pick your starting point above and begin your SINTRAN development journey!
-
----
-
-**Location:** `Source Code\Sintran L\NPL\Developer\`  
-**Status:** ✅ Complete  
-**Last Updated:** October 17, 2025
-
+**Last Updated:** 2026-11-10
