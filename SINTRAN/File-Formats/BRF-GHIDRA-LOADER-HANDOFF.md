@@ -14,6 +14,21 @@ beside its BPUN and `:PROG` loaders, with its own handoff `HANDOFF-BRF-LOADER.md
 NOT CHECKED here: whether the loader passes the checklist in section 5 below - the file
 and its commit were looked at, the loader was not run.
 
+**Corrections, 2026-11-16** (from running that loader over all 48 BRF files in this repository
+and measuring on BRF-LINKER C01; details in [BRF-FILE-FORMAT.md](BRF-FILE-FORMAT.md)):
+- The six-bit code is NOT "ASCII minus 40 octal". It is the LOW SIX BITS of the ASCII code:
+  01-037 are `A`-`Z` and `[\]^_` (ASCII 0100 + code), 040-077 are the ASCII characters
+  themselves, 0 is a space. The prose in section 2 said otherwise and the loader copied it,
+  which garbled every name; the `SIXBIT` table in the reference code below was right.
+  Padding with code 0 occurs on the left AND on the right.
+- REF takes a word, as this document says, and that word is a link in the reference chain of
+  ND-60.066.04 section 2.5 (177777 for the first reference). A fix-up onto it works only when
+  the symbol is already defined; see BRF-FILE-FORMAT.md section 4.
+- Two-bank files (PMO/DMO/LRP/LRD) keep one load counter and one base per bank.
+- MAIN marks the start address; in an RT load its name stands for the RT description, not
+  the code.
+- The reference code below is kept as it was written; it does not do the last three.
+
 The rest of this document is kept as the specification the loader was built from, and as
 the record of the format rules that cost debugging time.
 
@@ -58,8 +73,10 @@ P-groups:
 - **P-group** (2 bytes): one 16-bit word, BIG-ENDIAN (MSB first). VERIFIED - the
   END checksum only validates with big-endian word assembly.
 - **S-group** (4 bytes, or 6 after LONGF): a symbol of 1-7 chars in six-bit code,
-  right-justified, space(0) padded. Six-bit code = ASCII minus 40 octal
-  (0=space, 1-32 octal = A-Z, 60-71 octal = 0-9). Bytes consumed MSB-first.
+  right-justified, padded with code 0 (a space) on either side. Six-bit code = the LOW SIX
+  BITS of the ASCII code (0 = space, 1-32 octal = A-Z, 60-71 octal = 0-9; corrected
+  2026-11-16 - this line used to say "ASCII minus 40 octal", which is wrong for letters).
+  Bytes consumed MSB-first.
 
 **Key structural rules (each cost real debugging - honor them):**
 1. Big-endian P-groups.
@@ -70,7 +87,7 @@ P-groups:
    "Checksum error"; see BRF-FILE-FORMAT.md section 5.)
 3. `LONGF` (32 octal) = 6-byte S-groups. It is **per-unit**: every `BEG` (17 octal)
    resets S-group size back to 4 bytes; a unit must repeat LONGF for 6-byte symbols.
-4. Sixbit = ASCII-40 octal, space padded, MSB-first packing.
+4. Sixbit = low six bits of ASCII, code 0 = space as padding, MSB-first packing.
 5. Zero bytes (FEED, control 0) pad between units; a single EOF (23 octal) byte
    terminates the file.
 

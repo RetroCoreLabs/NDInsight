@@ -83,7 +83,11 @@ def scan(archive: str):
                 continue
             parsed = nd100_brf.parse_brf(data)
             units = parsed.units
-            defs = sorted({s.name for u in units for s in u.symbols if s.kind in ("MAIN", "ENTR")})
+            # FORTRAN/BASIC statement-number labels (STMT_<n>, see nd100_brf.decode_symbol_packed)
+            # are local labels, not names anyone links to; the old six-bit reading listed them
+            # as junk such as "!2 #<".
+            defs = sorted({s.name for u in units for s in u.symbols
+                           if s.kind in ("MAIN", "ENTR") and not s.name.startswith("STMT_")})
             found[md5] = {
                 "name": o.object_name, "bytes": len(data), "where": [where], "md5": md5,
                 "units": len(units),

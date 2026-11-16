@@ -179,9 +179,25 @@ carrier in compiler output - VERIFIED.)
 ### Two-bank loading (PMO/DMO)
 
 PMO (50) and DMO (51) switch the loader between program-bank and data-bank load
-addressing for two-bank program systems; LRP (52) and LRD (53) relocate against the
-respective bank's program base. Used with IMAGE-FILE/PROG-FILE loading
+addressing for two-bank program systems. Used with IMAGE-FILE/PROG-FILE loading
 (ND-60.066.04 section 1).
+
+Measured on the 13 two-bank files in NDInsight (2026-11-16, all -2 / 2BANK variants:
+NK-100-2BANK-C03, NK-LIB-100-2, SLIB-NRE-2B-B01, SLIB-REE-2B-B01, X25P-100-2-C00,
+RRP/TLF/TLP/XMF/XMP-100-2-B02):
+
+- Each bank has its own load counter (CLC) and its own base (CLC at BEG minus 1). DMO selects
+  the data bank, PMO the program bank, and every BEG starts in program mode.
+- With separate counters, 1720 of 1724 fix-ups land on words already loaded in the current bank
+  and not on a REF word. With one shared counter, 48 would land on never-loaded words and 65 on
+  REF words. The 4 left are OPEN: NK-100-2BANK-C03 file offset 0x1b10; SLIB-NRE-2B-B01 0x9a94,
+  0xe236, 0x10180. Each is an AFR onto a REF to a runtime routine.
+- Groups used in data mode: LNF, LF, LRP (1925), LRD, REF, ENTR, LIBR, AFL; never LR and never
+  a fix-up. Program mode: LNF, LF, LR, REF, AFR, LRP, LRD, ENTR.
+- LRP (52) and LRD (53) store in the CURRENT bank, relocated by the program or data base
+  respectively (the data bank holds tables of program addresses).
+- Not settled by any file: the data bank's start address (given at load time), whether LR in
+  data mode uses the data base, and two-bank ASF (no ASF occurs in any of the 48 files).
 
 ---
 
@@ -205,6 +221,12 @@ own `LIST-BRF-ENTRIES` on `FORT48-2BANK-F02:BRF`: 462 of 462 names identical (20
 Examples decoded from the sample files (VERIFIED): `ENNS0` (MAIN), `POSUERR`,
 `READPIO`, `SEGLOAD`, `UNLOAD`, `UEIEDIN` (LIBR+ENTR pairs).
 
+Padding (measured 2026-11-16): names are padded with code 0 on the LEFT (MAC symbols, PLANC
+entry names) and also on the RIGHT (PLANC internal labels: `NK-100-1BANK-C03.BRF` has `AIL0`
+followed by two code-0 pad characters in a 6-byte S-group). Code 0 is a space in both places.
+A 4-byte S-group holds 5 characters (top 2 bits zero), a 6-byte one 7 (top 6 bits zero); the
+manual's "one to seven" is the 6-byte case.
+
 Statement numbers (labels) in FORTRAN and BASIC are S-groups where the first two
 and last two bytes are zero; bytes 3-4 hold the numeric label value.
 
@@ -219,6 +241,33 @@ The loader's symbol table entry is 3 words for the symbol + 1 word ADR:
   177777 (octal) as end-of-list marker. When the ENTR arrives, the loader walks the
   chain and patches every reference. One bit in the table entry distinguishes the
   two meanings of ADR.
+
+A fix-up can land on a REF word (measured 2026-11-16):
+
+- `NK-100-1BANK-C03`: `AIL0` is ENTR at 000107; a later REF `AIL0` at 001010 is followed by
+  AFR 000026 onto that word, meaning "AIL0 + 26". The symbol is already defined, so the loader
+  stores the address at once and the add works.
+- Measured with the real BRF-LINKER C01 (2026-11-16, nd100x, a copy of ND5000.IMG, a fresh
+  boot per file; words read with LOOK-AT-PROGRAM and from the PROG file, and the two agree;
+  hand-made test units with 4-byte S-groups):
+  - REFA: unit 1 = MAIN TMAIN; LF 111111; REF TSTX; LF 122222; AFR 5 onto the REF word. Unit 2
+    = ENTR TSTX; LF 133333. Result: TSTX = 3; words 0..3 = 000003 000003 122222 133333; 000003
+    also written at address 4 and at address 111111. No message.
+  - REFB: two REF TSTX in a row, AFR 5 onto the first. Result: TSTX = 4; words 0..2 all 000004;
+    000004 also at 111111.
+  - REFC: TSTX defined first, then REF + AFR 5. The word is 000005 = TSTX + 5; nothing is
+    written anywhere else.
+- Conclusion: the reference chain lives in the loaded words, as described above. A fix-up onto
+  a reference whose symbol is NOT yet defined changes a chain link. The linker then follows the
+  changed link without a message, writes the address in the wrong places (in REFA over the
+  program's first word and at 111111), and the added offset is lost. Adding onto a reference
+  works only when the symbol is already defined. The exact rule that ends the walk is not
+  settled by these numbers.
+- `TCP-ERROR-1-B05` does this for `5UTBY` (REF at 025357, then AFR 647 onto it) and `5STCO`
+  (025353 and 037770). Both are PLANC runtime routines. UNVERIFIED: a real load defines them
+  earlier, from the runtime library; no real load script has been checked for this.
+- Trap for tests: within one login the linker's memory carries over from one BRF-LINKER run to
+  the next. Boot fresh for each test.
 
 ---
 
@@ -255,6 +304,12 @@ A checksum P-group follows every END (21) control byte. Algorithm
   a COMMON block: the S-group names the block (must already be defined; its value is
   ADR), W4 is the offset, W5.. are the data.
 
+MAIN marks the unit's start address (the CLC at the MAIN group). In an RT load the MAIN name
+becomes an RT program, and a REF to that name gets the RT DESCRIPTION address, not the code
+address (ND-60.051.8: IGNORE-MAIN "substitutes the main entry by an entry definition";
+DEFINE-PROGRAM `<rt program> <rt description address>`). Example: `X25-LINK-C00` references
+`X25TM`, which X25-LINK itself names with MAIN.
+
 ---
 
 ## 7. Observed Extension: Control Number 30 (octal)
@@ -273,6 +328,9 @@ ASSUMPTION (UNVERIFIED interpretation): this is a compiler/runtime identificatio
 stamp inserted by the PLANC compiler ("PLANC 1-bank runtime, version G00"),
 presumably checked or listed by later loaders. The framing (count word + payload)
 is verified; the meaning is not documented in any manual in this repository.
+
+Across all 48 BRF files in NDInsight (2026-11-16) control number 30 occurs 4 times, always with
+this LNF-like framing.
 
 ---
 
@@ -301,6 +359,26 @@ against the two files in `Installation/Communication/Ethernet/x/`:
 |------|-------------|-------|--------------|----------------|
 | encos-err-i-b01.brf  | 60909 | 174 | 174/174 | 100% (to last byte) |
 | encos-err-ii-b01.brf | 61005 | 174 | 174/174 | 100% (to last byte) |
+
+### Count over all 48 BRF files in NDInsight (2026-11-16)
+
+2472 units, all checksums good, every file parses to its EOF. Control-number totals: LF 69793,
+LR 25953, LC 6, AFR 14348, ARR 194, AFL 378, SRL 146, MAIN 18, LIBR 3360, ENTR 5842, REF 29366,
+END 2472, LNF 29055, RT 5, ctrl-30 4, LONGF 1929, INL 19, BYL 3005, DBG 43964, PMO 1838,
+DMO 1813, LRP 2452, LRD 387.
+
+Never seen in any file: AFF, ARF, SFL, ASF, ADS, DBL/RLL/CXL, INC/DBC/RLC/CXC, BYC, NWL, INHB,
+DIC. Those rest on the manual only.
+
+Two files need more than 64K words if every unit is loaded (`X25-UTILITY-C00` 0x1321A,
+`TCP-ERROR-1-B05` 0x24881); the real loader only loads the library units something references.
+Bytes after EOF are not BRF groups: zero padding (`XMSG-LIBRARY-L03`, 127 bytes) or
+`00 00 00 00 00 00 00 65 01` (several X25 C00 files).
+
+The ghidra-nd100 BRF loader (commit 39381ad) implements all of the above; its open points are
+in ghidra-nd100 `src/PLAN.md`.
+
+### First validation, two files (2026-07-07)
 
 Control-number usage (encos-err-i-b01.brf): FEED 1651 (inter-unit zero padding),
 LR 868, REF 834, LNF 715, AFR 567, LF 482, ENTR 214, LIBR 201, BEG 174, END 174,

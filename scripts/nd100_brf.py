@@ -17,11 +17,24 @@ BRF byte stream syntax (sequence of "groups"):
   <control_byte>                       — 0 args (FEED, BEG, INHB, EOF)
   <control_byte><P-group>              — 1 P-group (LF, LR, LC, SFL, AFL, SRL, END, LNF, RT)
   <control_byte><P-group><P-group>     — 2 P-groups (AFF, ARF, AFR, ARR)
-  <control_byte><S-group>              — 1 S-group (4 or 6 bytes)
-  <control_byte><S-group><P-group>     — S+P (MAIN, LIBR, ENTR, REF, ASF, ADS)
+  <control_byte><S-group>              — 1 S-group (MAIN, LIBR, ENTR, REF, ADS)
+  <control_byte><S-group><P-group>     — S+P (ASF)
+  (two-bank files also use PMO/DMO with no args and LRP/LRD with one P-group)
 
 A P-group is one 16-bit word, big-endian, 2 bytes.
 An S-group is a packed symbol — 4 bytes default, 6 bytes if LONGF flag set.
+
+Loading rules this file follows (measured; see BRF-FILE-FORMAT.md, sections 3 and 4):
+  - PB = CLC at BEG minus 1, so LR W loads W + PB and AFR W1,W2 changes word W2 + PB.
+  - REF takes one word at CLC (the reference chain of ND-60.066.04 section 2.5).
+  - Two-bank files: one CLC and one PB per bank; DMO selects the data bank, PMO and every
+    BEG the program bank. The data bank starts at 0 here (its real start is set at load time).
+  - Everything after EOF is ignored. materialize_memory() loads the file and lists what it
+    could not load cleanly in parser.problems (broken reference chains, symbols defined
+    twice, units past 0177777).
+An earlier version used PB = CLC with "W - 1" corrections in LR and AFR, did not give REF a
+word, and read the two-bank groups as C-compiler markers; names and checksums were right,
+loaded addresses were not.
 
 Usage:
   python nd100_brf.py PROG.bin --brf PROG.brf       # cross-reference
@@ -63,8 +76,8 @@ CB_SRL  = 0o12   # CLC := W1 + PB
 CB_MAIN = 0o14   # S-group + P: main entry
 CB_LIBR = 0o15   # S-group + P: library subprogram
 CB_ENTR = 0o16   # S-group + P: entry point
-CB_BEG  = 0o17   # start of program unit, CLC -> PB
-CB_REF  = 0o20   # S-group + P: external reference
+CB_BEG  = 0o17   # start of program unit, PB := CLC - 1 (measured, see BRFParser)
+CB_REF  = 0o20   # S-group: reference to a symbol; TAKES ONE WORD at CLC (see BRFParser)
 CB_END  = 0o21   # end of unit + checksum
 CB_INHB = 0o22   # compilation errors flag (no args)
 CB_EOF  = 0o23   # end of loading (no args)
@@ -74,6 +87,10 @@ CB_ASF  = 0o26   # COMMON block (S+P)
 CB_ADS  = 0o27   # add common (S only)
 CB_LONGF = 0o32  # set 6-byte S-group mode for the rest of the unit
 CB_DBG  = 0o47   # debug mode on/off (no args)
+CB_PMO  = 0o50   # two-bank: load into the program bank (no args)
+CB_DMO  = 0o51   # two-bank: load into the data bank (no args)
+CB_LRP  = 0o52   # two-bank: load W + program-bank PB at CLC of the CURRENT bank
+CB_LRD  = 0o53   # two-bank: load W + data-bank PB at CLC of the CURRENT bank
 CB_DIC  = 0o54   # dictionary table follows, ends with a 177777 word (made by MAKE-LIBRARY-FILE)
 
 # Groups with a fixed shape that this tool reads past but does not interpret:
@@ -84,21 +101,12 @@ EXTRA_GROUPS = {
     0o44: (False, 2), 0o45: (True, 3), 0o46: (False, 1),
 }
 
-# --- CC-100 (ND-100 C compiler) BRF extensions ---
-# Reverse-engineered 2026-05-25 from CAT.C → CAT.BRF correlation, then extended
-# by inspecting the C runtime libraries (CC-{1,2}BANK/HEADER/TRAILER-A.BRF).
-# Standard BRF only defines control bytes 0o0-0o27 + 0o32. CC-100 adds:
-CB_CC_STRSEG_BEG = 0o51   # marker: begin string-data segment (no args)
-CB_CC_STRSEG_END = 0o50   # marker: end string-data segment (no args)
-CB_CC_REFFIX_A   = 0o52   # REF fix-up sub-marker, 1 P-group arg
-CB_CC_REFFIX_B   = 0o53   # REF fix-up sub-marker (different flavor), 1 P-group arg
-# C runtime BRFs (CC-{1,2}{HEADER,TRAILER,BANK}-A.BRF) use additional bytes:
-CB_CC_RT54       = 0o54   # observed in CC-{1,2}HEADER preamble; 1 P-group?
-CB_CC_RT60       = 0o60   # also HEADER preamble
-# Plus various high-byte ones (0o113-0o324 range) that appear preceding REF
-# symbols within the runtime. Likely fix-up records with multi-byte arg
-# encoding we haven't fully decoded; the parser falls through to "skip
-# unknown" for these and the parse still produces useful output.
+# 0o50-0o53 are the two-bank groups PMO, DMO, LRP, LRD (ND-60.066.04 section 2.9). An earlier
+# version of this file read them as "CC-100 string-segment markers" (0o50/0o51) and "REF fix-up
+# sub-markers" (0o52/0o53), guessed from the C runtime. The byte widths are the same, so names
+# and checksums came out right, but addresses in two-bank files did not. Census of the 48 BRF
+# files in this repository (2026-11-16): PMO 1838, DMO 1813, LRP 2452, LRD 387, all in the 13
+# two-bank (-2 / 2BANK) files.
 
 CONTROL_NAMES = {
     CB_FEED: "FEED", CB_LF: "LF", CB_LR: "LR", CB_LC: "LC",
@@ -108,9 +116,7 @@ CONTROL_NAMES = {
     CB_BEG: "BEG", CB_REF: "REF", CB_END: "END",
     CB_INHB: "INHB", CB_EOF: "EOF", CB_LNF: "LNF",
     CB_RT: "RT", CB_ASF: "ASF", CB_ADS: "ADS",
-    CB_LONGF: "LONGF",
-    CB_CC_STRSEG_BEG: "CC.STRBEG", CB_CC_STRSEG_END: "CC.STREND",
-    CB_CC_REFFIX_A:   "CC.REFA",   CB_CC_REFFIX_B:   "CC.REFB",
+    CB_LONGF: "LONGF", CB_PMO: "PMO", CB_DMO: "DMO", CB_LRP: "LRP", CB_LRD: "LRD",
 }
 
 
@@ -122,7 +128,16 @@ CONTROL_NAMES = {
 # (padding). Checked against the BRF linker's own LIST-BRF-ENTRIES on FORT48-2BANK-F02:BRF:
 # 462 of 462 names identical.
 def decode_symbol_packed(buf: bytes) -> str:
-    """Decode an S-group into its symbol name (trailing and leading spaces removed)."""
+    """Decode an S-group into its symbol name (trailing and leading spaces removed).
+
+    FORTRAN/BASIC statement-number labels are not names: in a 6-byte S-group the first two
+    and last two bytes are zero and bytes 3-4 hold the label number (ND-60.066.04 section
+    2.3). They are returned as "STMT_" + the decimal number, as the ghidra-nd100 BRF loader
+    does. Read as six-bit text they give junk such as "Y", "[" or "#J" (X25-LTST-C00).
+    """
+    if len(buf) == 6 and buf[0] == 0 and buf[1] == 0 and buf[4] == 0 and buf[5] == 0 \
+            and (buf[2] or buf[3]):
+        return f"STMT_{(buf[2] << 8) | buf[3]}"
     v = int.from_bytes(buf, "big")
     n = (len(buf) * 8) // 6
     chars = []
@@ -146,6 +161,8 @@ class Reloc:
     kind: str           # "LF", "LR", "LC", "ARF", etc.
     value: int          # raw P-group word value (pre-relocation)
     unit: int = 0       # which program unit it's in
+    bank: int = 0       # 0 = program bank, 1 = data bank (two-bank files, after DMO)
+    name: str = ""      # symbol name for REF and DEF entries
 
 
 @dataclass
@@ -153,18 +170,21 @@ class Symbol:
     name: str
     kind: str           # MAIN | ENTR | LIBR | REF
     addr: int           # address of the entry (or referencing location for REF)
+    bank: int = 0       # 0 = program bank, 1 = data bank
 
 
 @dataclass
 class ProgramUnit:
-    base: int                       # PB at BEG time
-    end: int                        # CLC at END time
+    base: int                       # program-bank PB: CLC at BEG minus 1
+    end: int                        # last program-bank word loaded
     checksum: int = 0
     checksum_ok: bool | None = None  # None until the unit's END group has been read
     offset: int = 0                  # byte offset of the unit's BEG in the file
     symbols: list[Symbol] = field(default_factory=list)
     rt_priority: int | None = None
     longf: bool = False
+    data_base: int = 0               # data-bank PB (two-bank files): data CLC at BEG minus 1
+    data_end: int = -1               # last data-bank word loaded, -1 if none
     comment: str = ""                # identification text of a control-30 group, if any
 
 
@@ -184,14 +204,42 @@ class BRFParser:
     def __init__(self, data: bytes, base_address: int = 0):
         self.data = data
         self.pos = 0
-        self.clc = base_address      # current location counter (= load address)
-        self.pb = 0                  # program base
+        # One load counter and one base per bank. Bank 0 = program (the only bank of a
+        # one-bank file), bank 1 = data (two-bank files, selected by DMO). Measured over the
+        # 13 two-bank files in this repository: with separate counters 1720 of 1724 fix-ups
+        # land on words already loaded in the current bank; with one shared counter 48 land
+        # on words never loaded. The data bank's start address is set at load time and is
+        # not in the file; it starts at 0 here.
+        self.clcs = [base_address, 0]
+        self.pbs = [0, 0]
+        self.bank = 0
+        self.twobank = False
         self.unit_idx = 0
         self.units: list[ProgramUnit] = []
         self.relocs: list[Reloc] = []
         self.longf: bool = False     # 6-byte S-groups when set (reset at every BEG)
         self.csum: int = 0           # running unit checksum: control bytes + P-groups + S-group words
         self.problems: list[str] = []
+
+    @property
+    def clc(self) -> int:
+        return self.clcs[self.bank]
+
+    @clc.setter
+    def clc(self, v: int) -> None:
+        # NOT masked to 16 bits: a file whose units together pass 0177777 (a library loaded
+        # whole: X25-UTILITY-C00, TCP-ERROR-1-B05) keeps counting upward instead of wrapping
+        # onto its own start. The real loader would load only the library units something
+        # references. Addresses above 0177777 are reported in problems.
+        if v > 0xFFFF and self.clcs[self.bank] <= 0xFFFF:
+            self.problems.append(f"unit {self.unit_idx} runs past 0177777; addresses from here"
+                                 f" on are counted past 64K words (no real load would hold all"
+                                 f" of these units)")
+        self.clcs[self.bank] = v
+
+    @property
+    def pb(self) -> int:
+        return self.pbs[self.bank]
 
     def _read_byte(self) -> int | None:
         if self.pos >= len(self.data):
@@ -228,8 +276,13 @@ class BRFParser:
             if cb == CB_BEG:
                 # Start a new unit. LONGF applies to ONE unit only: every BEG goes back to
                 # 4-byte S-groups (BRF-FILE-FORMAT.md section 2; a file can mix both forms).
-                cur_unit = ProgramUnit(base=self.clc, end=self.clc, offset=self.pos - 1)
-                self.pb = self.clc
+                # Every BEG starts in the program bank. PB = CLC - 1: measured on the real
+                # BRF-LINKER (an LR 1 in the first word loads the unit's own first address)
+                # and over 4701 fix-ups in five files (BRF-FILE-FORMAT.md section 3).
+                self.bank = 0
+                self.pbs = [self.clcs[0] - 1, self.clcs[1] - 1]
+                cur_unit = ProgramUnit(base=self.pbs[0], end=self.pbs[0],
+                                       offset=self.pos - 1, data_base=self.pbs[1])
                 self.units.append(cur_unit)
                 self.unit_idx += 1
                 self.longf = False
@@ -241,7 +294,9 @@ class BRFParser:
 
             if cb == CB_END:
                 if cur_unit is not None:
-                    cur_unit.end = self.clc - 1
+                    cur_unit.end = self.clcs[0] - 1
+                    if self.clcs[1] - 1 != cur_unit.data_base:
+                        cur_unit.data_end = self.clcs[1] - 1
                     # the stored word is NOT part of the sum; sum + stored = 0 (mod 65536)
                     stored = ((self.data[self.pos] << 8) | self.data[self.pos + 1]
                               if self.pos + 1 < len(self.data) else 0)
@@ -283,24 +338,40 @@ class BRFParser:
                         break
                 continue
 
-            if cb == CB_INHB or cb == CB_EOF:
-                # No args
+            if cb == CB_EOF:
+                # End of the loading. What follows is padding or junk, not BRF groups (the
+                # 48-file census found zero bytes and "00 00 00 00 00 00 00 65 01" there).
+                break
+            if cb == CB_INHB:
+                continue
+            if cb in (CB_PMO, CB_DMO):
+                self.bank = 0 if cb == CB_PMO else 1
+                self.twobank = True
+                continue
+            if cb in (CB_LRP, CB_LRD):
+                # Relocated by the base of the bank the group names, stored in the CURRENT
+                # bank: the data bank holds tables of program addresses (LRP in DMO mode).
+                w = self._read_word()
+                self.relocs.append(Reloc(self.clc, CONTROL_NAMES[cb], w, self.unit_idx,
+                                         self.bank))
+                self.clc += 1
                 continue
 
             if cb in (CB_LF, CB_LR, CB_LC):
                 w = self._read_word()
                 self.relocs.append(Reloc(self.clc, CONTROL_NAMES[cb], w,
-                                          self.unit_idx))
+                                          self.unit_idx, self.bank))
                 self.clc += 1
                 continue
 
             if cb in (CB_AFF, CB_ARF, CB_AFR, CB_ARR):
                 w1 = self._read_word()
                 w2 = self._read_word()
-                # w2 is the address being fixed up; w1 is the value to add
-                # Record at the FIXUP TARGET ADDRESS, not at CLC
+                # W1 is the value to add, W2 the word to change (relative to PB for AFR/ARR,
+                # absolute for AFF/ARF). Stored with the raw W2; materialize_memory() works out
+                # the target. AFF and ARF occur in none of the 48 files in this repository.
                 self.relocs.append(Reloc(w2, CONTROL_NAMES[cb] + ".val", w1,
-                                          self.unit_idx))
+                                          self.unit_idx, self.bank))
                 # NOTE: fix-up doesn't advance CLC
                 continue
 
@@ -324,7 +395,7 @@ class BRFParser:
                 w = self._read_word()
                 for _ in range(w):
                     word = self._read_word()
-                    self.relocs.append(Reloc(self.clc, "LF", word, self.unit_idx))
+                    self.relocs.append(Reloc(self.clc, "LF", word, self.unit_idx, self.bank))
                     self.clc += 1
                 continue
 
@@ -335,15 +406,26 @@ class BRFParser:
                 continue
 
             if cb in (CB_MAIN, CB_ENTR, CB_LIBR, CB_REF):
-                # Per ND-60.066.04 §2.9 "MAIN 2(3)" means the S-group is 2 words
-                # (3 if LONGF). There is NO trailing P-group; the symbol's value
-                # is set by the loader (= current CLC for MAIN/ENTR, or a
-                # back-link for REF, or conditional for LIBR).
+                # MAIN, ENTR, LIBR, REF: an S-group of 2 words (3 after LONGF), no P-group.
                 sym = decode_symbol_packed(self._read_sgroup())
                 if cur_unit:
                     cur_unit.symbols.append(
-                        Symbol(name=sym, kind=CONTROL_NAMES[cb], addr=self.clc)
+                        Symbol(name=sym, kind=CONTROL_NAMES[cb], addr=self.clc, bank=self.bank)
                     )
+                if cb == CB_REF:
+                    # REF TAKES ONE WORD: the loader stores the symbol's value there or, while
+                    # the symbol is undefined, a link to the previous reference of it (177777
+                    # for the first) - ND-60.066.04 section 2.5. Measured: with REF taking a
+                    # word every fix-up target is a loaded word; without it 985 of 4701 are not.
+                    self.relocs.append(Reloc(self.clc, "REF", 0, self.unit_idx, self.bank, sym))
+                    self.clc += 1
+                elif cb == CB_ENTR:
+                    # Defines the symbol as CLC. LIBR only names the unit for library search.
+                    # MAIN marks the start address but is NOT entered as a symbol here: in an
+                    # RT load the MAIN name becomes an RT program, and a REF to it gets the RT
+                    # DESCRIPTION address (ND-60.051.8, DEFINE-PROGRAM / IGNORE-MAIN), which is
+                    # not in the file. X25-LINK-C00 references X25TM, its own MAIN name.
+                    self.relocs.append(Reloc(self.clc, "DEF", 0, self.unit_idx, self.bank, sym))
                 continue
 
             if cb == CB_ASF:
@@ -361,19 +443,6 @@ class BRFParser:
                 if cur_unit:
                     cur_unit.symbols.append(
                         Symbol(name=sym, kind="ADS", addr=0)
-                    )
-                continue
-
-            # CC-100 dialect: string-segment markers (no args)
-            if cb in (CB_CC_STRSEG_BEG, CB_CC_STRSEG_END):
-                continue
-
-            # CC-100 dialect: REF fix-up sub-markers (1 P-group arg)
-            if cb in (CB_CC_REFFIX_A, CB_CC_REFFIX_B):
-                w = self._read_word()
-                if cur_unit:
-                    cur_unit.symbols.append(
-                        Symbol(name=f"CC{cb:o}.subref", kind=CONTROL_NAMES[cb], addr=w)
                     )
                 continue
 
@@ -395,93 +464,92 @@ def parse_brf(data: bytes, base_address: int = 0) -> BRFParser:
 
 def reloc_kinds(parser: BRFParser) -> dict[int, str]:
     """Return {addr: kind} for every relocation entry."""
-    return {r.addr: r.kind for r in parser.relocs}
+    return {r.addr: r.kind for r in parser.relocs if r.bank == 0 and r.kind != "DEF"}
 
 
 def relocated_addresses(parser: BRFParser) -> set[int]:
     """Set of memory addresses that hold RELOCATED ADDRESSES (LR or ARF/ARR)."""
-    return {r.addr for r in parser.relocs
-            if r.kind in ("LR", "LC", "ARF.val", "ARR.val")}
-
-
-def materialize_memory(parser: BRFParser) -> dict[int, int]:
-    """Apply all BRF records to produce a {addr: word} memory image.
-
-    Per ND-60.066.04 §2.9 + empirical refinements from HSERV1 validation:
-
-      LF  loads W1 unmodified at CLC                          [VERIFIED]
-      LR  W1 is a 1-indexed word ordinal; loaded value at CLC is (W1-1) + PB
-          when W1 != 0; LR with W1=0 is a placeholder waiting for an AFR/ARR
-          fix-up to supply the symbol value.                   [empirical]
-      LC  loads W1 + CDB at CLC (CDB=0 assumed; we don't model COMMON)
-      AFR fix-up: W2 is a 1-indexed word ordinal selecting the target word
-                  within the unit (target = PB + W2 - 1).
-                  For LF-targeted (= jump/displacement fix-up): add = W1 raw.
-                  For LR-targeted (= pointer fix-up): add = W1 - 1.
-                  Same applies to ARR (raises the conditional add by PB).
-      AFF/ARF: W2 is interpreted as the absolute target address (no -1).
-               W1 for AFF is raw; for ARF, add = W1 + PB.
-
-    The LF-vs-LR-target distinction is determined from the FIRST-PASS state:
-    if memory[target] was set by an LR record, the fix-up applies the
-    ordinal-to-offset shift; otherwise it adds the raw W1.
-
-    This rule has been empirically validated against HSERV1:BRF vs
-    HSERV1:PROG (201 / 281 LF-only match → 281 / 281 with the rule above).
-    """
-    mem: dict[int, int] = {}
-    target_was_lr: dict[int, bool] = {}  # tracks LR-target identity
-
-    # Pre-pass: establish initial values from LF/LR/LC.
+    out = set()
     for r in parser.relocs:
-        if r.kind in ("LF", "LR", "LC"):
+        if r.bank != 0:
+            continue
+        if r.kind in ("LR", "LC", "LRP", "LRD", "ARF.val"):
+            out.add(r.addr)
+        elif r.kind == "ARR.val":
             unit = parser.units[r.unit - 1] if r.unit > 0 else None
-            pb = unit.base if unit else 0
-            if r.kind == "LF":
-                mem[r.addr] = r.value & 0xFFFF
-                target_was_lr[r.addr] = False
-            elif r.kind == "LR":
-                # When W1=0 the slot is a placeholder for an upcoming AFR
-                # fix-up that supplies the full address. Leaving the initial
-                # value at 0 makes the fix-up math work out (AFR's W1 will
-                # be the 1-indexed ordinal whose -1 is the actual target).
-                if r.value == 0:
-                    mem[r.addr] = 0
-                else:
-                    mem[r.addr] = ((r.value - 1) + pb) & 0xFFFF
-                target_was_lr[r.addr] = True
-            elif r.kind == "LC":
-                mem[r.addr] = r.value & 0xFFFF
-                target_was_lr[r.addr] = False
+            out.add(((unit.base if unit else 0) + r.addr) & 0xFFFF)
+    return out
 
-    # Second pass: apply fix-ups.
+
+def materialize_memory(parser: BRFParser, bank: int = 0) -> dict[int, int]:
+    """Load the file the way BRF-LINKER does and return {addr: word} for one bank.
+
+    Rules (ND-60.066.04 section 2.9; measured where marked):
+      PB  = CLC at BEG minus 1, one per bank                             [measured]
+      LF  W1 at CLC;  LR  W1 + PB;  LC  W1 + CDB (COMMON not modelled, CDB = 0)
+      LRP / LRD  W1 + program-bank / data-bank PB, at CLC of the current bank
+      AFF W1 + (W2) -> (W2);       ARF W1 + PB + (W2) -> (W2)
+      AFR W1 + (W2+PB) -> (W2+PB); ARR W1 + PB + (W2+PB) -> (W2+PB)
+      REF takes one word. A defined symbol's value is stored at once; an undefined
+          symbol's word holds a link to its previous reference (177777 for the first)
+          and the chain is walked and patched when MAIN/ENTR defines it (section 2.5).
+          Checked on BRF-LINKER C01 (2026-11-16): REF to a defined symbol + AFR 5 gives
+          symbol + 5. A fix-up onto the word of a still-undefined symbol changes a link;
+          the real linker then follows it without a message and writes the address into
+          wrong places. Here the walk stops at that word and the problem is added to
+          parser.problems.
+    Only symbols defined in this file are known; a reference to anything else keeps its
+    chain link (or 177777). Library units are all loaded, unlike the real loader.
+    """
+    mems: list[dict[int, int]] = [{}, {}]
+    refs: dict[str, list[tuple[int, int]]] = {}    # name -> [(bank, addr)] of open references
+    defs: dict[str, int] = {}
+    pbs = [0, 0]
+    cur_unit = 0
     for r in parser.relocs:
-        if not r.kind.endswith(".val"):
-            continue
-        unit = parser.units[r.unit - 1] if r.unit > 0 else None
-        pb = unit.base if unit else 0
-        kind = r.kind[:-4]
-        if kind == "AFF":
-            target = r.addr
-            add = r.value
-        elif kind == "ARF":
-            target = r.addr
-            add = (r.value + pb) & 0xFFFF
-        elif kind == "AFR":
-            target = (pb + r.addr - 1) & 0xFFFF
-            is_lr = target_was_lr.get(target, False)
-            add = (r.value - 1) if is_lr else r.value
-        elif kind == "ARR":
-            target = (pb + r.addr - 1) & 0xFFFF
-            is_lr = target_was_lr.get(target, False)
-            add = ((r.value - 1) if is_lr else r.value) + pb
-            add &= 0xFFFF
-        else:
-            continue
-        old = mem.get(target, 0)
-        mem[target] = (old + add) & 0xFFFF
-
-    return mem
+        if r.unit != cur_unit:
+            cur_unit = r.unit
+            u = parser.units[r.unit - 1]
+            pbs = [u.base, u.data_base]
+        m = mems[r.bank]
+        pb = pbs[r.bank]
+        k = r.kind
+        if k == "LF":
+            m[r.addr] = r.value & 0xFFFF
+        elif k == "LR":
+            m[r.addr] = (r.value + pb) & 0xFFFF
+        elif k == "LC":
+            m[r.addr] = r.value & 0xFFFF
+        elif k in ("LRP", "LRD"):
+            m[r.addr] = (r.value + pbs[0 if k == "LRP" else 1]) & 0xFFFF
+        elif k == "REF":
+            if r.name in defs:
+                m[r.addr] = defs[r.name] & 0xFFFF
+            else:
+                chain = refs.setdefault(r.name, [])
+                m[r.addr] = (chain[-1][1] & 0xFFFF) if chain else 0xFFFF
+                chain.append((r.bank, r.addr))
+        elif k == "DEF":
+            if r.name in defs:
+                parser.problems.append(f"{r.name} defined again in unit {r.unit}")
+            defs[r.name] = r.addr
+            chain = refs.pop(r.name, [])
+            # Walk from the newest reference back, as the loader does, checking each link.
+            for i in range(len(chain) - 1, -1, -1):
+                b_, a_ = chain[i]
+                want = (chain[i - 1][1] & 0xFFFF) if i > 0 else 0xFFFF
+                word = mems[b_].get(a_, 0)
+                mems[b_][a_] = r.addr & 0xFFFF
+                if word != want:
+                    parser.problems.append(
+                        f"reference chain of {r.name} broken at 0o{a_:06o} (a fix-up changed it)")
+                    break
+        elif k.endswith(".val"):
+            k = k[:-4]
+            target = r.addr if k in ("AFF", "ARF") else r.addr + pb
+            add = r.value + (pb if k in ("ARF", "ARR") else 0)
+            m[target] = (m.get(target, 0) + add) & 0xFFFF
+    return mems[bank]
 
 
 def main():
@@ -562,6 +630,12 @@ def main():
         lines = [f"0o{r.addr:o}\t{r.kind}\t0o{r.value:o}" for r in parser.relocs]
         args.out.write_text("\n".join(lines))
         print(f"\nWrote reloc map to {args.out}")
+
+    materialize_memory(parser)      # loads the file; fills parser.problems
+    if parser.problems:
+        print(f"\n# {len(parser.problems)} problem(s) found while loading:")
+        for x in parser.problems:
+            print(f"  {x}")
 
     # Summary stats
     kinds: dict[str, int] = {}
